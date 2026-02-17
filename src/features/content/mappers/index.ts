@@ -1,1 +1,1 @@
-export { mapSectionDTOToSection } from './sectionMapper'
+export { mapPublicSectionDTO, mapAdminSectionDTO, mapSectionListItem } from './sectionMapper'

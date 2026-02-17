@@ -4,3 +4,10 @@ export interface TextContent {
   role: string | null
   order: number
 }
+
+/** Modelo admin con IDs para edición */
+export interface AdminTextContent extends TextContent {
+  id: number
+  status: string | null
+  pivotId: number
+}

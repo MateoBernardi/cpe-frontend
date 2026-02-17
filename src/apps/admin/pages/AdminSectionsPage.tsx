@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
-
-const sections = ['hero', 'about', 'services', 'testimonials', 'contact', 'footer']
+import { useSectionsList } from '@features/content/viewmodels'
+import { LoadingSpinner, ErrorMessage } from '@shared/components'
 
 export default function AdminSectionsPage() {
+  const { data: sections, isLoading, error } = useSectionsList()
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Secciones</h1>
@@ -10,18 +12,23 @@ export default function AdminSectionsPage() {
         Listado de secciones de contenido disponibles para editar.
       </p>
 
-      <div className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
-        {sections.map((name) => (
-          <Link
-            key={name}
-            to={`/sections/${name}`}
-            className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-gray-50"
-          >
-            <span className="font-medium capitalize text-gray-900">{name}</span>
-            <span className="text-sm text-gray-400">Editar →</span>
-          </Link>
-        ))}
-      </div>
+      {isLoading && <LoadingSpinner className="py-12" />}
+      {error && <ErrorMessage message={error instanceof Error ? error.message : 'Error cargando secciones'} />}
+
+      {sections && (
+        <div className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
+          {sections.map((s) => (
+            <Link
+              key={s.id}
+              to={`/sections/${s.id}`}
+              className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-gray-50"
+            >
+              <span className="font-medium capitalize text-gray-900">{s.name}</span>
+              <span className="text-sm text-gray-400">Editar →</span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

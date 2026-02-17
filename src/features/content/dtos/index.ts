@@ -1,4 +1,18 @@
-export type { TextDTO } from './TextDTO'
-export type { MediaDTO } from './MediaDTO'
-export type { SectionDTO, SectionResponseDTO } from './SectionDTO'
-export type { CreateSectionDTO, CreateTextInput, CreateMediaInput } from './CreateSectionDTO'
+export type { PublicTextDTO, AdminTextDTO } from './TextDTO'
+export type { PublicMediaDTO, AdminMediaDTO, UploadMediaResponseDTO } from './MediaDTO'
+export type {
+  PublicSectionDTO,
+  PublicSectionResponseDTO,
+  AdminSectionDTO,
+  AdminSectionResponseDTO,
+  SectionListItemDTO,
+  SectionListResponseDTO,
+} from './SectionDTO'
+export type {
+  CreateTextInput,
+  CreateMediaInput,
+  AddSectionContentDTO,
+  PatchTextDTO,
+  PatchMediaDTO,
+  PatchPivotDTO,
+} from './CreateSectionDTO'

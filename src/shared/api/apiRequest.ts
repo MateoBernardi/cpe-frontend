@@ -33,9 +33,8 @@ export class ApiError extends Error {
 }
 
 /**
- * Fábrica de requests HTTP.
- * Headers fijos para cumplir con las normas HTTPS de los navegadores.
- * Configurable: método, endpoint, body, token.
+ * Fábrica de requests HTTP (JSON).
+ * Incluye x-tenant-id en todos los requests.
  */
 export async function apiRequest<TResponse, TBody = unknown>(
   options: ApiRequestOptions<TBody>,
@@ -46,7 +45,8 @@ export async function apiRequest<TResponse, TBody = unknown>(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    Accept: 'application/json',
+    'Accept': 'application/json',
+    'x-tenant-id': ENV.TENANT_ID,
   }
 
   if (token) {
@@ -64,6 +64,40 @@ export async function apiRequest<TResponse, TBody = unknown>(
   }
 
   const response = await fetch(url, config)
+
+  if (!response.ok) {
+    let errorData: ApiErrorResponse
+    try {
+      errorData = (await response.json()) as ApiErrorResponse
+    } catch {
+      errorData = { message: response.statusText }
+    }
+    throw new ApiError(response.status, response.statusText, errorData)
+  }
+
+  const data = (await response.json()) as TResponse
+  return data
+}
+
+/**
+ * Fábrica de requests multipart/form-data (para uploads de archivos).
+ * NO setea Content-Type — el browser lo hace automáticamente con el boundary.
+ */
+export async function apiUpload<TResponse>(
+  endpoint: string,
+  formData: FormData,
+  signal?: AbortSignal,
+): Promise<TResponse> {
+  const url = `${ENV.API_BASE_URL}${endpoint}`
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'x-tenant-id': ENV.TENANT_ID,
+    },
+    body: formData,
+    signal,
+  })
 
   if (!response.ok) {
     let errorData: ApiErrorResponse

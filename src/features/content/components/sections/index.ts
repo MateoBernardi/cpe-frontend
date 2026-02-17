@@ -1,0 +1,7 @@
+export { default as HeroSection } from './HeroSection'
+export { default as SecondaryHeroSection } from './SecondaryHeroSection'
+export { default as AboutSection } from './AboutSection'
+export { default as NewsSection } from './NewsSection'
+export { default as InfoPrimarySection } from './InfoPrimarySection'
+export { default as InfoSecondarySection } from './InfoSecondarySection'
+export { default as ContactFormSection } from './ContactFormSection'

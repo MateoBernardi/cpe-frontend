@@ -1,17 +1,16 @@
 import { SectionEditor } from '../components/admin'
 
 interface AdminSectionViewProps {
-  sectionName: string
-  tenantId?: number
+  sectionId: number
 }
 
 /**
- * Vista de admin para editar una sección con previsualización.
+ * Vista de admin para editar una sección.
  */
-export default function AdminSectionView({ sectionName, tenantId }: AdminSectionViewProps) {
+export default function AdminSectionView({ sectionId }: AdminSectionViewProps) {
   return (
     <div>
-      <SectionEditor sectionName={sectionName} tenantId={tenantId} />
+      <SectionEditor sectionId={sectionId} />
     </div>
   )
 }

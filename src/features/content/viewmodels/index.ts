@@ -1,2 +1,2 @@
 export { useSectionViewModel } from './useSectionViewModel'
-export { useAdminSectionViewModel, contentKeys } from './useAdminSectionViewModel'
+export { useAdminSectionViewModel, useSectionsList, contentKeys } from './useAdminSectionViewModel'

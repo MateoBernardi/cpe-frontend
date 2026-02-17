@@ -2,9 +2,10 @@ import { useParams, Link } from 'react-router-dom'
 import { AdminSectionView } from '@features/content/views'
 
 export default function AdminSectionEditPage() {
-  const { sectionName } = useParams<{ sectionName: string }>()
+  const { sectionId } = useParams<{ sectionId: string }>()
+  const id = Number(sectionId)
 
-  if (!sectionName) {
+  if (!sectionId || isNaN(id)) {
     return (
       <div className="text-center">
         <p className="text-gray-500">Sección no especificada.</p>
@@ -20,7 +21,7 @@ export default function AdminSectionEditPage() {
       <Link to="/sections" className="text-sm text-blue-600 hover:underline">
         ← Volver a secciones
       </Link>
-      <AdminSectionView sectionName={sectionName} />
+      <AdminSectionView sectionId={id} />
     </div>
   )
 }

@@ -1,21 +1,23 @@
 import type { CreateTextInput } from '../../dtos'
+import { getSectionRoles } from '../../config/sectionRoles'
 
 interface TextEditorProps {
   texts: CreateTextInput[]
   onChange: (texts: CreateTextInput[]) => void
+  sectionName: string
 }
 
-const emptyText: CreateTextInput = {
-  title: '',
-  body: '',
-  role: '',
-  order: 0,
-  status: 'PUBLISHED',
-}
+export default function TextEditor({ texts, onChange, sectionName }: TextEditorProps) {
+  const roles = getSectionRoles(sectionName)
 
-export default function TextEditor({ texts, onChange }: TextEditorProps) {
   const addText = () => {
-    onChange([...texts, { ...emptyText, order: texts.length }])
+    onChange([...texts, {
+      body: '',
+      title: '',
+      role: roles.defaultTextRole,
+      order: texts.length,
+      status: 'PUBLISHED',
+    }])
   }
 
   const updateText = (index: number, field: keyof CreateTextInput, value: string | number) => {
@@ -55,14 +57,6 @@ export default function TextEditor({ texts, onChange }: TextEditorProps) {
             </button>
           </div>
 
-          <input
-            type="text"
-            placeholder="Título (opcional)"
-            value={text.title ?? ''}
-            onChange={(e) => updateText(index, 'title', e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-
           <textarea
             placeholder="Cuerpo del texto *"
             value={text.body}
@@ -72,13 +66,15 @@ export default function TextEditor({ texts, onChange }: TextEditorProps) {
           />
 
           <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Rol (ej: headline)"
-              value={text.role ?? ''}
+            <select
+              value={text.role ?? roles.defaultTextRole}
               onChange={(e) => updateText(index, 'role', e.target.value)}
               className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+            >
+              {roles.textRoles.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
             <input
               type="number"
               placeholder="Orden"

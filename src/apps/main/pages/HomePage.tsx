@@ -1,14 +1,23 @@
 import { SectionView } from '@features/content/views'
 
+const PUBLIC_SECTIONS = [
+  'hero',
+  'secondary_hero',
+  'about',
+  'news',
+  'info_primary',
+  'info_secondary',
+  'contact_form',
+] as const
+
 /**
- * Página principal - renderiza las secciones en orden.
+ * Página principal — renderiza todas las secciones del landing en orden.
+ * Cada sección se carga independientemente del API público.
  */
 export default function HomePage() {
-  const sections = ['hero', 'about', 'footer']
-
   return (
-    <div className="space-y-12">
-      {sections.map((name) => (
+    <div>
+      {PUBLIC_SECTIONS.map((name) => (
         <section key={name} id={name}>
           <SectionView sectionName={name} />
         </section>

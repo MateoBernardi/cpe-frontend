@@ -1,2 +1,2 @@
-export { apiRequest, ApiError } from './apiRequest'
-export type { default as ENV } from './apiConfig'
+export { apiRequest, apiUpload, ApiError } from './apiRequest'
+export { default as ENV } from './apiConfig'

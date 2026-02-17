@@ -1,23 +1,43 @@
+/** POST /content/sections/:sectionId/content */
 export interface CreateTextInput {
-  title?: string
   body: string
+  title?: string
   role?: string
   order?: number
-  status?: 'PUBLISHED' | 'DRAFT'
+  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 }
 
 export interface CreateMediaInput {
-  title?: string
   media_url: string
-  mime_type?: string
+  mime_type: string
+  title?: string
   role?: string
   order?: number
-  origin?: 'ADMIN' | 'USER'
+  origin?: 'ADMIN' | 'WEB_FORM'
 }
 
-export interface CreateSectionDTO {
-  tenant_id: number
-  section_name: string
+export interface AddSectionContentDTO {
   texts?: CreateTextInput[]
   media?: CreateMediaInput[]
+}
+
+/** PATCH /content/texts/:id */
+export interface PatchTextDTO {
+  title?: string
+  body?: string
+  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+}
+
+/** PATCH /content/media/:id */
+export interface PatchMediaDTO {
+  title?: string
+  url?: string
+  mime_type?: string
+  origin?: 'ADMIN' | 'WEB_FORM'
+}
+
+/** PATCH /content/text-sections/:pivotId  |  PATCH /content/media-texts/:pivotId */
+export interface PatchPivotDTO {
+  role?: string
+  order?: number
 }
