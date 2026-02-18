@@ -1,51 +1,117 @@
-import { useState, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import WhatsAppFab from './WhatsAppFab'
+import LoadingSpinner from './LoadingSpinner'
+import { useSmoothScroll } from '@shared/hooks'
 
 interface MainLayoutProps {
   children: ReactNode
 }
 
+/** Links con ancla al home | rutas propias */
 const NAV_LINKS = [
-  { label: 'Inicio', href: '#hero' },
-  { label: 'Nosotros', href: '#about' },
-  { label: 'Novedades', href: '#news' },
-  { label: 'Servicios', href: '#info_primary' },
+  { label: 'Inicio', href: '/#hero' },
+  { label: 'Nosotros', href: '/#about' },
+  { label: 'Servicios', href: '/#info_primary' },
+  { label: 'Novedades', href: '/news' },
+  { label: 'Contacto', href: '/contact' },
 ] as const
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [fadeOut, setFadeOut] = useState(false)
+  const location = useLocation()
+  const lenisRef = useSmoothScroll()
+
+  // Splash screen: logo 1.5s → fade out 0.8s
+  useEffect(() => {
+    const t1 = setTimeout(() => setFadeOut(true), 1500)
+    const t2 = setTimeout(() => setLoading(false), 2300)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [])
+
+  // Scroll to hash after navigation (using Lenis when available)
+  useEffect(() => {
+    if (location.hash) {
+      const el = document.getElementById(location.hash.slice(1))
+      if (el) {
+        setTimeout(() => {
+          if (lenisRef.current) {
+            lenisRef.current.scrollTo(el, { offset: 0 })
+          } else {
+            el.scrollIntoView({ behavior: 'smooth' })
+          }
+        }, 100)
+      }
+    }
+  }, [location, lenisRef])
+
+  const renderNavLink = (l: (typeof NAV_LINKS)[number]) => {
+    const isRoute = !l.href.startsWith('/#')
+    if (isRoute) {
+      return (
+        <Link
+          key={l.href}
+          to={l.href}
+          onClick={() => setMobileOpen(false)}
+          className="nav-link"
+        >
+          {l.label}
+        </Link>
+      )
+    }
+    return (
+      <a
+        key={l.href}
+        href={l.href}
+        onClick={() => setMobileOpen(false)}
+        className="nav-link"
+      >
+        {l.label}
+      </a>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      {/* ── Fixed Header ── */}
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/60 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <div className="min-h-screen bg-slate-950 text-white">
+      {/* ── Splash overlay ── */}
+      {loading && (
+        <div
+          className={`fixed inset-0 z-[100] flex items-center justify-center bg-black ${fadeOut ? 'page-overlay-exit' : ''}`}
+        >
+          <LoadingSpinner size="lg" />
+        </div>
+      )}
+
+      {/* ── Fixed Header — dark, transparent feel ── */}
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-slate-900/80 backdrop-blur-lg">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           {/* Logo */}
-          <a href="#hero" className="flex items-center gap-2.5">
+          <a href="/#hero" className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">
               CPE
             </div>
-            <span className="text-lg font-bold tracking-tight text-slate-900">
+            <span className="text-lg font-bold tracking-tight text-white">
               Clínica para Empresas
             </span>
           </a>
 
           {/* Desktop nav */}
-          <nav className="hidden items-center gap-6 md:flex">
-            {NAV_LINKS.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
-              >
-                {l.label}
-              </a>
-            ))}
+          <nav className="hidden items-center gap-8 md:flex">
+            {NAV_LINKS.map(renderNavLink)}
+
+            {/* Instagram icon */}
             <a
-              href="#contact_form"
-              className="rounded-lg bg-teal-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700"
+              href="https://instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/70 transition-colors hover:text-white"
+              aria-label="Instagram"
             >
-              Contáctanos
+              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+              </svg>
             </a>
           </nav>
 
@@ -53,7 +119,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           <button
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="rounded-md p-2 text-slate-600 md:hidden"
+            className="rounded-md p-2 text-white/70 md:hidden"
             aria-label="Menú"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -68,31 +134,27 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className="border-t border-slate-200 bg-white px-4 pb-4 md:hidden">
+          <div className="border-t border-white/10 bg-slate-900 px-4 pb-4 md:hidden">
             <nav className="flex flex-col gap-3 pt-3">
-              {NAV_LINKS.map((l) => (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
-                >
-                  {l.label}
-                </a>
-              ))}
+              {NAV_LINKS.map(renderNavLink)}
               <a
-                href="#contact_form"
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => setMobileOpen(false)}
-                className="mt-1 rounded-lg bg-teal-600 px-5 py-2.5 text-center text-sm font-semibold text-white"
+                className="flex items-center gap-2 text-sm text-white/70 transition-colors hover:text-white"
               >
-                Contáctanos
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                </svg>
+                Instagram
               </a>
             </nav>
           </div>
         )}
       </header>
 
-      {/* ── Main content (offset for fixed header) ── */}
+      {/* ── Main content ── */}
       <main>
         {children}
       </main>
@@ -101,7 +163,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <WhatsAppFab />
 
       {/* ── Footer ── */}
-      <footer className="bg-slate-900 text-slate-400">
+      <footer className="bg-slate-950 text-slate-400 border-t border-white/10">
         <div className="mx-auto max-w-7xl px-6 py-12">
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {/* Brand */}
@@ -148,7 +210,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             </div>
           </div>
 
-          <div className="mt-10 border-t border-slate-800 pt-6 text-center text-xs">
+          <div className="mt-10 border-t border-white/10 pt-6 text-center text-xs">
             © {new Date().getFullYear()} Clínica para Empresas. Todos los derechos reservados.
           </div>
         </div>

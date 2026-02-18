@@ -35,7 +35,6 @@ export function useSectionViewModel(sectionName: string): UseSectionViewModelRes
 
   useEffect(() => {
     void fetchSection()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sectionName])
 
   return { section, isLoading, error, refetch: fetchSection }

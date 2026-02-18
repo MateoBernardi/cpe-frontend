@@ -1,17 +1,19 @@
 import { SectionView } from '@features/content/views'
 
+/**
+ * Secciones de la landing page principal (en orden).
+ * News y ContactForm se muestran en rutas separadas (/news, /contact).
+ */
 const PUBLIC_SECTIONS = [
   'hero',
-  'secondary_hero',
   'about',
-  'news',
   'info_primary',
   'info_secondary',
-  'contact_form',
+  'secondary_hero',
 ] as const
 
 /**
- * Página principal — renderiza todas las secciones del landing en orden.
+ * Página principal — renderiza las secciones del landing en orden.
  * Cada sección se carga independientemente del API público.
  */
 export default function HomePage() {
