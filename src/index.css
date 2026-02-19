@@ -43,6 +43,20 @@ html.lenis, html.lenis body {
   left: 0;
 }
 
+/* ── Header scrolled — teal nav links ── */
+.header-scrolled .nav-link {
+  color: rgb(15, 118, 110);
+}
+.header-scrolled .nav-link:hover {
+  color: rgb(13, 148, 136);
+}
+.header-scrolled .nav-link::after {
+  background: rgb(15, 118, 110);
+}
+.header-scrolled .nav-link:hover::after {
+  background: rgb(13, 148, 136);
+}
+
 /* ── Logo pulse (loading spinner) ── */
 @keyframes logoPulse {
   0%, 100% { opacity: 0.6; transform: scale(1); }

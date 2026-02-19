@@ -1,16 +1,16 @@
 import { useState, useMemo } from 'react'
 import type { Section } from '../../models'
-import { textByRole, textsByRole, mediaByRole } from './sectionHelpers'
+import { textByRole, textsByRole } from './sectionHelpers'
 import { useInView } from '@shared/hooks'
 
 interface Props { section: Section }
 
 /** Tiers de precio según cantidad de empleados */
 const PRICE_TIERS = [
-  { max: 10, rate: 8500 },
-  { max: 50, rate: 6500 },
-  { max: 200, rate: 4800 },
-  { max: Infinity, rate: 3500 },
+  { max: 10, rate: 15000 },
+  { max: 50, rate: 45000 },
+  { max: 200, rate: 88000 },
+  { max: Infinity, rate: 95000 },
 ]
 
 function calcBudget(employees: number): number {
@@ -30,7 +30,6 @@ export default function ContactFormSection({ section }: Props) {
   const heading = textByRole(section.texts, 'heading')
   const paragraphs = textsByRole(section.texts, 'paragraph')
   const cta = textByRole(section.texts, 'cta')
-  const bg = mediaByRole(section.media, 'background')
 
   const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
 
@@ -55,16 +54,8 @@ export default function ContactFormSection({ section }: Props) {
   return (
     <section
       ref={ref}
-      className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 py-24 text-white"
+      className="relative from-slate-500 via-slate-600 to-slate-700 py-24 text-white"
     >
-      {bg && (
-        <img
-          src={bg.mediaUrl}
-          alt=""
-          className="absolute inset-0 -z-10 h-full w-full object-cover opacity-5"
-        />
-      )}
-
       <div className="mx-auto max-w-7xl px-6">
         <div className="grid gap-16 lg:grid-cols-2 lg:items-start">
           {/* ── Columna izquierda: texto + estimador ── */}
@@ -108,7 +99,7 @@ export default function ContactFormSection({ section }: Props) {
 
               <div className="mt-6 rounded-xl bg-teal-600/10 p-5 text-center">
                 <p className="text-xs uppercase tracking-wider text-teal-400/70">
-                  Presupuesto estimativo mensual
+                  Presupuesto estimativo de la entrevista inicial
                 </p>
                 <p className="mt-1 text-3xl font-bold text-teal-400">
                   {formatARS(budget)}
@@ -167,13 +158,13 @@ export default function ContactFormSection({ section }: Props) {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm text-slate-400">Empresa</label>
+                    <label className="mb-1 block text-sm text-slate-400">Localidad</label>
                     <input
                       type="text"
                       value={form.company}
                       onChange={(e) => setForm({ ...form, company: e.target.value })}
                       className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                      placeholder="Acme S.A."
+                      placeholder="San Basilio, Córdoba"
                     />
                   </div>
                   <div>

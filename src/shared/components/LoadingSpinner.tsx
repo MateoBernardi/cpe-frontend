@@ -19,9 +19,9 @@ export default function LoadingSpinner({ size = 'md', className = '' }: LoadingS
   return (
     <div className={`flex items-center justify-center ${className}`}>
       <div
-        className={`${sizeClasses[size]} logo-pulse flex items-center justify-center rounded-full bg-teal-600 shadow-lg shadow-teal-600/30`}
+        className={`${sizeClasses[size]} logo-pulse flex items-center justify-center`}
       >
-        <span className={`${textSizes[size]} font-bold tracking-tight text-white`}>CPE</span>
+        <img src="/cpeLoading.png" className={`h-25 w-25 ${textSizes[size]}`} />
       </div>
     </div>
   )

@@ -25,7 +25,7 @@ export default function AboutSection({ section }: Props) {
   return (
     <section
       ref={ref}
-      className="relative flex min-h-screen items-center bg-slate-950 py-20"
+      className="relative flex min-h-screen items-center bg-teal-700 py-20"
     >
       <div className="mx-auto w-full max-w-7xl px-6">
         {/* Heading */}

@@ -9,7 +9,7 @@ interface Props { section: Section }
  * Roles: heading, subheading | background
  */
 export default function HeroSection({ section }: Props) {
-  const heading = textByRole(section.texts, 'heading')
+  const heading = textByRole(section.texts, 'headline')
   const subheading = textByRole(section.texts, 'subheading')
   const backgrounds = mediasByRole(section.media, 'background')
   const [current, setCurrent] = useState(0)
@@ -42,7 +42,7 @@ export default function HeroSection({ section }: Props) {
             />
           ))}
           {/* Overlay gradiente */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-transparent" />
         </div>
       )}
 

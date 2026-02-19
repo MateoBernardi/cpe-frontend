@@ -19,7 +19,7 @@ export default function InfoPrimarySection({ section }: Props) {
   const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
 
   return (
-    <section ref={ref} className="bg-slate-900 py-24 text-white">
+    <section ref={ref} className="bg-slate-500 py-24 text-white">
       <div className="mx-auto max-w-7xl px-6">
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
           {/* Imagen a la izquierda */}
