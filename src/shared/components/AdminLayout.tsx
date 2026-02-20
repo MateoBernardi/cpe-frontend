@@ -6,8 +6,9 @@ interface AdminLayoutProps {
 }
 
 const navItems = [
-  { to: '/preview', label: 'Previsualización' },
-  { to: '/sections', label: 'Secciones' },
+  { to: '/', label: 'Dashboard', exact: true },
+  { to: '/preview', label: 'Previsualización', exact: false },
+  { to: '/sections', label: 'Secciones', exact: false },
 ]
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
@@ -31,7 +32,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         } lg:relative lg:translate-x-0 lg:shadow-sm`}
       >
         <div className="flex h-16 items-center justify-between border-b border-gray-200 px-6">
-          <h1 className="text-lg font-bold text-gray-900">CPE Admin</h1>
+          <Link to="/" className="text-lg font-bold text-gray-900 hover:text-blue-700 transition-colors">
+            CPE Admin
+          </Link>
           <button
             onClick={() => setSidebarOpen(false)}
             className="rounded-md p-1 text-gray-400 hover:text-gray-600 lg:hidden"
@@ -43,7 +46,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
         <nav className="mt-4 flex flex-col gap-1 px-3">
           {navItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.to)
+            const isActive = item.exact
+              ? location.pathname === item.to
+              : location.pathname.startsWith(item.to)
             return (
               <Link
                 key={item.to}

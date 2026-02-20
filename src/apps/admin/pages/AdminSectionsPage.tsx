@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useSectionsList } from '@features/content/viewmodels'
+import { getSectionDisplayName } from '@features/content/config/sectionRoles'
 import { LoadingSpinner, ErrorMessage } from '@shared/components'
 
 export default function AdminSectionsPage() {
@@ -23,7 +24,7 @@ export default function AdminSectionsPage() {
               to={`/sections/${s.id}`}
               className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-gray-50"
             >
-              <span className="font-medium capitalize text-gray-900">{s.name}</span>
+              <span className="font-medium text-gray-900">{getSectionDisplayName(s.name)}</span>
               <span className="text-sm text-gray-400">Editar →</span>
             </Link>
           ))}

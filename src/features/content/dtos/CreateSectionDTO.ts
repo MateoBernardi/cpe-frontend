@@ -1,7 +1,6 @@
 /** POST /content/sections/:sectionId/content */
 export interface CreateTextInput {
   body: string
-  title?: string
   role?: string
   order?: number
   status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
@@ -23,7 +22,6 @@ export interface AddSectionContentDTO {
 
 /** PATCH /content/texts/:id */
 export interface PatchTextDTO {
-  title?: string
   body?: string
   status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 }

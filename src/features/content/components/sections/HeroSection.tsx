@@ -24,7 +24,7 @@ export default function HeroSection({ section }: Props) {
   }, [backgrounds.length])
 
   return (
-    <section className="relative isolate h-screen w-full overflow-hidden bg-slate-950">
+    <section className="relative isolate h-screen w-full overflow-hidden bg-slate-200">
       {/* Carrusel de imágenes de fondo */}
       {backgrounds.length > 0 && (
         <div className="absolute inset-0 -z-10">
@@ -42,13 +42,13 @@ export default function HeroSection({ section }: Props) {
             />
           ))}
           {/* Overlay gradiente */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
         </div>
       )}
 
       {/* Si no hay imágenes, gradiente teal fallback */}
       {backgrounds.length === 0 && (
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-teal-700 via-teal-800 to-slate-900" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-teal-200 via-teal-300 to-slate-200" />
       )}
 
       {/* Texto — abajo-izquierda */}

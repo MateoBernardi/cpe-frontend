@@ -1,7 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import type { AdminSection } from '../models'
-import type { AddSectionContentDTO, CreateTextInput, CreateMediaInput } from '../dtos'
+import type {
+  AddSectionContentDTO,
+  CreateTextInput,
+  AdminSectionResponseDTO,
+} from '../dtos'
 import { contentService } from '../services'
 import { mapAdminSectionDTO, mapSectionListItem } from '../mappers'
 
@@ -11,6 +15,12 @@ export const contentKeys = {
   all: ['content'] as const,
   sectionsList: () => [...contentKeys.all, 'sections-list'] as const,
   section: (id: number) => [...contentKeys.all, 'section', id] as const,
+  pendingEdits: () => [...contentKeys.all, 'pending-edits'] as const,
+}
+
+/** Ediciones locales que aún no se enviaron al backend */
+export interface PendingEdits {
+  textEdits: Record<number, string> // textId → newBody
 }
 
 // ── Hook: listar secciones ──
@@ -33,10 +43,7 @@ interface UseAdminSectionVMResult {
   draftTexts: CreateTextInput[]
   setDraftTexts: React.Dispatch<React.SetStateAction<CreateTextInput[]>>
 
-  draftMedia: CreateMediaInput[]
-  setDraftMedia: React.Dispatch<React.SetStateAction<CreateMediaInput[]>>
-
-  /** POST nuevos textos/media */
+  /** POST nuevos textos como DRAFT */
   submitNewContent: () => void
   isSubmitting: boolean
   submitError: string | null
@@ -45,14 +52,18 @@ interface UseAdminSectionVMResult {
   uploadFile: (file: File, sectionId: number, role: string, order: number) => void
   isUploading: boolean
 
-  /** PATCH texto existente */
-  editText: (textId: number, body: string, title?: string) => void
+  /** Edición local de texto (solo caché, no envía al backend) */
+  editText: (textId: number, body: string) => void
 
   /** DELETE soft */
   removeText: (textId: number) => void
   removeMedia: (mediaId: number) => void
 
   refetch: () => void
+
+  /** Cantidad de textos/media existentes (para calcular orden) */
+  existingTextCount: number
+  existingMediaCount: number
 }
 
 export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMResult {
@@ -69,21 +80,19 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
 
   // ── Borradores locales ──
   const [draftTexts, setDraftTexts] = useState<CreateTextInput[]>([])
-  const [draftMedia, setDraftMedia] = useState<CreateMediaInput[]>([])
 
   const invalidate = () => void qc.invalidateQueries({ queryKey: contentKeys.section(sectionId) })
 
-  // ── Mutación: agregar contenido ──
+  // ── Mutación: agregar contenido (siempre como DRAFT) ──
   const addMut = useMutation({
     mutationFn: (data: AddSectionContentDTO) => contentService.addContent(sectionId, data),
-    onSuccess: () => { invalidate(); setDraftTexts([]); setDraftMedia([]) },
+    onSuccess: () => { invalidate(); setDraftTexts([]) },
   })
 
   const submitNewContent = () => {
-    if (draftTexts.length === 0 && draftMedia.length === 0) return
+    if (draftTexts.length === 0) return
     addMut.mutate({
-      texts: draftTexts.length > 0 ? draftTexts : undefined,
-      media: draftMedia.length > 0 ? draftMedia : undefined,
+      texts: draftTexts.map((t) => ({ ...t, status: 'DRAFT' as const })),
     })
   }
 
@@ -104,14 +113,31 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     uploadMut.mutate(fd)
   }
 
-  // ── Editar texto ──
-  const editTextMut = useMutation({
-    mutationFn: ({ id, body, title }: { id: number; body: string; title?: string }) =>
-      contentService.patchText(id, { body, title }),
-    onSuccess: invalidate,
-  })
-  const editText = (textId: number, body: string, title?: string) =>
-    editTextMut.mutate({ id: textId, body, title })
+  // ── Editar texto localmente (solo caché) ──
+  const editText = useCallback((textId: number, body: string) => {
+    // 1. Actualizar la caché de la sección de forma optimista
+    qc.setQueryData<AdminSectionResponseDTO>(
+      contentKeys.section(sectionId),
+      (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          section: {
+            ...old.section,
+            texts: old.section.texts.map((t) =>
+              t.id === textId ? { ...t, body } : t,
+            ),
+          },
+        }
+      },
+    )
+    // 2. Guardar la edición pendiente
+    const current = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits()) ?? { textEdits: {} }
+    qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), {
+      ...current,
+      textEdits: { ...current.textEdits, [textId]: body },
+    })
+  }, [qc, sectionId])
 
   // ── Eliminar ──
   const delTextMut = useMutation({ mutationFn: contentService.deleteText, onSuccess: invalidate })
@@ -121,8 +147,8 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     section: section ?? null,
     isLoading,
     error: qErr instanceof Error ? qErr.message : qErr ? 'Error desconocido' : null,
-    draftTexts, setDraftTexts,
-    draftMedia, setDraftMedia,
+    draftTexts,
+    setDraftTexts,
     submitNewContent,
     isSubmitting: addMut.isPending,
     submitError: addMut.error instanceof Error ? addMut.error.message : addMut.error ? 'Error al guardar' : null,
@@ -132,5 +158,40 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     removeText: (id) => delTextMut.mutate(id),
     removeMedia: (id) => delMediaMut.mutate(id),
     refetch: () => void refetch(),
+    existingTextCount: section?.texts.length ?? 0,
+    existingMediaCount: section?.media.length ?? 0,
   }
+}
+
+// ── Hook: publicar todos los cambios pendientes ──
+
+export function usePublishChanges() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (sections: AdminSection[]) => {
+      const pending = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits()) ?? { textEdits: {} }
+
+      // 1. Enviar todas las ediciones pendientes de texto
+      const editPromises = Object.entries(pending.textEdits).map(([id, body]) =>
+        contentService.patchText(Number(id), { body }),
+      )
+      await Promise.all(editPromises)
+
+      // 2. Publicar todos los textos en DRAFT
+      const draftTexts = sections.flatMap((s) =>
+        s.texts.filter((t) => t.status === 'DRAFT'),
+      )
+      const publishPromises = draftTexts.map((t) =>
+        contentService.patchText(t.id, { status: 'PUBLISHED' }),
+      )
+      await Promise.all(publishPromises)
+    },
+    onSuccess: () => {
+      // Limpiar ediciones pendientes
+      qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: {} })
+      // Re-validar todas las queries de contenido
+      void qc.invalidateQueries({ queryKey: contentKeys.all })
+    },
+  })
 }

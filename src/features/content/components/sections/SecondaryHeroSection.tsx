@@ -1,79 +1,85 @@
 import type { Section } from '../../models'
-import { textByRole, textsByRole, mediaByRole } from './sectionHelpers'
+import { textByRole, mediasByRole } from './sectionHelpers'
 import { useInView } from '@shared/hooks'
 
 interface Props { section: Section }
 
-/**
- * Hero secundario publicitario — texto a la izquierda, imagen a la derecha, animación.
- * Roles: heading, subtitle, paragraph | portrait, background
- */
 export default function SecondaryHeroSection({ section }: Props) {
   const heading = textByRole(section.texts, 'heading')
   const subtitle = textByRole(section.texts, 'subtitle')
-  const paragraphs = textsByRole(section.texts, 'paragraph')
-  const portrait = mediaByRole(section.media, 'portrait')
-  const bg = mediaByRole(section.media, 'background')
+  const ctaTitle = textByRole(section.texts, 'cta')
+  const photos = mediasByRole(section.media, 'photo')
 
-  const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.15 })
+  const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
+
+  const mainPhoto = photos[0]
 
   return (
-    <section
-      ref={ref}
-      className="relative overflow-hidden bg-gradient-to-br from-teal-900 via-slate-900 to-slate-950 py-24"
-    >
-      {bg && (
-        <img
-          src={bg.mediaUrl}
-          alt=""
-          className="absolute inset-0 -z-10 h-full w-full object-cover opacity-10"
-        />
-      )}
-
-      <div className="mx-auto grid max-w-7xl gap-12 px-6 lg:grid-cols-2 lg:items-center">
-        {/* Texto (izquierda) — sube con delay */}
-        <div
-          className={`space-y-6 transition-all duration-1000 ${
-            isInView ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-          }`}
-        >
-          {heading && (
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-              {heading.body}
-            </h2>
-          )}
-          {subtitle && (
-            <p className="text-lg font-medium text-teal-400">{subtitle.body}</p>
-          )}
-          {paragraphs.map((p, i) => (
-            <p key={i} className="leading-relaxed text-slate-300">{p.body}</p>
-          ))}
-          <a
-            href="/contact"
-            className="mt-4 inline-block rounded-xl bg-teal-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/30 transition-all hover:bg-teal-500 hover:shadow-teal-500/40"
-          >
-            Solicitar presupuesto
-          </a>
-        </div>
-
-        {/* Imagen (derecha) — entra desde la derecha */}
-        {portrait && (
+    <>
+      {/* ── Hero image + heading ── */}
+      <section
+        ref={ref}
+        className="relative flex min-h-screen items-center bg-slate-50"
+      >
+        <div className="mx-auto w-full max-w-7xl px-6 py-20">
+          {/* Header text — centered */}
           <div
-            className={`flex justify-center lg:justify-end transition-all duration-1000 delay-300 ${
-              isInView ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'
+            className={`mx-auto max-w-3xl text-center transition-all duration-1000 ${
+              isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
             }`}
           >
-            <div className="relative">
-              <div className="absolute -inset-6 rounded-3xl bg-teal-500/10 blur-3xl" />
-              <img
-                src={portrait.mediaUrl}
-                alt={portrait.role ?? ''}
-                className="relative w-full max-w-md rounded-2xl object-cover shadow-2xl"
-              />
-            </div>
+            {heading && (
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
+                {heading.body}
+              </h2>
+            )}
+            {subtitle && (
+              <p className="mt-4 text-lg font-medium text-teal-600">{subtitle.body}</p>
+            )}
           </div>
-        )}
-      </div>
-    </section>
+
+          {/* Floating image */}
+          {mainPhoto && (
+            <div
+              className={`mt-14 flex justify-center transition-all duration-1000 delay-300 ${
+                isInView ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'
+              }`}
+            >
+              <div className="group relative w-full max-w-3xl">
+                <div className="overflow-hidden rounded-2xl shadow-2xl shadow-slate-300/50 ring-1 ring-slate-200">
+                  <img
+                    src={mainPhoto.mediaUrl}
+                    alt=""
+                    className="aspect-[16/9] w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── CTA section — separated below ── */}
+      <section className="bg-slate-50 py-16">
+        <div
+          className={`mx-auto max-w-2xl transition-all duration-700 ${
+            isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
+          }`}
+        >
+          <div className="flex flex-col items-center gap-4 rounded-2xl bg-blue-50 px-10 py-8 shadow-xl ring-1 ring-blue-100 mx-6">
+            {ctaTitle && (
+              <p className="text-center text-base font-semibold text-slate-800">{ctaTitle.body}</p>
+            )}
+            <a
+              href="/contact"
+              className="inline-block rounded-xl bg-teal-600 px-10 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/30 transition-all hover:bg-teal-500 hover:shadow-teal-500/40 hover:-translate-y-0.5"
+            >
+              Solicitar presupuesto
+            </a>
+          </div>
+        </div>
+      </section>
+    </>
   )
 }

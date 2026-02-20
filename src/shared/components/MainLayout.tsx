@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import WhatsAppFab from './WhatsAppFab'
 import LoadingSpinner from './LoadingSpinner'
@@ -12,18 +12,29 @@ interface MainLayoutProps {
 const NAV_LINKS = [
   { label: 'Inicio', href: '/#hero' },
   { label: 'Nosotros', href: '/#about' },
-  { label: 'Servicios', href: '/#info_primary' },
   { label: 'Novedades', href: '/news' },
   { label: 'Contacto', href: '/contact' },
 ] as const
 
+const SERVICE_LINKS = [
+  { label: 'Intervención Directa', href: '/servicios/intervencion-directa' },
+  { label: 'Selección de Personal', href: '/servicios/seleccion-de-personal' },
+  { label: 'Acompañamiento', href: '/servicios/acompanamiento' },
+] as const
+
 export default function MainLayout({ children }: MainLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [servicesOpen, setServicesOpen] = useState(false)
+  const servicesTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
   const [loading, setLoading] = useState(true)
   const [fadeOut, setFadeOut] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
   const lenisRef = useSmoothScroll()
+
+  // On sub-pages (anything other than "/"), header always looks scrolled (white bg)
+  const isHome = location.pathname === '/'
+  const headerActive = !isHome || scrolled
 
   // Splash screen: logo 1.5s → fade out 0.8s
   useEffect(() => {
@@ -94,26 +105,60 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
       {/* ── Fixed Header — shrinks on scroll ── */}
       <header className={`fixed z-50 transition-all duration-500 ease-in-out ${
-        scrolled
+        headerActive
           ? 'top-3 left-3 right-3 md:left-6 md:right-6 lg:left-16 lg:right-16 xl:left-32 xl:right-32 bg-white/95 backdrop-blur-md rounded-2xl shadow-lg header-scrolled'
           : 'top-0 left-0 right-0 bg-transparent backdrop-blur-sm'
       }`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6">
           {/* Logo */}
           <a href="/#hero" className="flex-shrink-0">
-            <img src="/cpeLoading.png" className={`w-auto transition-all duration-500 ${scrolled ? 'h-14 sm:h-16' : 'h-40 sm:h-50'}`} alt="CPE Logo" />
+            <img src="/cpeLoading.png" className={`w-auto transition-all duration-500 ${headerActive ? 'h-16 sm:h-20 lg:h-24' : 'h-40 sm:h-50'}`} alt="CPE Logo" />
           </a>
 
           {/* Desktop nav */}
           <nav className="hidden items-center gap-8 md:flex">
-            {NAV_LINKS.map(renderNavLink)}
+            {NAV_LINKS.slice(0, 2).map(renderNavLink)}
+
+            {/* Servicios dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => { clearTimeout(servicesTimeoutRef.current); setServicesOpen(true) }}
+              onMouseLeave={() => { servicesTimeoutRef.current = setTimeout(() => setServicesOpen(false), 300) }}
+            >
+              <button
+                type="button"
+                className="nav-link inline-flex items-center gap-1"
+                onClick={() => setServicesOpen((o) => !o)}
+              >
+                Servicios
+                <svg className={`h-3.5 w-3.5 transition-transform duration-200 ${servicesOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {servicesOpen && (
+                <div className="absolute left-1/2 top-full z-50 w-56 -translate-x-1/2 rounded-xl bg-white py-2 shadow-xl ring-1 ring-slate-200 before:absolute before:left-0 before:right-0 before:-top-4 before:h-4 before:content-[''] mt-1">
+                  {SERVICE_LINKS.map((s) => (
+                    <Link
+                      key={s.href}
+                      to={s.href}
+                      onClick={() => setServicesOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700"
+                    >
+                      {s.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {NAV_LINKS.slice(2).map(renderNavLink)}
 
             {/* Instagram icon */}
             <a
               href="https://instagram.com"
               target="_blank"
               rel="noopener noreferrer"
-              className={`transition-colors ${scrolled ? 'text-teal-600 hover:text-teal-800' : 'text-white/70 hover:text-white'}`}
+              className={`transition-colors ${headerActive ? 'text-teal-600 hover:text-teal-800' : 'text-white/70 hover:text-white'}`}
               aria-label="Instagram"
             >
               <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -126,7 +171,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           <button
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
-            className={`rounded-md p-2 md:hidden transition-colors ${scrolled ? 'text-teal-700' : 'text-white/70'}`}
+            className={`rounded-md p-2 md:hidden transition-colors ${headerActive ? 'text-teal-700' : 'text-white/70'}`}
             aria-label="Menú"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -142,17 +187,49 @@ export default function MainLayout({ children }: MainLayoutProps) {
         {/* Mobile menu */}
         {mobileOpen && (
           <div className={`border-t px-4 pb-4 md:hidden transition-colors duration-500 ${
-            scrolled ? 'border-gray-200 bg-white' : 'border-white/10 bg-slate-900'
+            headerActive ? 'border-gray-200 bg-white' : 'border-white/10 bg-slate-900'
           }`}>
             <nav className="flex flex-col gap-3 pt-3">
-              {NAV_LINKS.map(renderNavLink)}
+              {NAV_LINKS.slice(0, 2).map(renderNavLink)}
+
+              {/* Servicios collapsible */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setServicesOpen((o) => !o)}
+                  className={`nav-link inline-flex w-full items-center justify-between`}
+                >
+                  Servicios
+                  <svg className={`h-4 w-4 transition-transform duration-200 ${servicesOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {servicesOpen && (
+                  <div className="mt-1 flex flex-col gap-1 pl-4">
+                    {SERVICE_LINKS.map((s) => (
+                      <Link
+                        key={s.href}
+                        to={s.href}
+                        onClick={() => { setServicesOpen(false); setMobileOpen(false) }}
+                        className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
+                          headerActive ? 'text-slate-600 hover:bg-teal-50 hover:text-teal-700' : 'text-white/60 hover:text-white'
+                        }`}
+                      >
+                        {s.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {NAV_LINKS.slice(2).map(renderNavLink)}
               <a
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-2 text-sm transition-colors ${
-                  scrolled ? 'text-teal-600 hover:text-teal-800' : 'text-white/70 hover:text-white'
+                  headerActive ? 'text-teal-600 hover:text-teal-800' : 'text-white/70 hover:text-white'
                 }`}
               >
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -188,18 +265,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <p className="text-sm leading-relaxed">
                 Soluciones integrales de salud ocupacional para empresas.
               </p>
-            </div>
-
-            {/* Links */}
-            <div>
-              <h4 className="mb-3 text-sm font-semibold text-white">Navegación</h4>
-              <ul className="space-y-2 text-sm">
-                {NAV_LINKS.map((l) => (
-                  <li key={l.href}>
-                    <a href={l.href} className="transition-colors hover:text-white">{l.label}</a>
-                  </li>
-                ))}
-              </ul>
             </div>
 
             {/* Contact */}

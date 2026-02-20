@@ -6,7 +6,7 @@ interface LoadingSpinnerProps {
 const sizeClasses = {
   sm: 'h-10 w-10',
   md: 'h-20 w-20',
-  lg: 'h-28 w-28',
+  lg: 'h-40 w-40 lg:h-52 lg:w-52',
 }
 
 const textSizes = {
@@ -21,7 +21,7 @@ export default function LoadingSpinner({ size = 'md', className = '' }: LoadingS
       <div
         className={`${sizeClasses[size]} logo-pulse flex items-center justify-center`}
       >
-        <img src="/cpeLoading.png" className={`h-25 w-25 ${textSizes[size]}`} />
+        <img src="/cpeLoading.png" className={`h-full w-full object-contain ${textSizes[size]}`} />
       </div>
     </div>
   )

@@ -108,7 +108,7 @@ export default function InfoSecondarySection({ section }: Props) {
         ref={(el) => {
           (viewRef as React.RefObject<HTMLElement | null>).current = el
         }}
-        className="bg-slate-100 py-24 text-white"
+        className="bg-white py-24"
       >
         <div className="mx-auto max-w-7xl px-6">
           {heading && (
@@ -131,11 +131,10 @@ export default function InfoSecondarySection({ section }: Props) {
               {segments.map(({ paragraph, quote }, i) => (
                 <div
                   key={i}
-                  className={`rounded-xl border overflow-hidden transition-colors duration-300 ${
-                    hoveredSeg === i
-                      ? 'border-slate/25 bg-slate/10'
-                      : 'border-slate/10 bg-slate/5'
-                  } backdrop-blur-sm`}
+                  className={`rounded-xl overflow-hidden transition-colors duration-300 border-l-4 ${
+                    hoveredSeg === i ? 'bg-slate-50' : 'bg-white'
+                  } shadow-sm`}
+                  style={{ borderLeftColor: COLORS[i % COLORS.length] }}
                   onMouseEnter={() => setHoveredSeg(i)}
                   onMouseLeave={() => setHoveredSeg(null)}
                 >

@@ -9,6 +9,8 @@ import {
   InfoPrimarySection,
   InfoSecondarySection,
   ContactFormSection,
+  ServiceDetailSection,
+  RecruitmentFormSection,
 } from './sections'
 
 interface SectionRendererProps {
@@ -24,6 +26,9 @@ const SECTION_LAYOUTS: Record<string, React.ComponentType<{ section: Section }>>
   info_primary: InfoPrimarySection,
   info_secondary: InfoSecondarySection,
   contact_form: ContactFormSection,
+  service_intervencion: ServiceDetailSection,
+  service_seleccion: RecruitmentFormSection,
+  service_acompanamiento: ServiceDetailSection,
 }
 
 /**

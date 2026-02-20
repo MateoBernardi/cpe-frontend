@@ -5,7 +5,7 @@ import { SectionView } from '@features/content/views'
  */
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-slate-950 pt-20">
+    <div className="min-h-screen bg-teal-50 pt-20">
       <SectionView sectionName="contact_form" />
     </div>
   )

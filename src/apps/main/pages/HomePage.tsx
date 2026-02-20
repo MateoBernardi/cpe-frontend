@@ -1,4 +1,5 @@
 import { SectionView } from '@features/content/views'
+import CircuitSection from '@features/content/components/sections/CircuitSection'
 
 /**
  * Secciones de la landing page principal (en orden).
@@ -19,7 +20,23 @@ const PUBLIC_SECTIONS = [
 export default function HomePage() {
   return (
     <div>
-      {PUBLIC_SECTIONS.map((name) => (
+      {/* hero */}
+      <section id="hero">
+        <SectionView sectionName="hero" />
+      </section>
+
+      {/* about */}
+      <section id="about">
+        <SectionView sectionName="about" />
+      </section>
+
+      {/* circuito — hardcoded, no editable */}
+      <section id="action_circuit">
+        <CircuitSection />
+      </section>
+
+      {/* remaining sections */}
+      {PUBLIC_SECTIONS.filter((n) => n !== 'hero' && n !== 'about').map((name) => (
         <section key={name} id={name}>
           <SectionView sectionName={name} />
         </section>
