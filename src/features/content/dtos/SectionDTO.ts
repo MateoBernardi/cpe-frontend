@@ -1,5 +1,6 @@
 import type { PublicTextDTO, AdminTextDTO } from './TextDTO'
 import type { PublicMediaDTO, AdminMediaDTO } from './MediaDTO'
+import type { AdminFileDTO } from './FileDTO'
 
 /** GET /content/sections/public/:name */
 export interface PublicSectionDTO {
@@ -19,6 +20,7 @@ export interface AdminSectionDTO {
   name: string
   texts: AdminTextDTO[]
   media: AdminMediaDTO[]
+  files: AdminFileDTO[]
 }
 
 export interface AdminSectionResponseDTO {

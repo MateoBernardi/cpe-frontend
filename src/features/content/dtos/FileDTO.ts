@@ -1,0 +1,91 @@
+/** Archivo en la respuesta admin — GET /content/sections/:id */
+export interface AdminFileDTO {
+  id: number
+  title: string | null
+  tamaño: number | null
+  state: 'PENDING' | 'UPLOADED'
+  role: string | null
+  order: number | null
+  pivot_id: number
+}
+
+/** POST /content/files/upload-url — solicitar presigned URL */
+export interface RequestUploadUrlDTO {
+  filename: string
+  content_type: string
+  title?: string
+  max_size?: number
+  section_id?: number
+  role?: string
+  order?: number
+}
+
+/** Respuesta de POST /content/files/upload-url */
+export interface UploadUrlResponseDTO {
+  file_id: number
+  upload: {
+    url: string
+    fields: Record<string, string>
+  }
+}
+
+/** POST /content/files/:fileId/confirm */
+export interface ConfirmUploadDTO {
+  tamaño?: number
+}
+
+export interface ConfirmUploadResponseDTO {
+  id: number
+  state: 'UPLOADED'
+}
+
+/** GET /content/files/:fileId/download-url */
+export interface DownloadUrlResponseDTO {
+  url: string
+  expires_in: number
+}
+
+/** GET /content/files */
+export interface FileListItemDTO {
+  id: number
+  title: string | null
+  tamaño: number | null
+  state: string
+  created_at: string
+}
+
+export interface FileListResponseDTO {
+  files: FileListItemDTO[]
+}
+
+/** PATCH /content/files-section/:pivotId */
+export interface PatchFilePivotDTO {
+  role?: string
+  order?: number
+}
+
+/** POST /content/media/draft — subir imagen como borrador */
+export interface DraftMediaResponseDTO {
+  media: {
+    id: number
+    url: string
+    mime_type: string
+    title: string | null
+    origin: string | null
+    status: 'DRAFT'
+    pivot_id?: number
+  }
+}
+
+/** POST /content/media/:mediaId/publish */
+export interface PublishMediaResponseDTO {
+  media: {
+    id: number
+    url: string
+    mime_type: string
+    title: string | null
+    origin: string | null
+    status: 'PUBLISHED'
+    pivot_id?: number
+  }
+}

@@ -1,5 +1,6 @@
 import type { TextContent, AdminTextContent } from './TextContent'
 import type { MediaContent, AdminMediaContent } from './MediaContent'
+import type { FileContent } from './FileContent'
 
 export interface Section {
   id: number
@@ -14,6 +15,7 @@ export interface AdminSection {
   name: string
   texts: AdminTextContent[]
   media: AdminMediaContent[]
+  files: FileContent[]
 }
 
 export interface SectionListItem {

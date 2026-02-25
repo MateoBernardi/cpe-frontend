@@ -9,6 +9,8 @@ import type {
   PatchMediaDTO,
   PatchPivotDTO,
   UploadMediaResponseDTO,
+  DraftMediaResponseDTO,
+  PublishMediaResponseDTO,
 } from '../dtos'
 
 const BASE = ENV.CONTENT_PREFIX
@@ -57,13 +59,31 @@ export const contentService = {
 
   // ── Admin: upload ──
 
-  /** POST /content/media/upload — multipart (Cloudflare Images) */
+  /** POST /content/media/upload — multipart (Cloudflare Images, directo a PUBLISHED) */
   uploadMedia(formData: FormData, signal?: AbortSignal) {
     return apiUpload<UploadMediaResponseDTO>(
       `${BASE}/media/upload`,
       formData,
       signal,
     )
+  },
+
+  /** POST /content/media/draft — subir imagen como borrador (local, para preview) */
+  uploadMediaDraft(formData: FormData, signal?: AbortSignal) {
+    return apiUpload<DraftMediaResponseDTO>(
+      `${BASE}/media/draft`,
+      formData,
+      signal,
+    )
+  },
+
+  /** POST /content/media/:mediaId/publish — publicar imagen (local → Cloudflare CDN) */
+  publishMedia(mediaId: number, signal?: AbortSignal) {
+    return apiRequest<PublishMediaResponseDTO>({
+      method: 'POST',
+      endpoint: `${BASE}/media/${mediaId}/publish`,
+      signal,
+    })
   },
 
   // ── Admin: editar ──

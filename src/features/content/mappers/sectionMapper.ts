@@ -1,9 +1,22 @@
 import type { PublicSectionDTO, AdminSectionDTO, SectionListItemDTO } from '../dtos'
 import type { PublicTextDTO, AdminTextDTO } from '../dtos'
 import type { PublicMediaDTO, AdminMediaDTO } from '../dtos'
+import type { AdminFileDTO } from '../dtos'
 import type { Section, AdminSection, SectionListItem } from '../models'
 import type { TextContent, AdminTextContent } from '../models'
 import type { MediaContent, AdminMediaContent } from '../models'
+import type { FileContent } from '../models'
+import ENV from '@shared/api/apiConfig'
+
+/**
+ * Si la URL es relativa (empieza con "/"), la prefija con API_BASE_URL
+ * para que el navegador la resuelva contra el backend y no contra el
+ * servidor de desarrollo del frontend.
+ */
+function resolveMediaUrl(url: string): string {
+  if (url.startsWith('/')) return `${ENV.API_BASE_URL}${url}`
+  return url
+}
 
 // ── Public mappers ──
 
@@ -18,7 +31,7 @@ function mapPublicText(dto: PublicTextDTO): TextContent {
 
 function mapPublicMedia(dto: PublicMediaDTO): MediaContent {
   return {
-    mediaUrl: dto.media_url,
+    mediaUrl: resolveMediaUrl(dto.media_url),
     mimeType: dto.mime_type,
     role: dto.role,
     order: dto.order ?? 0,
@@ -51,10 +64,22 @@ function mapAdminText(dto: AdminTextDTO): AdminTextContent {
 function mapAdminMedia(dto: AdminMediaDTO): AdminMediaContent {
   return {
     id: dto.id,
-    mediaUrl: dto.media_url,
+    mediaUrl: resolveMediaUrl(dto.media_url),
     mimeType: dto.mime_type,
     title: dto.title,
     origin: dto.origin,
+    role: dto.role,
+    order: dto.order ?? 0,
+    pivotId: dto.pivot_id,
+  }
+}
+
+function mapAdminFile(dto: AdminFileDTO): FileContent {
+  return {
+    id: dto.id,
+    title: dto.title,
+    size: dto.tamaño,
+    state: dto.state,
     role: dto.role,
     order: dto.order ?? 0,
     pivotId: dto.pivot_id,
@@ -67,6 +92,7 @@ export function mapAdminSectionDTO(dto: AdminSectionDTO): AdminSection {
     name: dto.name,
     texts: dto.texts.map(mapAdminText).sort((a, b) => a.order - b.order),
     media: dto.media.map(mapAdminMedia).sort((a, b) => a.order - b.order),
+    files: (dto.files ?? []).map(mapAdminFile).sort((a, b) => a.order - b.order),
   }
 }
 

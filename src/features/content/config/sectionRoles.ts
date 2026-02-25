@@ -10,7 +10,7 @@ interface SectionRoleConfig {
 
 export const SECTION_ROLES: Record<string, SectionRoleConfig> = {
   hero: {
-    textRoles: ['headline', 'subheadline'],
+    textRoles: ['headline', 'subheading', 'cta', 'cta_secondary', 'trust'],
     mediaRoles: ['background'],
   },
   secondary_hero: {
@@ -19,11 +19,11 @@ export const SECTION_ROLES: Record<string, SectionRoleConfig> = {
   },
   about: {
     textRoles: ['heading', 'paragraph', 'bio'],
-    mediaRoles: ['photo', 'logo'],
+    mediaRoles: ['photo'],
   },
   news: {
-    textRoles: ['heading', 'paragraph', 'quote'],
-    mediaRoles: ['thumbnail', 'illustration'],
+    textRoles: ['heading', 'paragraph'],
+    mediaRoles: ['thumbnail'],
   },
   info_primary: {
     textRoles: ['heading', 'bullet'],
@@ -31,11 +31,11 @@ export const SECTION_ROLES: Record<string, SectionRoleConfig> = {
   },
   info_secondary: {
     textRoles: ['heading', 'paragraph', 'quote'],
-    mediaRoles: ['photo', 'logo'],
+    mediaRoles: [],
   },
   contact_form: {
     textRoles: ['heading', 'paragraph', 'cta', 'info', 'label_name', 'label_email', 'label_location', 'label_phone', 'label_employees', 'label_message'],
-    mediaRoles: ['background'],
+    mediaRoles: [],
   },
   service_intervencion: {
     textRoles: ['heading', 'subtitle', 'paragraph', 'bullet'],
@@ -76,6 +76,7 @@ export const SECTION_DISPLAY_NAMES: Record<string, string> = {
 export const ROLE_DISPLAY_NAMES: Record<string, string> = {
   // Roles de texto
   headline: 'Título principal',
+  subheading: 'Subtítulo',
   subheadline: 'Subtítulo principal',
   heading: 'Encabezado',
   subtitle: 'Subtítulo',
@@ -84,6 +85,8 @@ export const ROLE_DISPLAY_NAMES: Record<string, string> = {
   quote: 'Cita',
   bullet: 'Viñeta',
   cta: 'Llamada a la acción',
+  cta_secondary: 'CTA secundario',
+  trust: 'Barra de confianza',
   // Roles de media
   background: 'Fondo',
   portrait: 'Retrato',

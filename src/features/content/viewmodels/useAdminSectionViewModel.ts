@@ -6,7 +6,7 @@ import type {
   CreateTextInput,
   AdminSectionResponseDTO,
 } from '../dtos'
-import { contentService } from '../services'
+import { contentService, fileService } from '../services'
 import { mapAdminSectionDTO, mapSectionListItem } from '../mappers'
 
 // ── Query keys ──
@@ -48,9 +48,13 @@ interface UseAdminSectionVMResult {
   isSubmitting: boolean
   submitError: string | null
 
-  /** Upload de archivo (drag & drop / click) */
+  /** Upload de imagen (drag & drop / click) — sube como DRAFT */
   uploadFile: (file: File, sectionId: number, role: string, order: number) => void
   isUploading: boolean
+
+  /** Publicar una imagen DRAFT → Cloudflare CDN */
+  publishMedia: (mediaId: number) => void
+  isPublishingMedia: boolean
 
   /** Edición local de texto (solo caché, no envía al backend) */
   editText: (textId: number, body: string) => void
@@ -59,11 +63,31 @@ interface UseAdminSectionVMResult {
   removeText: (textId: number) => void
   removeMedia: (mediaId: number) => void
 
+  /** Crear un texto individual desde un slot del canvas (auto-role, auto-order) */
+  createSlotText: (body: string, role: string, order: number) => void
+  isCreatingSlot: boolean
+
+  /** Intercambiar orden de dos textos por pivotId */
+  swapTextOrder: (pivotIdA: number, orderA: number, pivotIdB: number, orderB: number) => void
+  /** Intercambiar orden de dos medios por pivotId */
+  swapMediaOrder: (pivotIdA: number, orderA: number, pivotIdB: number, orderB: number) => void
+
+  /** Upload de archivo a R2 (Presigned POST) */
+  uploadR2File: (file: File, sectionId: number, role: string, order: number) => void
+  isUploadingR2: boolean
+
+  /** Descargar archivo de R2 (abre URL firmada) */
+  downloadFile: (fileId: number) => void
+
+  /** Eliminar archivo de R2 */
+  removeFile: (fileId: number) => void
+
   refetch: () => void
 
-  /** Cantidad de textos/media existentes (para calcular orden) */
+  /** Cantidad de textos/media/files existentes (para calcular orden) */
   existingTextCount: number
   existingMediaCount: number
+  existingFileCount: number
 }
 
 export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMResult {
@@ -96,7 +120,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     })
   }
 
-  // ── Upload de archivo ──
+  // ── Upload de imagen directo a Cloudflare (PUBLISHED) ──
   const uploadMut = useMutation({
     mutationFn: (fd: FormData) => contentService.uploadMedia(fd),
     onSuccess: invalidate,
@@ -109,9 +133,39 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     fd.append('role', role)
     fd.append('order', order.toString())
     fd.append('title', `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
-    fd.append('origin', 'ADMIN')
     uploadMut.mutate(fd)
   }
+
+  // ── Publicar imagen DRAFT → Cloudflare CDN ──
+  const publishMediaMut = useMutation({
+    mutationFn: (mediaId: number) => contentService.publishMedia(mediaId),
+    onSuccess: invalidate,
+  })
+
+  // ── Upload de archivo a R2 (3 pasos: presigned → upload → confirm) ──
+  const uploadR2Mut = useMutation({
+    mutationFn: ({ file, sId, role, order }: { file: File; sId: number; role: string; order: number }) =>
+      fileService.uploadFile(file, {
+        title: file.name,
+        sectionId: sId,
+        role,
+        order,
+      }),
+    onSuccess: invalidate,
+  })
+
+  // ── Descargar archivo de R2 ──
+  const downloadFile = async (fileId: number) => {
+    try {
+      const { url } = await fileService.getDownloadUrl(fileId)
+      window.open(url, '_blank')
+    } catch (err) {
+      console.error('Error al obtener URL de descarga:', err)
+    }
+  }
+
+  // ── Eliminar archivo de R2 ──
+  const delFileMut = useMutation({ mutationFn: fileService.deleteFile, onSuccess: invalidate })
 
   // ── Editar texto localmente (solo caché) ──
   const editText = useCallback((textId: number, body: string) => {
@@ -139,9 +193,43 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     })
   }, [qc, sectionId])
 
+  // ── Crear texto individual desde slot del canvas ──
+  const createSlotMut = useMutation({
+    mutationFn: (data: { body: string; role: string; order: number }) =>
+      contentService.addContent(sectionId, {
+        texts: [{ body: data.body, role: data.role, order: data.order, status: 'DRAFT' as const }],
+      }),
+    onSuccess: invalidate,
+  })
+
+  const createSlotText = (body: string, role: string, order: number) => {
+    createSlotMut.mutate({ body, role, order })
+  }
+
   // ── Eliminar ──
   const delTextMut = useMutation({ mutationFn: contentService.deleteText, onSuccess: invalidate })
   const delMediaMut = useMutation({ mutationFn: contentService.deleteMedia, onSuccess: invalidate })
+
+  // ── Intercambiar orden ──
+  const swapTextMut = useMutation({
+    mutationFn: async ({ pivotIdA, orderA, pivotIdB, orderB }: { pivotIdA: number; orderA: number; pivotIdB: number; orderB: number }) => {
+      await Promise.all([
+        contentService.patchTextPivot(pivotIdA, { order: orderB }),
+        contentService.patchTextPivot(pivotIdB, { order: orderA }),
+      ])
+    },
+    onSuccess: invalidate,
+  })
+
+  const swapMediaMut = useMutation({
+    mutationFn: async ({ pivotIdA, orderA, pivotIdB, orderB }: { pivotIdA: number; orderA: number; pivotIdB: number; orderB: number }) => {
+      await Promise.all([
+        contentService.patchMediaPivot(pivotIdA, { order: orderB }),
+        contentService.patchMediaPivot(pivotIdB, { order: orderA }),
+      ])
+    },
+    onSuccess: invalidate,
+  })
 
   return {
     section: section ?? null,
@@ -154,12 +242,26 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     submitError: addMut.error instanceof Error ? addMut.error.message : addMut.error ? 'Error al guardar' : null,
     uploadFile,
     isUploading: uploadMut.isPending,
+    publishMedia: (mediaId: number) => publishMediaMut.mutate(mediaId),
+    isPublishingMedia: publishMediaMut.isPending,
     editText,
+    createSlotText,
+    isCreatingSlot: createSlotMut.isPending,
     removeText: (id) => delTextMut.mutate(id),
     removeMedia: (id) => delMediaMut.mutate(id),
+    swapTextOrder: (pivotIdA, orderA, pivotIdB, orderB) =>
+      swapTextMut.mutate({ pivotIdA, orderA, pivotIdB, orderB }),
+    swapMediaOrder: (pivotIdA, orderA, pivotIdB, orderB) =>
+      swapMediaMut.mutate({ pivotIdA, orderA, pivotIdB, orderB }),
+    uploadR2File: (file: File, sId: number, role: string, order: number) =>
+      uploadR2Mut.mutate({ file, sId, role, order }),
+    isUploadingR2: uploadR2Mut.isPending,
+    downloadFile,
+    removeFile: (id) => delFileMut.mutate(id),
     refetch: () => void refetch(),
     existingTextCount: section?.texts.length ?? 0,
     existingMediaCount: section?.media.length ?? 0,
+    existingFileCount: section?.files.length ?? 0,
   }
 }
 
@@ -191,6 +293,29 @@ export function usePublishChanges() {
       // Limpiar ediciones pendientes
       qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: {} })
       // Re-validar todas las queries de contenido
+      void qc.invalidateQueries({ queryKey: contentKeys.all })
+    },
+  })
+}
+
+// ── Hook: descartar todos los borradores y ediciones pendientes ──
+
+export function useDiscardDrafts() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (sections: AdminSection[]) => {
+      // 1. Eliminar textos DRAFT del backend
+      const draftTexts = sections.flatMap((s) =>
+        s.texts.filter((t) => t.status === 'DRAFT'),
+      )
+      const deletePromises = draftTexts.map((t) => contentService.deleteText(t.id))
+      await Promise.all(deletePromises)
+    },
+    onSuccess: () => {
+      // Limpiar ediciones pendientes de la caché
+      qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: {} })
+      // Re-validar todas las queries para refrescar desde el backend
       void qc.invalidateQueries({ queryKey: contentKeys.all })
     },
   })
