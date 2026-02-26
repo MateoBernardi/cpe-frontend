@@ -77,6 +77,7 @@ export function ConnectedMediaSlot({
       onDelete={ctx.deleteMedia}
       onPublish={ctx.publishMedia}
       isPublishing={ctx.isPublishingMedia}
+      onPickFromGallery={ctx.pickFromGallery ? () => ctx.pickFromGallery!(config) : undefined}
       className={className}
     />
   )
@@ -101,14 +102,14 @@ export function MultipleTextSlots({
     if (index <= 0) return
     const curr = texts[index]
     const prev = texts[index - 1]
-    ctx.swapTextOrder(curr.pivotId, curr.order, prev.pivotId, prev.order)
+    ctx.swapTextOrder(curr.blockId, curr.order, prev.blockId, prev.order)
   }
 
   const handleMoveDown = (index: number) => {
     if (index >= texts.length - 1) return
     const curr = texts[index]
     const next = texts[index + 1]
-    ctx.swapTextOrder(curr.pivotId, curr.order, next.pivotId, next.order)
+    ctx.swapTextOrder(curr.blockId, curr.order, next.blockId, next.order)
   }
 
   return (

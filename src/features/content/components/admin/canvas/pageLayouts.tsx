@@ -143,7 +143,7 @@ export function HeroLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
             {/* Background image */}
             {bgImages.length > 0 && (
               <div className="absolute inset-0">
-                <img src={bgImages[0].mediaUrl} alt="" className="h-full w-full object-cover" />
+                <img src={bgImages[0].url} alt="" className="h-full w-full object-cover" />
               </div>
             )}
             {/* Overlay */}
@@ -269,12 +269,12 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
     const pB = paragraphs[indexB]
     if (!pA || !pB) return
     // Intercambiar textos
-    ctx.swapTextOrder(pA.pivotId, pA.order, pB.pivotId, pB.order)
+    ctx.swapTextOrder(pA.blockId, pA.order, pB.blockId, pB.order)
     // Intercambiar thumbnails si ambos existen
     const tA = thumbnails[indexA]
     const tB = thumbnails[indexB]
     if (tA && tB) {
-      ctx.swapMediaOrder(tA.pivotId, tA.order, tB.pivotId, tB.order)
+      ctx.swapMediaOrder(tA.blockId, tA.order, tB.blockId, tB.order)
     }
   }
 
@@ -316,7 +316,7 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
               {thumb ? (
                 <div className="group/thumb relative aspect-[16/10] bg-slate-100">
                   <img
-                    src={thumb.mediaUrl}
+                    src={thumb.url}
                     alt=""
                     loading="lazy"
                     className="h-full w-full object-cover"

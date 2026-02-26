@@ -138,7 +138,7 @@ export default function InlineTextSlot({
         title="Clic para editar"
       >
         <span className={textStyle}>{text.body}</span>
-        {text.status === 'DRAFT' && (
+        {text.status === 'DRAFTED' && (
           <span className="ml-2 inline-flex rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
             Borrador
           </span>

@@ -2,6 +2,10 @@ import type { TextContent, AdminTextContent } from './TextContent'
 import type { MediaContent, AdminMediaContent } from './MediaContent'
 import type { FileContent } from './FileContent'
 
+/**
+ * Modelo público — los textos/media se derivan de blocks[] en el mapper.
+ * Los componentes de sección siguen accediendo a .texts y .media sin cambios.
+ */
 export interface Section {
   id: number
   name: string

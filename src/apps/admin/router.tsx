@@ -4,6 +4,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import AdminSectionsPage from './pages/AdminSectionsPage'
 import AdminSectionEditPage from './pages/AdminSectionEditPage'
 import AdminPreviewPage from './pages/AdminPreviewPage'
+import AdminGalleryPage from './pages/AdminGalleryPage'
 
 export default function AdminRouter() {
   return (
@@ -14,6 +15,7 @@ export default function AdminRouter() {
           <Route path="/sections" element={<AdminSectionsPage />} />
           <Route path="/sections/:sectionId" element={<AdminSectionEditPage />} />
           <Route path="/preview" element={<AdminPreviewPage />} />
+          <Route path="/gallery" element={<AdminGalleryPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AdminLayout>

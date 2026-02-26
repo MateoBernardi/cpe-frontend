@@ -12,7 +12,7 @@ export default function MediaBlock({ media }: MediaBlockProps) {
     <div className="overflow-hidden rounded-lg">
       {isImage && (
         <img
-          src={media.mediaUrl}
+          src={media.url}
           alt={media.role ?? 'Media'}
           className="h-auto w-full object-cover"
           loading="lazy"
@@ -20,19 +20,19 @@ export default function MediaBlock({ media }: MediaBlockProps) {
       )}
       {isVideo && (
         <video
-          src={media.mediaUrl}
+          src={media.url}
           controls
           className="h-auto w-full"
         />
       )}
       {!isImage && !isVideo && (
         <a
-          href={media.mediaUrl}
+          href={media.url}
           target="_blank"
           rel="noopener noreferrer"
           className="block rounded-lg bg-gray-50 p-4 text-sm text-blue-600 hover:underline"
         >
-          {media.mediaUrl}
+          {media.url}
         </a>
       )}
       {media.role && (

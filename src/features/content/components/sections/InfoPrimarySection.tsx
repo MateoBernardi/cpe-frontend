@@ -13,8 +13,8 @@ export default function InfoPrimarySection({ section }: Props) {
   const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
 
   return (
-    <section ref={ref} className="bg-slate-100 py-24">
-      <div className="mx-auto max-w-7xl px-6">
+    <section ref={ref} className="bg-slate-100 py-12 sm:py-16 md:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
           {/* Imagen/diagrama a la izquierda */}
           {diagram && (
@@ -25,7 +25,7 @@ export default function InfoPrimarySection({ section }: Props) {
             >
               <div className="group relative">
                 <img
-                  src={diagram.mediaUrl}
+                  src={diagram.url}
                   alt=""
                   className="w-full max-w-lg rounded-2xl shadow-lg ring-1 ring-slate-200"
                 />
@@ -40,7 +40,7 @@ export default function InfoPrimarySection({ section }: Props) {
             }`}
           >
             {heading && (
-              <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl">
                 {heading.body}
               </h2>
             )}
@@ -57,7 +57,7 @@ export default function InfoPrimarySection({ section }: Props) {
                     style={{ transitionDelay: `${400 + i * 100}ms` }}
                   >
                     {icons[i] ? (
-                      <img src={icons[i].mediaUrl} alt="" className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                      <img src={icons[i].url} alt="" className="mt-0.5 h-5 w-5 flex-shrink-0" />
                     ) : (
                       <span className="mt-1.5 flex h-2.5 w-2.5 flex-shrink-0 rounded-full bg-teal-800 shadow-sm shadow-teal-800/30" />
                     )}

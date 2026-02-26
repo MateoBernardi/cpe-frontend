@@ -86,14 +86,14 @@ export default function AdminPreviewPage() {
   const pending = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits())
   const hasPendingEdits = pending && Object.keys(pending.textEdits).length > 0
 
-  // Verificar si hay textos en DRAFT en las secciones cacheadas
+  // Verificar si hay bloques en DRAFTED en las secciones cacheadas
   const hasDrafts = useMemo(() => {
     if (!orderedSections.length) return false
     for (const s of orderedSections) {
-      const cached = qc.getQueryData<{ section: { texts: { status: string | null }[] } }>(
+      const cached = qc.getQueryData<AdminSectionResponseDTO>(
         contentKeys.section(s.id),
       )
-      if (cached?.section.texts.some((t) => t.status === 'DRAFT')) return true
+      if (cached?.section.blocks?.some((b) => b.status === 'DRAFTED')) return true
     }
     return false
   }, [orderedSections, qc])
@@ -101,16 +101,8 @@ export default function AdminPreviewPage() {
   const hasChanges = hasPendingEdits || hasDrafts
 
   const handlePublish = () => {
-    const adminSections: AdminSection[] = []
-    for (const s of orderedSections) {
-      const cached = qc.getQueryData<AdminSectionResponseDTO>(
-        contentKeys.section(s.id),
-      )
-      if (cached) {
-        adminSections.push(mapAdminSectionDTO(cached.section))
-      }
-    }
-    publishMut.mutate(adminSections)
+    const sectionIds = orderedSections.map((s) => s.id)
+    publishMut.mutate(sectionIds)
   }
 
   const handleDiscard = () => {

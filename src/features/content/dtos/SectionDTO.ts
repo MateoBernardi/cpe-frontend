@@ -1,13 +1,10 @@
-import type { PublicTextDTO, AdminTextDTO } from './TextDTO'
-import type { PublicMediaDTO, AdminMediaDTO } from './MediaDTO'
-import type { AdminFileDTO } from './FileDTO'
+import type { BlockDTO, PublicBlockDTO } from './BlockDTO'
 
-/** GET /content/sections/public/:name */
+/** GET /public/sections/:name */
 export interface PublicSectionDTO {
   id: number
   name: string
-  texts: PublicTextDTO[]
-  media: PublicMediaDTO[]
+  blocks: PublicBlockDTO[]
 }
 
 export interface PublicSectionResponseDTO {
@@ -18,9 +15,7 @@ export interface PublicSectionResponseDTO {
 export interface AdminSectionDTO {
   id: number
   name: string
-  texts: AdminTextDTO[]
-  media: AdminMediaDTO[]
-  files: AdminFileDTO[]
+  blocks: BlockDTO[]
 }
 
 export interface AdminSectionResponseDTO {

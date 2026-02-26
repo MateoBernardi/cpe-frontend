@@ -48,7 +48,7 @@ export default function SectionRenderer({ section }: SectionRendererProps) {
       {section.media.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {section.media.map((m, i) => (
-            <MediaBlock key={`${m.mediaUrl}-${i}`} media={m} />
+            <MediaBlock key={`${m.url}-${i}`} media={m} />
           ))}
         </div>
       )}

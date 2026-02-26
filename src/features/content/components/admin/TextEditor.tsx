@@ -18,7 +18,6 @@ export default function TextEditor({ texts, onChange, sectionName, existingCount
       body: '',
       role: roles.textRoles[0],
       order: nextOrder,
-      status: 'DRAFT',
     }])
   }
 

@@ -55,17 +55,17 @@ export default function RecruitmentFormSection({ section }: Props) {
   return (
     <section ref={ref}>
       {/* ── Top: service detail ── */}
-      <div className="py-16">
-        <div className="mx-auto max-w-7xl px-6">
+      <div className="py-10 sm:py-12 md:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
             {/* Left text (floating card) */}
             <div
-              className={`rounded-2xl bg-white/90 backdrop-blur-sm p-8 shadow-lg ring-1 ring-slate-200/60 space-y-6 transition-all duration-1000 ${
+              className={`rounded-2xl bg-white/90 backdrop-blur-sm p-5 sm:p-6 md:p-8 shadow-lg ring-1 ring-slate-200/60 space-y-6 transition-all duration-1000 ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
               }`}
             >
               {heading && (
-                <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl">
                   {heading.body}
                 </h2>
               )}
@@ -117,7 +117,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                   <div className="absolute -inset-4 rounded-3xl bg-teal-100/50" />
                   <div className="relative overflow-hidden rounded-2xl shadow-xl ring-1 ring-slate-200">
                     <img
-                      src={photo.mediaUrl}
+                      src={photo.url}
                       alt=""
                       className="aspect-[4/3] w-full object-cover transition-transform duration-700 group-hover:scale-105"
                       loading="lazy"
@@ -131,12 +131,12 @@ export default function RecruitmentFormSection({ section }: Props) {
       </div>
 
       {/* ── Bottom: CV form ── */}
-      <div className="bg-teal-50 py-24">
-        <div className="mx-auto max-w-7xl px-6">
+      <div className="bg-teal-50 py-12 sm:py-16 md:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="grid gap-16 lg:grid-cols-2 lg:items-start">
             {/* Left: form */}
             <div
-              className={`rounded-2xl border border-teal-200 bg-white p-8 shadow-sm transition-all duration-1000 delay-200 ${
+              className={`rounded-2xl border border-teal-200 bg-white p-5 sm:p-6 md:p-8 shadow-sm transition-all duration-1000 delay-200 ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
               }`}
             >
@@ -285,7 +285,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleFileDrop}
                   onClick={() => fileInputRef.current?.click()}
-                  className="cv-upload-zone group relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-teal-300 bg-white p-12 transition-all hover:border-teal-500 hover:bg-teal-50/50"
+                  className="cv-upload-zone group relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-teal-300 bg-white p-6 sm:p-8 md:p-12 transition-all hover:border-teal-500 hover:bg-teal-50/50"
                 >
                   {/* Animated ring */}
                   <div className="cv-pulse-ring absolute inset-0 rounded-2xl" />

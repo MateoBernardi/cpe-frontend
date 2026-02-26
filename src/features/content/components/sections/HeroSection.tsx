@@ -34,8 +34,8 @@ export default function HeroSection({ section }: Props) {
         <div className="absolute inset-0 -z-10">
           {backgrounds.map((bg, i) => (
             <img
-              key={`${bg.mediaUrl}-${i}`}
-              src={bg.mediaUrl}
+              key={`${bg.url}-${i}`}
+              src={bg.url}
               alt=""
               loading={i === 0 ? 'eager' : 'lazy'}
               className="absolute inset-0 h-full w-full object-cover"
@@ -78,7 +78,7 @@ export default function HeroSection({ section }: Props) {
             {ctaPrimary && (
               <a
                 href="/contact"
-                className="inline-block rounded-xl bg-teal-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-teal-600/30 transition-all hover:bg-teal-500 hover:shadow-teal-500/40 hover:-translate-y-0.5"
+                className="inline-block rounded-xl bg-teal-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-teal-600/30 transition-all hover:bg-teal-500 hover:shadow-teal-500/40 hover:-translate-y-0.5 sm:px-8 sm:py-3.5"
               >
                 {ctaPrimary.body}
               </a>
@@ -86,7 +86,7 @@ export default function HeroSection({ section }: Props) {
             {ctaSecondary && (
               <a
                 href="#about"
-                className="inline-block rounded-xl border-2 border-white/30 bg-white/10 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:border-white/50 hover:bg-white/20"
+                className="inline-block rounded-xl border-2 border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:border-white/50 hover:bg-white/20 sm:px-8 sm:py-3.5"
               >
                 {ctaSecondary.body}
               </a>

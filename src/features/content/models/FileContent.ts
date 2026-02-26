@@ -1,4 +1,6 @@
-/** Archivo subido a R2 (asociado a una sección) */
+import type { BlockStatus } from '../dtos/BlockDTO'
+
+/** Archivo subido a R2 (asociado a una sección via section_blocks) */
 export interface FileContent {
   id: number
   title: string | null
@@ -6,5 +8,6 @@ export interface FileContent {
   state: 'PENDING' | 'UPLOADED'
   role: string | null
   order: number
-  pivotId: number
+  blockId: number
+  status: BlockStatus
 }

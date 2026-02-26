@@ -57,12 +57,12 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
     const pA = paragraphs[indexA]
     const pB = paragraphs[indexB]
     if (!pA || !pB) return
-    ctx.swapTextOrder(pA.pivotId, pA.order, pB.pivotId, pB.order)
+    ctx.swapTextOrder(pA.blockId, pA.order, pB.blockId, pB.order)
     // También reordenar las quotes asociadas si existen
     const qA = quotes[indexA]
     const qB = quotes[indexB]
     if (qA && qB) {
-      ctx.swapTextOrder(qA.pivotId, qA.order, qB.pivotId, qB.order)
+      ctx.swapTextOrder(qA.blockId, qA.order, qB.blockId, qB.order)
     }
   }
 

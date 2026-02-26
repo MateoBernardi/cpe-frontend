@@ -20,19 +20,19 @@ export default function ServiceDetailSection({ section }: Props) {
   const hasTextContent = heading || subtitle || paragraphs.length > 0 || bullets.length > 0
 
   return (
-    <section ref={ref} className="py-16">
-      <div className="mx-auto max-w-7xl px-6">
+    <section ref={ref} className="py-10 sm:py-12 md:py-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className={`grid gap-10 ${hasTextContent && photo ? 'lg:grid-cols-2' : ''} lg:items-start`}>
           {/* ── Left: text content (floating card) ── */}
           {hasTextContent && (
             <div
-              className={`rounded-2xl bg-white/90 backdrop-blur-sm p-8 shadow-lg ring-1 ring-slate-200/60 transition-all duration-1000 ${
+              className={`rounded-2xl bg-white/90 backdrop-blur-sm p-5 sm:p-6 md:p-8 shadow-lg ring-1 ring-slate-200/60 transition-all duration-1000 ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
               }`}
             >
               <div className="space-y-6">
                 {heading && (
-                  <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                  <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl">
                     {heading.body}
                   </h2>
                 )}
@@ -87,7 +87,7 @@ export default function ServiceDetailSection({ section }: Props) {
                 <div className="absolute -inset-4 rounded-3xl bg-teal-100/50" />
                 <div className="relative overflow-hidden rounded-2xl shadow-xl ring-1 ring-slate-200">
                   <img
-                    src={photo.mediaUrl}
+                    src={photo.url}
                     alt=""
                     className="aspect-[4/3] w-full object-cover transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"

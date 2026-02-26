@@ -1,5 +1,7 @@
+import type { BlockStatus } from '../dtos/BlockDTO'
+
 export interface MediaContent {
-  mediaUrl: string
+  url: string
   mimeType: string | null
   role: string | null
   order: number
@@ -10,5 +12,6 @@ export interface AdminMediaContent extends MediaContent {
   id: number
   title: string | null
   origin: string | null
-  pivotId: number
+  blockId: number
+  status: BlockStatus
 }

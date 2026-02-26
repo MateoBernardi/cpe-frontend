@@ -59,8 +59,8 @@ export default function ContactFormSection({ section }: Props) {
     'w-full rounded-lg border border-teal-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition-colors'
 
   return (
-    <section ref={ref} className="bg-teal-50 py-24">
-      <div className="mx-auto max-w-7xl px-6">
+    <section ref={ref} className="bg-teal-50 py-12 sm:py-16 md:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="grid gap-16 lg:grid-cols-2 lg:items-start">
           {/* ── Left column: text + estimator ── */}
           <div
@@ -69,7 +69,7 @@ export default function ContactFormSection({ section }: Props) {
             }`}
           >
             {heading && (
-              <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl">
                 {heading.body}
               </h2>
             )}
@@ -126,7 +126,7 @@ export default function ContactFormSection({ section }: Props) {
                 <p className="text-xs uppercase tracking-wider text-slate-500">
                   Presupuesto estimativo de la entrevista inicial
                 </p>
-                <p className="mt-1 text-3xl font-bold text-teal-700 transition-transform duration-300 group-hover:scale-105">
+                <p className="mt-1 text-2xl font-bold text-teal-700 transition-transform duration-300 group-hover:scale-105 sm:text-3xl">
                   {formatARS(budget)}
                 </p>
                 <p className="mt-1 flex items-center justify-center gap-1 text-xs text-slate-400">
@@ -141,7 +141,7 @@ export default function ContactFormSection({ section }: Props) {
 
           {/* ── Right column: form ── */}
           <div
-            className={`rounded-2xl border border-teal-200 bg-white p-8 shadow-sm transition-all duration-1000 delay-200 ${
+            className={`rounded-2xl border border-teal-200 bg-white p-5 sm:p-6 md:p-8 shadow-sm transition-all duration-1000 delay-200 ${
               isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
             }`}
           >

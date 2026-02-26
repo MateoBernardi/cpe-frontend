@@ -112,7 +112,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6">
           {/* Logo */}
           <a href="/#hero" className="flex-shrink-0">
-            <img src="/cpeLoading.png" className={`w-auto transition-all duration-500 ${headerActive ? 'h-16 sm:h-20 lg:h-24' : 'h-40 sm:h-50'}`} alt="CPE Logo" />
+            <img src="/cpeLoading.png" className={`w-auto transition-all duration-500 ${headerActive ? 'h-12 sm:h-16 md:h-20 lg:h-24' : 'h-24 sm:h-32 md:h-40 lg:h-48'}`} alt="CPE Logo" />
           </a>
 
           {/* Desktop nav */}
@@ -136,7 +136,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 </svg>
               </button>
               {servicesOpen && (
-                <div className="absolute left-1/2 top-full z-50 w-56 -translate-x-1/2 rounded-xl bg-white py-2 shadow-xl ring-1 ring-slate-200 before:absolute before:left-0 before:right-0 before:-top-4 before:h-4 before:content-[''] mt-1">
+                <div className="absolute left-1/2 top-full z-50 w-48 md:w-56 -translate-x-1/2 rounded-xl bg-white py-2 shadow-xl ring-1 ring-slate-200 before:absolute before:left-0 before:right-0 before:-top-4 before:h-4 before:content-[''] mt-1">
                   {SERVICE_LINKS.map((s) => (
                     <Link
                       key={s.href}
@@ -186,7 +186,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className={`border-t px-4 pb-4 md:hidden transition-colors duration-500 ${
+          <div className={`border-t px-4 pb-4 md:hidden transition-colors duration-500 max-h-[70vh] overflow-y-auto ${
             headerActive ? 'border-gray-200 bg-white' : 'border-white/10 bg-slate-900'
           }`}>
             <nav className="flex flex-col gap-3 pt-3">
@@ -252,8 +252,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
       {/* ── Footer ── */}
       <footer className="bg-slate-950 text-slate-400 border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-6 py-12">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 sm:py-12">
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {/* Brand */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">

@@ -17,8 +17,8 @@ export interface SectionCanvasEditorProps {
   onUploadMedia: (file: File, sectionId: number, role: string, order: number) => void
   onDeleteText: (textId: number) => void
   onDeleteMedia: (mediaId: number) => void
-  onSwapTextOrder: (pivotIdA: number, orderA: number, pivotIdB: number, orderB: number) => void
-  onSwapMediaOrder: (pivotIdA: number, orderA: number, pivotIdB: number, orderB: number) => void
+  onSwapTextOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
+  onSwapMediaOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
   isUploading: boolean
   // ── Nuevas operaciones de media (draft/publish) ──
   onPublishMedia?: (mediaId: number) => void
@@ -28,6 +28,8 @@ export interface SectionCanvasEditorProps {
   isUploadingR2?: boolean
   onDownloadFile?: (fileId: number) => void
   onRemoveFile?: (fileId: number) => void
+  // ── Galería ──
+  onAssignFromGallery?: (mediaId: number, sectionId: number, role: string, order: number) => void
 }
 
 // ── Props de slots individuales ──
@@ -52,6 +54,7 @@ export interface MediaSlotProps {
   onDelete: (id: number) => void
   onPublish?: (mediaId: number) => void
   isPublishing?: boolean
+  onPickFromGallery?: () => void
   className?: string
 }
 
@@ -69,8 +72,8 @@ export interface SlotContext {
   uploadToSlot: (config: MediaSlotConfig, file: File) => void
   deleteText: (id: number) => void
   deleteMedia: (id: number) => void
-  swapTextOrder: (pivotIdA: number, orderA: number, pivotIdB: number, orderB: number) => void
-  swapMediaOrder: (pivotIdA: number, orderA: number, pivotIdB: number, orderB: number) => void
+  swapTextOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
+  swapMediaOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
   // ── Nuevas: media draft/publish ──
   publishMedia?: (mediaId: number) => void
   isPublishingMedia?: boolean
@@ -80,6 +83,8 @@ export interface SlotContext {
   downloadFile?: (fileId: number) => void
   removeFile?: (fileId: number) => void
   sectionId: number
+  // ── Galería ──
+  pickFromGallery?: (config: MediaSlotConfig) => void
 }
 
 // ── Props de layouts de sección ──

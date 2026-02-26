@@ -9,6 +9,7 @@ const navItems = [
   { to: '/', label: 'Dashboard', exact: true },
   { to: '/preview', label: 'Previsualización', exact: false },
   { to: '/sections', label: 'Secciones', exact: false },
+  { to: '/gallery', label: 'Galería', exact: false },
 ]
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
@@ -81,7 +82,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </button>
           <h2 className="text-sm font-medium text-gray-500">Panel de Administración</h2>
         </header>
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-3 sm:p-4 md:p-6">
           {children}
         </main>
       </div>

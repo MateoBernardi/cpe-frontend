@@ -7,7 +7,7 @@ import type {
   ConfirmUploadResponseDTO,
   DownloadUrlResponseDTO,
   FileListResponseDTO,
-  PatchFilePivotDTO,
+  PatchFileBlockDTO,
 } from '../dtos'
 
 const BASE = ENV.CONTENT_PREFIX
@@ -82,7 +82,7 @@ export const fileService = {
 
   /**
    * Ejecuta los 3 pasos del ciclo de subida de archivo a R2.
-   * Retorna el file_id confirmado.
+   * Retorna el file_id y block_id (si se vincula a sección) confirmados.
    */
   async uploadFile(
     file: File,
@@ -93,9 +93,9 @@ export const fileService = {
       order?: number
       maxSize?: number
     },
-  ): Promise<{ fileId: number }> {
+  ): Promise<{ fileId: number; blockId?: number }> {
     // Paso 1
-    const { file_id, upload } = await fileService.requestUploadUrl({
+    const { file_id, block_id, upload } = await fileService.requestUploadUrl({
       filename: file.name,
       content_type: file.type || 'application/octet-stream',
       title: options?.title,
@@ -116,7 +116,7 @@ export const fileService = {
     // Paso 3
     await fileService.confirmUpload(file_id, { tamaño: file.size })
 
-    return { fileId: file_id }
+    return { fileId: file_id, blockId: block_id }
   },
 
   // ── Descargar ──
@@ -141,13 +141,13 @@ export const fileService = {
     })
   },
 
-  // ── Editar pivote ──
+  // ── Editar bloque de archivo ──
 
-  /** PATCH /content/files-section/:pivotId */
-  patchFilePivot(pivotId: number, data: PatchFilePivotDTO) {
-    return apiRequest<unknown, PatchFilePivotDTO>({
+  /** PATCH /content/file-blocks/:blockId */
+  patchFileBlock(blockId: number, data: PatchFileBlockDTO) {
+    return apiRequest<unknown, PatchFileBlockDTO>({
       method: 'PATCH',
-      endpoint: `${BASE}/files-section/${pivotId}`,
+      endpoint: `${BASE}/file-blocks/${blockId}`,
       body: data,
     })
   },

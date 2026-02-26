@@ -12,7 +12,7 @@ interface UseSectionViewModelResult {
 
 /**
  * ViewModel para la app pública.
- * Usa GET /content/sections/public/:sectionName.
+ * Usa GET /public/sections/:sectionName.
  */
 export function useSectionViewModel(sectionName: string): UseSectionViewModelResult {
   const [section, setSection] = useState<Section | null>(null)

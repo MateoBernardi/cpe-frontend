@@ -26,13 +26,13 @@ export default function NewsSection({ section }: Props) {
   }
 
   return (
-    <section ref={ref} className="bg-teal-50 py-24">
-      <div className="mx-auto max-w-7xl px-6">
+    <section ref={ref} className="bg-teal-50 py-12 sm:py-16 md:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Section heading + nav arrows */}
-        <div className="mb-10 flex items-end justify-between">
+        <div className="mb-6 sm:mb-8 md:mb-10 flex items-end justify-between">
           {heading && (
             <h2
-              className={`text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl transition-all duration-700 ${
+              className={`text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl transition-all duration-700 ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
               }`}
             >
@@ -74,11 +74,11 @@ export default function NewsSection({ section }: Props) {
         >
           {paragraphs.map((p, i) => {
             const thumb = thumbnails[i]
-            const imgUrl = thumb?.mediaUrl
+            const imgUrl = thumb?.url
             return (
               <article
                 key={i}
-                className={`group flex-shrink-0 w-[85vw] sm:w-[380px] lg:w-[420px] snap-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-slate-200/60 transition-all duration-500 hover:shadow-xl hover:-translate-y-1 ${
+                className={`group flex-shrink-0 w-[85vw] sm:w-[340px] md:w-[380px] lg:w-[420px] snap-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-slate-200/60 transition-all duration-500 hover:shadow-xl hover:-translate-y-1 ${
                   isInView ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
                 }`}
                 style={{ transitionDelay: `${200 + i * 100}ms` }}
@@ -98,7 +98,7 @@ export default function NewsSection({ section }: Props) {
                   </div>
                 )}
                 {/* Content */}
-                <div className="p-6">
+                <div className="p-4 sm:p-5 md:p-6">
                   {p.title && (
                     <h3 className="text-lg font-semibold text-slate-900 group-hover:text-teal-700 transition-colors">
                       {p.title}

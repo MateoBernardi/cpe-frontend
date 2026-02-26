@@ -1,3 +1,12 @@
+export type {
+  BlockType,
+  BlockStatus,
+  BlockTextContent,
+  BlockMediaContent,
+  BlockFileContent,
+  BlockDTO,
+  PublicBlockDTO,
+} from './BlockDTO'
 export type { PublicTextDTO, AdminTextDTO } from './TextDTO'
 export type { PublicMediaDTO, AdminMediaDTO, UploadMediaResponseDTO } from './MediaDTO'
 export type {
@@ -9,7 +18,7 @@ export type {
   DownloadUrlResponseDTO,
   FileListItemDTO,
   FileListResponseDTO,
-  PatchFilePivotDTO,
+  PatchFileBlockDTO,
   DraftMediaResponseDTO,
   PublishMediaResponseDTO,
 } from './FileDTO'
@@ -25,7 +34,14 @@ export type {
   CreateTextInput,
   CreateMediaInput,
   AddSectionContentDTO,
+  AddSectionContentResponseDTO,
   PatchTextDTO,
   PatchMediaDTO,
-  PatchPivotDTO,
+  PatchBlockDTO,
 } from './CreateSectionDTO'
+export type {
+  GalleryAssociationDTO,
+  GalleryMediaDTO,
+  GalleryResponseDTO,
+  AssignMediaInput,
+} from './GalleryDTO'

@@ -1,3 +1,5 @@
+import type { BlockStatus } from '../dtos/BlockDTO'
+
 export interface TextContent {
   title: string | null
   body: string
@@ -8,6 +10,6 @@ export interface TextContent {
 /** Modelo admin con IDs para edición */
 export interface AdminTextContent extends TextContent {
   id: number
-  status: string | null
-  pivotId: number
+  status: BlockStatus
+  blockId: number
 }

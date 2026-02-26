@@ -1,7 +1,5 @@
 import type { PublicSectionDTO, AdminSectionDTO, SectionListItemDTO } from '../dtos'
-import type { PublicTextDTO, AdminTextDTO } from '../dtos'
-import type { PublicMediaDTO, AdminMediaDTO } from '../dtos'
-import type { AdminFileDTO } from '../dtos'
+import type { PublicBlockDTO, BlockDTO } from '../dtos'
 import type { Section, AdminSection, SectionListItem } from '../models'
 import type { TextContent, AdminTextContent } from '../models'
 import type { MediaContent, AdminMediaContent } from '../models'
@@ -18,81 +16,91 @@ function resolveMediaUrl(url: string): string {
   return url
 }
 
-// ── Public mappers ──
+// ── Public mappers (blocks → texts/media) ──
 
-function mapPublicText(dto: PublicTextDTO): TextContent {
+function mapPublicTextBlock(block: PublicBlockDTO): TextContent {
   return {
-    title: dto.title,
-    body: dto.body,
-    role: dto.role,
-    order: dto.order ?? 0,
+    title: null,
+    body: block.text?.body ?? '',
+    role: block.role,
+    order: block.order ?? 0,
   }
 }
 
-function mapPublicMedia(dto: PublicMediaDTO): MediaContent {
+function mapPublicMediaBlock(block: PublicBlockDTO): MediaContent {
   return {
-    mediaUrl: resolveMediaUrl(dto.media_url),
-    mimeType: dto.mime_type,
-    role: dto.role,
-    order: dto.order ?? 0,
+    url: resolveMediaUrl(block.media?.url ?? ''),
+    mimeType: block.media?.mime_type ?? null,
+    role: block.role,
+    order: block.order ?? 0,
   }
 }
 
 export function mapPublicSectionDTO(dto: PublicSectionDTO): Section {
+  const textBlocks = (dto.blocks ?? []).filter((b) => b.type === 'text')
+  const mediaBlocks = (dto.blocks ?? []).filter((b) => b.type === 'media')
+
   return {
     id: dto.id,
     name: dto.name,
-    texts: dto.texts.map(mapPublicText).sort((a, b) => a.order - b.order),
-    media: dto.media.map(mapPublicMedia).sort((a, b) => a.order - b.order),
+    texts: textBlocks.map(mapPublicTextBlock).sort((a, b) => a.order - b.order),
+    media: mediaBlocks.map(mapPublicMediaBlock).sort((a, b) => a.order - b.order),
   }
 }
 
-// ── Admin mappers ──
+// ── Admin mappers (blocks → texts/media/files) ──
 
-function mapAdminText(dto: AdminTextDTO): AdminTextContent {
+function mapAdminTextBlock(block: BlockDTO): AdminTextContent {
   return {
-    id: dto.id,
-    title: dto.title,
-    body: dto.body,
-    status: dto.status,
-    role: dto.role,
-    order: dto.order ?? 0,
-    pivotId: dto.pivot_id,
+    id: block.text!.id,
+    title: block.text!.title,
+    body: block.text!.body,
+    status: block.status,
+    role: block.role,
+    order: block.order ?? 0,
+    blockId: block.id,
   }
 }
 
-function mapAdminMedia(dto: AdminMediaDTO): AdminMediaContent {
+function mapAdminMediaBlock(block: BlockDTO): AdminMediaContent {
   return {
-    id: dto.id,
-    mediaUrl: resolveMediaUrl(dto.media_url),
-    mimeType: dto.mime_type,
-    title: dto.title,
-    origin: dto.origin,
-    role: dto.role,
-    order: dto.order ?? 0,
-    pivotId: dto.pivot_id,
+    id: block.media!.id,
+    url: resolveMediaUrl(block.media!.url),
+    mimeType: block.media!.mime_type,
+    title: block.media!.title,
+    origin: block.media!.origin,
+    role: block.role,
+    order: block.order ?? 0,
+    blockId: block.id,
+    status: block.status,
   }
 }
 
-function mapAdminFile(dto: AdminFileDTO): FileContent {
+function mapAdminFileBlock(block: BlockDTO): FileContent {
   return {
-    id: dto.id,
-    title: dto.title,
-    size: dto.tamaño,
-    state: dto.state,
-    role: dto.role,
-    order: dto.order ?? 0,
-    pivotId: dto.pivot_id,
+    id: block.file!.id,
+    title: block.file!.title,
+    size: block.file!.tamaño,
+    state: (block.file!.state as 'PENDING' | 'UPLOADED') ?? 'PENDING',
+    role: block.role,
+    order: block.order ?? 0,
+    blockId: block.id,
+    status: block.status,
   }
 }
 
 export function mapAdminSectionDTO(dto: AdminSectionDTO): AdminSection {
+  const blocks = dto.blocks ?? []
+  const textBlocks = blocks.filter((b) => b.type === 'text' && b.text)
+  const mediaBlocks = blocks.filter((b) => b.type === 'media' && b.media)
+  const fileBlocks = blocks.filter((b) => b.type === 'file' && b.file)
+
   return {
     id: dto.id,
     name: dto.name,
-    texts: dto.texts.map(mapAdminText).sort((a, b) => a.order - b.order),
-    media: dto.media.map(mapAdminMedia).sort((a, b) => a.order - b.order),
-    files: (dto.files ?? []).map(mapAdminFile).sort((a, b) => a.order - b.order),
+    texts: textBlocks.map(mapAdminTextBlock).sort((a, b) => a.order - b.order),
+    media: mediaBlocks.map(mapAdminMediaBlock).sort((a, b) => a.order - b.order),
+    files: fileBlocks.map(mapAdminFileBlock).sort((a, b) => a.order - b.order),
   }
 }
 

@@ -5,24 +5,28 @@ import type {
   AdminSectionResponseDTO,
   SectionListResponseDTO,
   AddSectionContentDTO,
+  AddSectionContentResponseDTO,
   PatchTextDTO,
   PatchMediaDTO,
-  PatchPivotDTO,
+  PatchBlockDTO,
   UploadMediaResponseDTO,
   DraftMediaResponseDTO,
   PublishMediaResponseDTO,
+  GalleryResponseDTO,
+  AssignMediaInput,
 } from '../dtos'
 
 const BASE = ENV.CONTENT_PREFIX
+const PUBLIC = ENV.PUBLIC_PREFIX
 
 export const contentService = {
   // ── Public ──
 
-  /** GET /content/sections/public/:sectionName */
+  /** GET /public/sections/:sectionName */
   getPublicSection(sectionName: string, signal?: AbortSignal) {
     return apiRequest<PublicSectionResponseDTO>({
       method: 'GET',
-      endpoint: `${BASE}/sections/public/${encodeURIComponent(sectionName)}`,
+      endpoint: `${PUBLIC}/sections/${encodeURIComponent(sectionName)}`,
       signal,
     })
   },
@@ -47,12 +51,30 @@ export const contentService = {
     })
   },
 
-  /** POST /content/sections/:sectionId/content — agregar textos/media */
+  /** GET /content/sections/:sectionId/preview — vista previa (DRAFTED prioritario) */
+  getPreviewSection(sectionId: number, signal?: AbortSignal) {
+    return apiRequest<AdminSectionResponseDTO>({
+      method: 'GET',
+      endpoint: `${BASE}/sections/${sectionId}/preview`,
+      signal,
+    })
+  },
+
+  /** POST /content/sections/:sectionId/content — agregar textos/media (crea bloques DRAFTED) */
   addContent(sectionId: number, data: AddSectionContentDTO, signal?: AbortSignal) {
-    return apiRequest<AdminSectionResponseDTO, AddSectionContentDTO>({
+    return apiRequest<AddSectionContentResponseDTO, AddSectionContentDTO>({
       method: 'POST',
       endpoint: `${BASE}/sections/${sectionId}/content`,
       body: data,
+      signal,
+    })
+  },
+
+  /** POST /content/sections/:sectionId/publish — publicar sección (DRAFTED → PUBLISHED) */
+  publishSection(sectionId: number, signal?: AbortSignal) {
+    return apiRequest<{ message: string }>({
+      method: 'POST',
+      endpoint: `${BASE}/sections/${sectionId}/publish`,
       signal,
     })
   },
@@ -86,7 +108,7 @@ export const contentService = {
     })
   },
 
-  // ── Admin: editar ──
+  // ── Admin: editar contenido ──
 
   /** PATCH /content/texts/:textId */
   patchText(textId: number, data: PatchTextDTO) {
@@ -106,25 +128,23 @@ export const contentService = {
     })
   },
 
-  /** PATCH /content/text-sections/:pivotId */
-  patchTextPivot(pivotId: number, data: PatchPivotDTO) {
-    return apiRequest<unknown, PatchPivotDTO>({
-      method: 'PATCH',
-      endpoint: `${BASE}/text-sections/${pivotId}`,
-      body: data,
-    })
-  },
+  // ── Admin: editar bloque (rol, orden) ──
 
-  /** PATCH /content/media-texts/:pivotId */
-  patchMediaPivot(pivotId: number, data: PatchPivotDTO) {
-    return apiRequest<unknown, PatchPivotDTO>({
+  /** PATCH /content/blocks/:blockId */
+  patchBlock(blockId: number, data: PatchBlockDTO) {
+    return apiRequest<unknown, PatchBlockDTO>({
       method: 'PATCH',
-      endpoint: `${BASE}/media-texts/${pivotId}`,
+      endpoint: `${BASE}/blocks/${blockId}`,
       body: data,
     })
   },
 
   // ── Admin: eliminar (soft delete) ──
+
+  /** DELETE /content/blocks/:blockId — soft delete de bloque */
+  deleteBlock(blockId: number) {
+    return apiRequest<unknown>({ method: 'DELETE', endpoint: `${BASE}/blocks/${blockId}` })
+  },
 
   /** DELETE /content/texts/:textId */
   deleteText(textId: number) {
@@ -134,5 +154,30 @@ export const contentService = {
   /** DELETE /content/media/:mediaId */
   deleteMedia(mediaId: number) {
     return apiRequest<unknown>({ method: 'DELETE', endpoint: `${BASE}/media/${mediaId}` })
+  },
+
+  // ── Galería ──
+
+  /** GET /content/gallery — todas las imágenes activas del tenant */
+  getGallery(signal?: AbortSignal) {
+    return apiRequest<GalleryResponseDTO>({
+      method: 'GET',
+      endpoint: `${BASE}/gallery`,
+      signal,
+    })
+  },
+
+  /** Asignar media existente a una sección (via addContent con assign_media) */
+  assignMediaToSection(
+    sectionId: number,
+    items: AssignMediaInput[],
+    signal?: AbortSignal,
+  ) {
+    return apiRequest<AddSectionContentResponseDTO, AddSectionContentDTO>({
+      method: 'POST',
+      endpoint: `${BASE}/sections/${sectionId}/content`,
+      body: { assign_media: items },
+      signal,
+    })
   },
 }

@@ -13,6 +13,8 @@ import { useState, useCallback, useMemo } from 'react'
 import type { AdminTextContent } from '../../models'
 import { getCanvasConfig, type TextSlotConfig, type MediaSlotConfig } from '../../config/sectionCanvasConfig'
 import SectionGuide from './SectionGuide'
+import GalleryPicker from './GalleryPicker'
+import type { GalleryMedia } from '../../viewmodels'
 import {
   ConnectedTextSlot,
   ConnectedMediaSlot,
@@ -75,8 +77,8 @@ function computeSlideStats(section: SectionCanvasEditorProps['section'], config:
     return section.media.some((m) => m.role === slot.role)
   }).length
 
-  const draftTexts = section.texts.filter((t) => t.status === 'DRAFT').length
-  const draftMedia = section.media.filter((m) => (m as unknown as { status?: string }).status === 'DRAFT').length
+  const draftTexts = section.texts.filter((t) => t.status === 'DRAFTED').length
+  const draftMedia = section.media.filter((m) => m.status === 'DRAFTED').length
   const filesCount = section.files.length
 
   // Check for text length warnings
@@ -117,6 +119,7 @@ export default function SectionCanvasEditor({
   isUploadingR2,
   onDownloadFile,
   onRemoveFile,
+  onAssignFromGallery,
 }: SectionCanvasEditorProps) {
   const config = getCanvasConfig(sectionName)
 
@@ -126,6 +129,9 @@ export default function SectionCanvasEditor({
   const [editingTextId, setEditingTextId] = useState<number | null>(null)
   const [showGuide, setShowGuide] = useState(false)
   const [showFiles, setShowFiles] = useState(false)
+
+  // ── Estado del gallery picker ──
+  const [galleryTarget, setGalleryTarget] = useState<MediaSlotConfig | null>(null)
 
   const startEdit = useCallback((slotId: string, existingText?: AdminTextContent) => {
     setEditingSlotId(slotId)
@@ -170,6 +176,22 @@ export default function SectionCanvasEditor({
     onUploadMedia(file, sectionId, slotConfig.role, order)
   }, [section, sectionId, onUploadMedia])
 
+  const pickFromGallery = useCallback((slotConfig: MediaSlotConfig) => {
+    setGalleryTarget(slotConfig)
+  }, [])
+
+  const handleGallerySelect = useCallback((media: GalleryMedia) => {
+    if (!galleryTarget || !onAssignFromGallery) return
+    const existingWithRole = section
+      ? section.media.filter((m) => m.role === galleryTarget.role).length
+      : 0
+    const order = galleryTarget.multiple
+      ? existingWithRole + 1
+      : galleryTarget.slotIndex + 1
+    onAssignFromGallery(media.id, sectionId, galleryTarget.role, order)
+    setGalleryTarget(null)
+  }, [galleryTarget, section, sectionId, onAssignFromGallery])
+
   // Stats
   const stats = useMemo(() => computeSlideStats(section, config), [section, config])
 
@@ -202,6 +224,7 @@ export default function SectionCanvasEditor({
     downloadFile: onDownloadFile,
     removeFile: onRemoveFile,
     sectionId,
+    pickFromGallery: onAssignFromGallery ? pickFromGallery : undefined,
   }
 
   const LayoutComponent = LAYOUT_MAP[sectionName]
@@ -212,7 +235,7 @@ export default function SectionCanvasEditor({
   return (
     <div className="space-y-4">
       {/* ━━━ TOOLBAR ━━━ */}
-      <div className="flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-2.5 shadow-lg">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-800 px-3 py-2 sm:px-4 sm:py-2.5 shadow-lg">
         {/* Slide indicator */}
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-inner">
@@ -220,10 +243,11 @@ export default function SectionCanvasEditor({
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
             </svg>
           </div>
-          <span className="text-sm font-semibold text-white">{config.displayName}</span>
+          <span className="hidden sm:inline text-sm font-semibold text-white">{config.displayName}</span>
+          <span className="sm:hidden text-xs font-semibold text-white">{config.displayName}</span>
         </div>
 
-        <div className="mx-2 h-4 w-px bg-slate-600" />
+        <div className="hidden sm:block mx-2 h-4 w-px bg-slate-600" />
 
         {/* Completion */}
         {stats && (
@@ -420,6 +444,14 @@ export default function SectionCanvasEditor({
           onDownload={onDownloadFile}
           onRemove={onRemoveFile}
           isUploading={isUploadingR2}
+        />
+      )}
+
+      {/* ━━━ GALLERY PICKER MODAL ━━━ */}
+      {galleryTarget && (
+        <GalleryPicker
+          onSelect={handleGallerySelect}
+          onClose={() => setGalleryTarget(null)}
         />
       )}
     </div>

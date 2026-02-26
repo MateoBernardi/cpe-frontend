@@ -19,6 +19,7 @@ export default function InlineMediaSlot({
   onDelete,
   onPublish,
   isPublishing,
+  onPickFromGallery,
   className = '',
 }: MediaSlotProps) {
   const fileRef = useRef<HTMLInputElement>(null)
@@ -121,7 +122,7 @@ export default function InlineMediaSlot({
                     </div>
                   ) : (
                     <img
-                      src={m.mediaUrl}
+                      src={m.url}
                       alt=""
                       loading="lazy"
                       onLoad={() => onImageLoad(m.id)}
@@ -139,14 +140,14 @@ export default function InlineMediaSlot({
                 </div>
               )}
               {/* Status badge */}
-              {(m as unknown as { status?: string }).status && (
+              {m.status && (
                 <div className="absolute left-1 top-1">
-                  {(m as unknown as { status?: string }).status === 'DRAFT' ? (
+                  {m.status === 'DRAFTED' ? (
                     <span className="flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm backdrop-blur-sm">
                       <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                       Borrador
                     </span>
-                  ) : (m as unknown as { status?: string }).status === 'PUBLISHED' ? (
+                  ) : m.status === 'PUBLISHED' ? (
                     <span className="flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm backdrop-blur-sm">
                       <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -159,8 +160,8 @@ export default function InlineMediaSlot({
 
               {/* Controles de hover */}
               <div className="absolute -right-1.5 -top-1.5 hidden gap-1 group-hover:flex">
-                {/* Botón publicar (solo para DRAFT) */}
-                {onPublish && (m as unknown as { status?: string }).status === 'DRAFT' && (
+                {/* Botón publicar (solo para DRAFTED) */}
+                {onPublish && m.status === 'DRAFTED' && (
                   <button
                     type="button"
                     onClick={() => onPublish(m.id)}
@@ -201,15 +202,27 @@ export default function InlineMediaSlot({
           ))}
           {/* Botón agregar (para slots múltiples, si no se alcanzó el límite) */}
           {canAddMore && (
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition-colors hover:border-purple-400 hover:bg-purple-50 hover:text-purple-500"
-            >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-            </button>
+            <div className="flex flex-col gap-1">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-gray-400 transition-colors hover:border-purple-400 hover:bg-purple-50 hover:text-purple-500"
+                title="Subir archivo"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              </button>
+              {onPickFromGallery && (
+                <button
+                  type="button"
+                  onClick={onPickFromGallery}
+                  className="rounded-md bg-teal-50 px-2 py-1 text-[10px] font-medium text-teal-700 ring-1 ring-teal-200 transition-colors hover:bg-teal-100"
+                >
+                  Galería
+                </button>
+              )}
+            </div>
           )}
         </div>
         {/* Info de límite + recomendación */}
@@ -235,31 +248,42 @@ export default function InlineMediaSlot({
 
   // ── Vacío — zona de upload ──
   return (
-    <div
-      className={`cursor-pointer rounded-xl border-2 border-dashed p-4 text-center transition-all ${
-        isDragOver
-          ? 'border-purple-400 bg-purple-50'
-          : 'border-gray-300 hover:border-purple-400 hover:bg-purple-50/30'
-      } ${className}`}
-      onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
-      onDragLeave={() => setIsDragOver(false)}
-      onDrop={handleDrop}
-      onClick={() => fileRef.current?.click()}
-    >
-      <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
-      </svg>
-      <p className="mt-2 text-xs font-medium text-gray-500">{config.label}</p>
-      {config.isBackground && <p className="text-[10px] text-gray-400">Imagen de fondo</p>}
-      {config.maxItems != null && (
-        <p className="mt-0.5 text-[10px] text-gray-400">
-          {config.maxItems === 1 ? 'Esta sección admite solo 1 imagen' : `Esta sección admite hasta ${config.maxItems} imágenes`}
-        </p>
+    <div className={className}>
+      <div
+        className={`cursor-pointer rounded-xl border-2 border-dashed p-4 text-center transition-all ${
+          isDragOver
+            ? 'border-purple-400 bg-purple-50'
+            : 'border-gray-300 hover:border-purple-400 hover:bg-purple-50/30'
+        }`}
+        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => fileRef.current?.click()}
+      >
+        <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91M3.75 21h16.5a1.5 1.5 0 001.5-1.5V5.25a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5v14.25a1.5 1.5 0 001.5 1.5z" />
+        </svg>
+        <p className="mt-2 text-xs font-medium text-gray-500">{config.label}</p>
+        {config.isBackground && <p className="text-[10px] text-gray-400">Imagen de fondo</p>}
+        {config.maxItems != null && (
+          <p className="mt-0.5 text-[10px] text-gray-400">
+            {config.maxItems === 1 ? 'Esta sección admite solo 1 imagen' : `Esta sección admite hasta ${config.maxItems} imágenes`}
+          </p>
+        )}
+        {config.recommendedSize && (
+          <p className="mt-0.5 text-[10px] text-gray-400">Recomendado: {config.recommendedSize}</p>
+        )}
+        <input ref={fileRef} type="file" accept="image/*,video/*" multiple={config.multiple} className="hidden" onChange={handleFileInput} />
+      </div>
+      {onPickFromGallery && (
+        <button
+          type="button"
+          onClick={onPickFromGallery}
+          className="mt-2 w-full rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-100"
+        >
+          O elegir de la galería
+        </button>
       )}
-      {config.recommendedSize && (
-        <p className="mt-0.5 text-[10px] text-gray-400">Recomendado: {config.recommendedSize}</p>
-      )}
-      <input ref={fileRef} type="file" accept="image/*,video/*" multiple={config.multiple} className="hidden" onChange={handleFileInput} />
     </div>
   )
 }

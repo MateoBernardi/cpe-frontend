@@ -108,12 +108,12 @@ export default function InfoSecondarySection({ section }: Props) {
         ref={(el) => {
           (viewRef as React.RefObject<HTMLElement | null>).current = el
         }}
-        className="bg-white py-24"
+        className="bg-white py-12 sm:py-16 md:py-24"
       >
-        <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           {heading && (
             <h2
-              className={`mb-16 text-center text-black text-3xl font-bold tracking-tight sm:text-4xl transition-all duration-700 ${
+              className={`mb-8 sm:mb-12 md:mb-16 text-center text-black text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl transition-all duration-700 ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
               }`}
             >
@@ -121,7 +121,7 @@ export default function InfoSecondarySection({ section }: Props) {
             </h2>
           )}
 
-          <div className="grid gap-12 lg:grid-cols-2 lg:items-start">
+          <div className="grid gap-8 sm:gap-10 lg:gap-12 lg:grid-cols-2 lg:items-start">
             {/* ── Collapsibles (izquierda) ── */}
             <div
               className={`space-y-3 transition-all duration-700 delay-200 ${
@@ -140,14 +140,14 @@ export default function InfoSecondarySection({ section }: Props) {
                 >
                   <button
                     onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                    className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-black/5"
+                    className="flex w-full items-center justify-between px-3 py-3 sm:px-5 sm:py-4 text-left transition-colors hover:bg-black/5"
                   >
                     <div className="flex items-center gap-3">
                       <span
                         className="flex h-3 w-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: COLORS[i % COLORS.length] }}
                       />
-                      <span className="font-semibold text-black">
+                      <span className="font-semibold text-black text-sm sm:text-base">
                         {paragraph?.body ?? `Servicio ${i + 1}`}
                       </span>
                     </div>
@@ -181,7 +181,7 @@ export default function InfoSecondarySection({ section }: Props) {
                 isInView ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'
               }`}
             >
-              <svg viewBox="0 0 300 300" className="w-full max-w-md">
+              <svg viewBox="0 0 300 300" className="w-full max-w-xs sm:max-w-sm md:max-w-md">
                 {/* Segmentos (porciones gruesas) */}
                 {segments.map(({ d, lp, lines }, i) => {
                   const isHovered = hoveredSeg === i
@@ -227,7 +227,7 @@ export default function InfoSecondarySection({ section }: Props) {
                             key={li}
                             x={lp.x}
                             dy={li === 0 ? 0 : 13}
-                            className="fill-white text-[7px] font-sans"
+                            className="fill-white text-[6px] sm:text-[7px] font-sans"
                             style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}
                           >
                             {line}

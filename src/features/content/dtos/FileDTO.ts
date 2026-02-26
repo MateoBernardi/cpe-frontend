@@ -1,4 +1,4 @@
-/** Archivo en la respuesta admin — GET /content/sections/:id */
+/** Archivo en la respuesta admin — incluido dentro de BlockDTO.file */
 export interface AdminFileDTO {
   id: number
   title: string | null
@@ -23,6 +23,7 @@ export interface RequestUploadUrlDTO {
 /** Respuesta de POST /content/files/upload-url */
 export interface UploadUrlResponseDTO {
   file_id: number
+  block_id?: number
   upload: {
     url: string
     fields: Record<string, string>
@@ -58,8 +59,8 @@ export interface FileListResponseDTO {
   files: FileListItemDTO[]
 }
 
-/** PATCH /content/files-section/:pivotId */
-export interface PatchFilePivotDTO {
+/** PATCH /content/file-blocks/:blockId */
+export interface PatchFileBlockDTO {
   role?: string
   order?: number
 }
@@ -72,8 +73,8 @@ export interface DraftMediaResponseDTO {
     mime_type: string
     title: string | null
     origin: string | null
-    status: 'DRAFT'
-    pivot_id?: number
+    status: 'DRAFTED'
+    block_id?: number
   }
 }
 
@@ -86,6 +87,6 @@ export interface PublishMediaResponseDTO {
     title: string | null
     origin: string | null
     status: 'PUBLISHED'
-    pivot_id?: number
+    block_id?: number
   }
 }

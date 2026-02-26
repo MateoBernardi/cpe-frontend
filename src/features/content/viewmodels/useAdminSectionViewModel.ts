@@ -8,6 +8,7 @@ import type {
 } from '../dtos'
 import { contentService, fileService } from '../services'
 import { mapAdminSectionDTO, mapSectionListItem } from '../mappers'
+import { galleryKeys } from './useGalleryViewModel'
 
 // ── Query keys ──
 
@@ -15,6 +16,7 @@ export const contentKeys = {
   all: ['content'] as const,
   sectionsList: () => [...contentKeys.all, 'sections-list'] as const,
   section: (id: number) => [...contentKeys.all, 'section', id] as const,
+  preview: (id: number) => [...contentKeys.all, 'preview', id] as const,
   pendingEdits: () => [...contentKeys.all, 'pending-edits'] as const,
 }
 
@@ -43,23 +45,26 @@ interface UseAdminSectionVMResult {
   draftTexts: CreateTextInput[]
   setDraftTexts: React.Dispatch<React.SetStateAction<CreateTextInput[]>>
 
-  /** POST nuevos textos como DRAFT */
+  /** POST nuevos textos como DRAFTED */
   submitNewContent: () => void
   isSubmitting: boolean
   submitError: string | null
 
-  /** Upload de imagen (drag & drop / click) — sube como DRAFT */
+  /** Upload de imagen (drag & drop / click) — sube como DRAFTED */
   uploadFile: (file: File, sectionId: number, role: string, order: number) => void
   isUploading: boolean
 
-  /** Publicar una imagen DRAFT → Cloudflare CDN */
+  /** Publicar una imagen DRAFTED → Cloudflare CDN */
   publishMedia: (mediaId: number) => void
   isPublishingMedia: boolean
 
   /** Edición local de texto (solo caché, no envía al backend) */
   editText: (textId: number, body: string) => void
 
-  /** DELETE soft */
+  /** Soft delete de bloque */
+  removeBlock: (blockId: number) => void
+
+  /** DELETE soft del contenido directamente (texto o media) */
   removeText: (textId: number) => void
   removeMedia: (mediaId: number) => void
 
@@ -67,10 +72,10 @@ interface UseAdminSectionVMResult {
   createSlotText: (body: string, role: string, order: number) => void
   isCreatingSlot: boolean
 
-  /** Intercambiar orden de dos textos por pivotId */
-  swapTextOrder: (pivotIdA: number, orderA: number, pivotIdB: number, orderB: number) => void
-  /** Intercambiar orden de dos medios por pivotId */
-  swapMediaOrder: (pivotIdA: number, orderA: number, pivotIdB: number, orderB: number) => void
+  /** Intercambiar orden de dos bloques por blockId */
+  swapTextOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
+  /** Intercambiar orden de dos bloques de media por blockId */
+  swapMediaOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
 
   /** Upload de archivo a R2 (Presigned POST) */
   uploadR2File: (file: File, sectionId: number, role: string, order: number) => void
@@ -82,12 +87,19 @@ interface UseAdminSectionVMResult {
   /** Eliminar archivo de R2 */
   removeFile: (fileId: number) => void
 
+  /** Asignar media existente (galería) a la sección */
+  assignFromGallery: (mediaId: number, sectionId: number, role: string, order: number) => void
+  isAssigningFromGallery: boolean
+
   refetch: () => void
 
   /** Cantidad de textos/media/files existentes (para calcular orden) */
   existingTextCount: number
   existingMediaCount: number
   existingFileCount: number
+
+  /** Cantidad de bloques DRAFTED pendientes de publicación */
+  draftedBlockCount: number
 }
 
 export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMResult {
@@ -107,7 +119,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
 
   const invalidate = () => void qc.invalidateQueries({ queryKey: contentKeys.section(sectionId) })
 
-  // ── Mutación: agregar contenido (siempre como DRAFT) ──
+  // ── Mutación: agregar contenido (siempre como DRAFTED) ──
   const addMut = useMutation({
     mutationFn: (data: AddSectionContentDTO) => contentService.addContent(sectionId, data),
     onSuccess: () => { invalidate(); setDraftTexts([]) },
@@ -116,7 +128,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
   const submitNewContent = () => {
     if (draftTexts.length === 0) return
     addMut.mutate({
-      texts: draftTexts.map((t) => ({ ...t, status: 'DRAFT' as const })),
+      texts: draftTexts,
     })
   }
 
@@ -136,7 +148,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     uploadMut.mutate(fd)
   }
 
-  // ── Publicar imagen DRAFT → Cloudflare CDN ──
+  // ── Publicar imagen DRAFTED → Cloudflare CDN ──
   const publishMediaMut = useMutation({
     mutationFn: (mediaId: number) => contentService.publishMedia(mediaId),
     onSuccess: invalidate,
@@ -167,6 +179,16 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
   // ── Eliminar archivo de R2 ──
   const delFileMut = useMutation({ mutationFn: fileService.deleteFile, onSuccess: invalidate })
 
+  // ── Asignar media existente desde galería ──
+  const assignGalleryMut = useMutation({
+    mutationFn: ({ mediaId, sId, role, order }: { mediaId: number; sId: number; role: string; order: number }) =>
+      contentService.assignMediaToSection(sId, [{ media_id: mediaId, role, order }]),
+    onSuccess: () => {
+      invalidate()
+      void qc.invalidateQueries({ queryKey: galleryKeys.all })
+    },
+  })
+
   // ── Editar texto localmente (solo caché) ──
   const editText = useCallback((textId: number, body: string) => {
     // 1. Actualizar la caché de la sección de forma optimista
@@ -178,8 +200,10 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
           ...old,
           section: {
             ...old.section,
-            texts: old.section.texts.map((t) =>
-              t.id === textId ? { ...t, body } : t,
+            blocks: old.section.blocks.map((b) =>
+              b.type === 'text' && b.text?.id === textId
+                ? { ...b, text: { ...b.text!, body } }
+                : b,
             ),
           },
         }
@@ -197,7 +221,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
   const createSlotMut = useMutation({
     mutationFn: (data: { body: string; role: string; order: number }) =>
       contentService.addContent(sectionId, {
-        texts: [{ body: data.body, role: data.role, order: data.order, status: 'DRAFT' as const }],
+        texts: [{ body: data.body, role: data.role, order: data.order }],
       }),
     onSuccess: invalidate,
   })
@@ -206,30 +230,29 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     createSlotMut.mutate({ body, role, order })
   }
 
-  // ── Eliminar ──
+  // ── Eliminar bloque (soft delete a nivel de section_blocks) ──
+  const delBlockMut = useMutation({ mutationFn: contentService.deleteBlock, onSuccess: invalidate })
+
+  // ── Eliminar contenido directamente (si se necesita) ──
   const delTextMut = useMutation({ mutationFn: contentService.deleteText, onSuccess: invalidate })
   const delMediaMut = useMutation({ mutationFn: contentService.deleteMedia, onSuccess: invalidate })
 
-  // ── Intercambiar orden ──
-  const swapTextMut = useMutation({
-    mutationFn: async ({ pivotIdA, orderA, pivotIdB, orderB }: { pivotIdA: number; orderA: number; pivotIdB: number; orderB: number }) => {
+  // ── Intercambiar orden (usa PATCH /blocks/:blockId) ──
+  const swapBlockMut = useMutation({
+    mutationFn: async ({ blockIdA, orderA, blockIdB, orderB }: { blockIdA: number; orderA: number; blockIdB: number; orderB: number }) => {
       await Promise.all([
-        contentService.patchTextPivot(pivotIdA, { order: orderB }),
-        contentService.patchTextPivot(pivotIdB, { order: orderA }),
+        contentService.patchBlock(blockIdA, { order: orderB }),
+        contentService.patchBlock(blockIdB, { order: orderA }),
       ])
     },
     onSuccess: invalidate,
   })
 
-  const swapMediaMut = useMutation({
-    mutationFn: async ({ pivotIdA, orderA, pivotIdB, orderB }: { pivotIdA: number; orderA: number; pivotIdB: number; orderB: number }) => {
-      await Promise.all([
-        contentService.patchMediaPivot(pivotIdA, { order: orderB }),
-        contentService.patchMediaPivot(pivotIdB, { order: orderA }),
-      ])
-    },
-    onSuccess: invalidate,
-  })
+  // ── Calcular bloques DRAFTED pendientes ──
+  const draftedBlockCount =
+    (section?.texts.filter((t) => t.status === 'DRAFTED').length ?? 0) +
+    (section?.media.filter((m) => m.status === 'DRAFTED').length ?? 0) +
+    (section?.files.filter((f) => f.status === 'DRAFTED').length ?? 0)
 
   return {
     section: section ?? null,
@@ -247,52 +270,75 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     editText,
     createSlotText,
     isCreatingSlot: createSlotMut.isPending,
+    removeBlock: (blockId) => delBlockMut.mutate(blockId),
     removeText: (id) => delTextMut.mutate(id),
     removeMedia: (id) => delMediaMut.mutate(id),
-    swapTextOrder: (pivotIdA, orderA, pivotIdB, orderB) =>
-      swapTextMut.mutate({ pivotIdA, orderA, pivotIdB, orderB }),
-    swapMediaOrder: (pivotIdA, orderA, pivotIdB, orderB) =>
-      swapMediaMut.mutate({ pivotIdA, orderA, pivotIdB, orderB }),
+    swapTextOrder: (blockIdA, orderA, blockIdB, orderB) =>
+      swapBlockMut.mutate({ blockIdA, orderA, blockIdB, orderB }),
+    swapMediaOrder: (blockIdA, orderA, blockIdB, orderB) =>
+      swapBlockMut.mutate({ blockIdA, orderA, blockIdB, orderB }),
     uploadR2File: (file: File, sId: number, role: string, order: number) =>
       uploadR2Mut.mutate({ file, sId, role, order }),
     isUploadingR2: uploadR2Mut.isPending,
     downloadFile,
     removeFile: (id) => delFileMut.mutate(id),
+    assignFromGallery: (mediaId, sId, role, order) =>
+      assignGalleryMut.mutate({ mediaId, sId, role, order }),
+    isAssigningFromGallery: assignGalleryMut.isPending,
     refetch: () => void refetch(),
     existingTextCount: section?.texts.length ?? 0,
     existingMediaCount: section?.media.length ?? 0,
     existingFileCount: section?.files.length ?? 0,
+    draftedBlockCount,
   }
 }
 
-// ── Hook: publicar todos los cambios pendientes ──
+// ── Hook: publicar una sección (DRAFTED → PUBLISHED) ──
 
-export function usePublishChanges() {
+export function usePublishSection() {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: async (sections: AdminSection[]) => {
+    mutationFn: async (sectionId: number) => {
+      // 1. Enviar ediciones pendientes de texto primero
       const pending = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits()) ?? { textEdits: {} }
-
-      // 1. Enviar todas las ediciones pendientes de texto
       const editPromises = Object.entries(pending.textEdits).map(([id, body]) =>
         contentService.patchText(Number(id), { body }),
       )
       await Promise.all(editPromises)
 
-      // 2. Publicar todos los textos en DRAFT
-      const draftTexts = sections.flatMap((s) =>
-        s.texts.filter((t) => t.status === 'DRAFT'),
+      // 2. Publicar sección (DRAFTED → PUBLISHED en una transacción)
+      await contentService.publishSection(sectionId)
+    },
+    onSuccess: () => {
+      qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: {} })
+      void qc.invalidateQueries({ queryKey: contentKeys.all })
+    },
+  })
+}
+
+// ── Hook: publicar múltiples secciones a la vez ──
+
+export function usePublishChanges() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (sectionIds: number[]) => {
+      // 1. Enviar todas las ediciones pendientes de texto
+      const pending = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits()) ?? { textEdits: {} }
+      const editPromises = Object.entries(pending.textEdits).map(([id, body]) =>
+        contentService.patchText(Number(id), { body }),
       )
-      const publishPromises = draftTexts.map((t) =>
-        contentService.patchText(t.id, { status: 'PUBLISHED' }),
+      await Promise.all(editPromises)
+
+      // 2. Publicar cada sección
+      const publishPromises = sectionIds.map((id) =>
+        contentService.publishSection(id),
       )
       await Promise.all(publishPromises)
     },
     onSuccess: () => {
-      // Limpiar ediciones pendientes
       qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: {} })
-      // Re-validar todas las queries de contenido
       void qc.invalidateQueries({ queryKey: contentKeys.all })
     },
   })
@@ -305,17 +351,17 @@ export function useDiscardDrafts() {
 
   return useMutation({
     mutationFn: async (sections: AdminSection[]) => {
-      // 1. Eliminar textos DRAFT del backend
-      const draftTexts = sections.flatMap((s) =>
-        s.texts.filter((t) => t.status === 'DRAFT'),
-      )
-      const deletePromises = draftTexts.map((t) => contentService.deleteText(t.id))
+      // Eliminar bloques DRAFTED del backend (soft delete)
+      const draftBlocks = sections.flatMap((s) => [
+        ...s.texts.filter((t) => t.status === 'DRAFTED').map((t) => t.blockId),
+        ...s.media.filter((m) => m.status === 'DRAFTED').map((m) => m.blockId),
+        ...s.files.filter((f) => f.status === 'DRAFTED').map((f) => f.blockId),
+      ])
+      const deletePromises = draftBlocks.map((blockId) => contentService.deleteBlock(blockId))
       await Promise.all(deletePromises)
     },
     onSuccess: () => {
-      // Limpiar ediciones pendientes de la caché
       qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: {} })
-      // Re-validar todas las queries para refrescar desde el backend
       void qc.invalidateQueries({ queryKey: contentKeys.all })
     },
   })
