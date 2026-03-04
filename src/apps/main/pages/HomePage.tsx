@@ -1,5 +1,6 @@
 import { SectionView } from '@features/content/views'
 import CircuitSection from '@features/content/components/sections/CircuitSection'
+import GenerationalTransferTeaser from '@features/content/components/sections/GenerationalTransferTeaser'
 
 /**
  * Secciones de la landing page principal (en orden).
@@ -33,6 +34,11 @@ export default function HomePage() {
       {/* circuito — hardcoded, no editable */}
       <section id="action_circuit">
         <CircuitSection />
+      </section>
+
+      {/* traspaso generacional — teaser no editable */}
+      <section id="traspaso_generacional">
+        <GenerationalTransferTeaser />
       </section>
 
       {/* remaining sections */}

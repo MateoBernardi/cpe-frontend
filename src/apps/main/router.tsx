@@ -6,6 +6,7 @@ import ContactPage from './pages/ContactPage'
 import IntervencionDirectaPage from './pages/IntervencionDirectaPage'
 import SeleccionPersonalPage from './pages/SeleccionPersonalPage'
 import AcompanamientoPage from './pages/AcompanamientoPage'
+import TraspasoGeneracionalPage from './pages/TraspasoGeneracionalPage'
 
 export default function MainRouter() {
   return (
@@ -18,6 +19,7 @@ export default function MainRouter() {
           <Route path="/servicios/intervencion-directa" element={<IntervencionDirectaPage />} />
           <Route path="/servicios/seleccion-de-personal" element={<SeleccionPersonalPage />} />
           <Route path="/servicios/acompanamiento" element={<AcompanamientoPage />} />
+          <Route path="/servicios/traspaso-generacional" element={<TraspasoGeneracionalPage />} />
         </Routes>
       </MainLayout>
     </BrowserRouter>

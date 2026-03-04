@@ -1,4 +1,5 @@
 import type { MediaContent } from '../models'
+import { colors } from '../../../theme'
 
 interface MediaBlockProps {
   media: MediaContent
@@ -30,13 +31,14 @@ export default function MediaBlock({ media }: MediaBlockProps) {
           href={media.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block rounded-lg bg-gray-50 p-4 text-sm text-blue-600 hover:underline"
+          className="block rounded-lg p-4 text-sm hover:underline"
+          style={{ backgroundColor: colors.lightGray, color: colors.tealMid }}
         >
           {media.url}
         </a>
       )}
       {media.role && (
-        <span className="mt-1 inline-block text-xs text-gray-400">{media.role}</span>
+        <span className="mt-1 inline-block text-xs" style={{ color: colors.blueMid }}>{media.role}</span>
       )}
     </div>
   )

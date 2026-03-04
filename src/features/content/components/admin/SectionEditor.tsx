@@ -22,7 +22,7 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
     createSlotText,
     removeText,
     removeMedia,
-    removeBlock,
+    // removeBlock — unused for now
     swapTextOrder,
     swapMediaOrder,
     uploadR2File,

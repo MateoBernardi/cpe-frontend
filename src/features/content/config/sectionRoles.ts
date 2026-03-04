@@ -49,6 +49,10 @@ export const SECTION_ROLES: Record<string, SectionRoleConfig> = {
     textRoles: ['heading', 'subtitle', 'paragraph', 'bullet'],
     mediaRoles: ['photo'],
   },
+  traspaso_generacional: {
+    textRoles: ['heading', 'subtitle', 'paragraph', 'bullet'],
+    mediaRoles: ['photo'],
+  },
 }
 
 export function getSectionRoles(sectionName: string): SectionRoleConfig {
@@ -71,6 +75,7 @@ export const SECTION_DISPLAY_NAMES: Record<string, string> = {
   service_intervencion: 'Servicio: Intervención Directa',
   service_seleccion: 'Servicio: Selección de Personal',
   service_acompanamiento: 'Servicio: Acompañamiento',
+  traspaso_generacional: 'Traspaso Generacional',
 }
 
 export const ROLE_DISPLAY_NAMES: Record<string, string> = {

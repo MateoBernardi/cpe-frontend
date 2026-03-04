@@ -172,15 +172,16 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
   news: {
     displayName: 'Novedades',
     guide: {
-      description: 'Carrusel horizontal de tarjetas. Cada tarjeta combina una imagen miniatura con un texto/noticia.',
+      description: 'Lista vertical de novedades. Cada novedad tiene una imagen opcional, un título y un párrafo descriptivo, separadas por líneas divisorias.',
       tips: [
-        'Cada texto (párrafo) crea una nueva tarjeta en el carrusel.',
-        'Cada miniatura se asocia a su tarjeta por orden: la 1ra imagen va con el 1er texto, etc.',
-        'El encabezado se muestra arriba del carrusel con flechas de navegación.',
-        'Podés agregar tantas novedades como quieras — el carrusel se extiende horizontalmente.',
+        'Cada texto (párrafo) crea una nueva novedad en la lista.',
+        'Cada miniatura se asocia a su novedad por orden: la 1ra imagen va con el 1er texto, etc.',
+        'El encabezado se muestra centrado arriba de la lista.',
+        'Podés agregar tantas novedades como quieras — se apilan verticalmente.',
+        'Si un párrafo tiene título (campo Title), se muestra como encabezado de la novedad.',
       ],
-      imageTip: 'Resolución recomendada: 800×500 px (16:10). Las imágenes se muestran en la parte superior de cada tarjeta.',
-      colorTip: 'Fondo teal claro (teal-50). Las tarjetas son blancas con sombra.',
+      imageTip: 'Resolución recomendada: 1200×675 px (16:9). Las imágenes se muestran a ancho completo con bordes redondeados.',
+      colorTip: 'Fondo gris claro (#eeeeee). Texto sobre fondo directo, sin tarjetas.',
     },
     textSlots: [
       { id: 'nw-heading', role: 'heading', slotIndex: 0, label: 'Título de sección', placeholder: 'Ej: Novedades', display: 'heading' },
@@ -335,6 +336,29 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
     ],
     mediaSlots: [
       { id: 'sa-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },
+    ],
+  },
+
+  // ── TRASPASO GENERACIONAL ──
+  traspaso_generacional: {
+    displayName: 'Servicio: Traspaso Generacional',
+    guide: {
+      description: 'Página de servicio con el mismo layout que los demás servicios: tarjeta de texto a la izquierda + imagen a la derecha.',
+      tips: [
+        'El subtítulo se muestra como "Objetivo" en una caja teal.',
+        'Los párrafos y viñetas listan los ejes de trabajo.',
+        'La imagen se muestra a la derecha con fondo decorativo.',
+      ],
+      imageTip: 'Resolución recomendada: 800×600 px (4:3).',
+    },
+    textSlots: [
+      { id: 'tg-heading', role: 'heading', slotIndex: 0, label: 'Título del servicio', placeholder: 'Ej: Traspaso Generacional', display: 'heading' },
+      { id: 'tg-subtitle', role: 'subtitle', slotIndex: 0, label: 'Objetivo', placeholder: 'Descripción del objetivo del servicio', display: 'subheading' },
+      { id: 'tg-paragraph', role: 'paragraph', slotIndex: 0, label: 'Párrafo', placeholder: 'Párrafo descriptivo del servicio...', display: 'body', multiple: true },
+      { id: 'tg-bullet', role: 'bullet', slotIndex: 0, label: 'Eje de trabajo', placeholder: 'Ej: Planificación sucesoria', display: 'bullet', multiple: true },
+    ],
+    mediaSlots: [
+      { id: 'tg-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },
     ],
   },
 }

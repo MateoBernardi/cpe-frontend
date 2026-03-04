@@ -2,12 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Global font ── */
+html, body {
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
 /* ── Smooth scroll (Lenis) ── */
 html.lenis, html.lenis body {
   height: auto;
 }
 .lenis.lenis-smooth {
-  scroll-behavior: auto; /* Lenis maneja el scroll */
+  scroll-behavior: auto;
 }
 .lenis.lenis-smooth [data-lenis-prevent] {
   overscroll-behavior: contain;
@@ -43,18 +48,18 @@ html.lenis, html.lenis body {
   left: 0;
 }
 
-/* ── Header scrolled — teal nav links ── */
+/* ── Header scrolled — brand nav links ── */
 .header-scrolled .nav-link {
-  color: rgb(15, 118, 110);
+  color: #036f73;
 }
 .header-scrolled .nav-link:hover {
-  color: rgb(13, 148, 136);
+  color: #01888d;
 }
 .header-scrolled .nav-link::after {
-  background: rgb(15, 118, 110);
+  background: #036f73;
 }
 .header-scrolled .nav-link:hover::after {
-  background: rgb(13, 148, 136);
+  background: #01888d;
 }
 
 /* ── Logo pulse (loading spinner) ── */
@@ -75,7 +80,7 @@ html.lenis, html.lenis body {
   animation: fadeOut 0.8s ease-out forwards;
 }
 
-/* ── Generic fade-in (modals, etc.) ── */
+/* ── Generic fade-in ── */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -99,8 +104,6 @@ html.lenis, html.lenis body {
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
 }
-
-/* ── Hide scrollbar for horizontal scroll ── */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
@@ -120,15 +123,9 @@ html.lenis, html.lenis body {
 
 /* ── CV upload zone pulse ring ── */
 @keyframes cvPulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.25);
-  }
-  70% {
-    box-shadow: 0 0 0 14px rgba(13, 148, 136, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(1, 136, 141, 0.25); }
+  70% { box-shadow: 0 0 0 14px rgba(1, 136, 141, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(1, 136, 141, 0); }
 }
 .cv-upload-zone {
   animation: cvPulse 2.5s ease-in-out infinite;
@@ -140,6 +137,5 @@ html.lenis, html.lenis body {
 }
 @keyframes cvRingGlow {
   0%, 100% { border-color: transparent; }
-  50% { border-color: rgba(13, 148, 136, 0.15); }
+  50% { border-color: rgba(1, 136, 141, 0.15); }
 }
-

@@ -29,6 +29,7 @@ const SECTION_LAYOUTS: Record<string, React.ComponentType<{ section: Section }>>
   service_intervencion: ServiceDetailSection,
   service_seleccion: RecruitmentFormSection,
   service_acompanamiento: ServiceDetailSection,
+  traspaso_generacional: ServiceDetailSection,
 }
 
 /**

@@ -2,28 +2,26 @@ import { useState } from 'react'
 import type { Section } from '../../models'
 import { textByRole, textsByRole } from './sectionHelpers'
 import { useInView } from '@shared/hooks'
+import { colors, layout } from '../../../../theme'
 
 interface Props { section: Section }
 
-// ── Constantes del donut SVG ──
+// ── Donut SVG constants ──
 const CENTER = 150
 const OUTER_R = 120
 const INNER_R = 65
-const GAP_DEG = 3 // grados de separación entre porciones
+const GAP_DEG = 3
 
-const COLORS = ['#0d9488', '#06b6d4', '#6366f1', '#4338ca', '#134e4a']
-const HOVER_COLORS = ['#14b8a6', '#22d3ee', '#818cf8', '#6366f1', '#1a6b64']
+const COLORS = colors.donut
+const HOVER_COLORS = colors.donutHover
 
-/** Convierte grados → radianes */
 const deg2rad = (d: number) => (d * Math.PI) / 180
 
-/** Punto en un círculo */
 function polarToCart(cx: number, cy: number, r: number, angleDeg: number) {
   const rad = deg2rad(angleDeg)
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
 }
 
-/** Genera el path `d` para un sector anular (porción de dona gruesa) */
 function arcSectorPath(
   cx: number, cy: number,
   outerR: number, innerR: number,
@@ -31,12 +29,10 @@ function arcSectorPath(
 ): string {
   const sweep = endDeg - startDeg
   const largeArc = sweep > 180 ? 1 : 0
-
   const os = polarToCart(cx, cy, outerR, startDeg)
   const oe = polarToCart(cx, cy, outerR, endDeg)
   const is_ = polarToCart(cx, cy, innerR, endDeg)
   const ie = polarToCart(cx, cy, innerR, startDeg)
-
   return [
     `M ${os.x} ${os.y}`,
     `A ${outerR} ${outerR} 0 ${largeArc} 1 ${oe.x} ${oe.y}`,
@@ -46,13 +42,11 @@ function arcSectorPath(
   ].join(' ')
 }
 
-/** Ángulo medio de un segmento para posicionar el label */
 function midAngle(index: number, numSegments: number): number {
   const segDeg = 360 / numSegments
   return -90 + index * segDeg + segDeg / 2
 }
 
-/** Separa texto largo en líneas de máximo `max` caracteres */
 function wrapText(text: string, max: number): string[] {
   const words = text.split(' ')
   const lines: string[] = []
@@ -69,25 +63,16 @@ function wrapText(text: string, max: number): string[] {
   return lines
 }
 
-/**
- * Sección informativa secundaria — Gráfico dona con scroll + collapsibles.
- * Cada porción del donut es clickable y scrollea a su sub-sección.
- */
 export default function InfoSecondarySection({ section }: Props) {
   const heading = textByRole(section.texts, 'heading')
-
-  // Paragraphs → porciones de rosca + títulos de collapsibles
   const paragraphs = textsByRole(section.texts, 'paragraph')
-  // Quotes → descripciones que se abren en los collapsibles
   const quotes = textsByRole(section.texts, 'quote')
-
   const numSegments = paragraphs.length || 1
 
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [hoveredSeg, setHoveredSeg] = useState<number | null>(null)
   const { ref: viewRef, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
 
-  // ── Pre-calcular geometría de cada segmento ──
   const segDeg = 360 / numSegments
   const segments = paragraphs.map((paragraph, i) => {
     const startDeg = -90 + i * segDeg + GAP_DEG / 2
@@ -98,7 +83,7 @@ export default function InfoSecondarySection({ section }: Props) {
     const lp = polarToCart(CENTER, CENTER, labelR, mid)
     const title = (paragraph.body ?? `Servicio ${i + 1}`).toUpperCase()
     const lines = wrapText(title, 14)
-    const quote = quotes[i] // descripción asociada
+    const quote = quotes[i]
     return { d, lp, lines, paragraph, quote }
   })
 
@@ -108,21 +93,23 @@ export default function InfoSecondarySection({ section }: Props) {
         ref={(el) => {
           (viewRef as React.RefObject<HTMLElement | null>).current = el
         }}
-        className="bg-white py-12 sm:py-16 md:py-24"
+        className={layout.sectionPadY}
+        style={{ backgroundColor: colors.infoSecondaryBg }}
       >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className={layout.container}>
           {heading && (
             <h2
-              className={`mb-8 sm:mb-12 md:mb-16 text-center text-black text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl transition-all duration-700 ${
+              className={`${layout.headingMb} text-center text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl transition-all duration-700 font-primary ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
               }`}
+              style={{ color: colors.blueDark }}
             >
               {heading.body}
             </h2>
           )}
 
-          <div className="grid gap-8 sm:gap-10 lg:gap-12 lg:grid-cols-2 lg:items-start">
-            {/* ── Collapsibles (izquierda) ── */}
+          <div className="grid gap-[4vh] sm:gap-[5vh] lg:gap-[6vh] lg:grid-cols-2 lg:items-center">
+            {/* Collapsibles (left) */}
             <div
               className={`space-y-3 transition-all duration-700 delay-200 ${
                 isInView ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'
@@ -131,10 +118,11 @@ export default function InfoSecondarySection({ section }: Props) {
               {segments.map(({ paragraph, quote }, i) => (
                 <div
                   key={i}
-                  className={`rounded-xl overflow-hidden transition-colors duration-300 border-l-4 ${
-                    hoveredSeg === i ? 'bg-slate-50' : 'bg-white'
-                  } shadow-sm`}
-                  style={{ borderLeftColor: COLORS[i % COLORS.length] }}
+                  className={`rounded-xl overflow-hidden transition-colors duration-300 border-l-4 shadow-sm`}
+                  style={{
+                    borderLeftColor: COLORS[i % COLORS.length],
+                    backgroundColor: hoveredSeg === i ? colors.offWhite : colors.white,
+                  }}
                   onMouseEnter={() => setHoveredSeg(i)}
                   onMouseLeave={() => setHoveredSeg(null)}
                 >
@@ -147,15 +135,14 @@ export default function InfoSecondarySection({ section }: Props) {
                         className="flex h-3 w-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: COLORS[i % COLORS.length] }}
                       />
-                      <span className="font-semibold text-black text-sm sm:text-base">
+                      <span className="font-semibold text-sm sm:text-base" style={{ color: colors.blueDark }}>
                         {paragraph?.body ?? `Servicio ${i + 1}`}
                       </span>
                     </div>
                     {quote && (
                       <svg
-                        className={`h-5 w-5 text-slate-400 transition-transform duration-300 ${
-                          openIndex === i ? 'rotate-180' : ''
-                        }`}
+                        className={`h-5 w-5 transition-transform duration-300 ${openIndex === i ? 'rotate-180' : ''}`}
+                        style={{ color: colors.blueMid }}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -167,7 +154,7 @@ export default function InfoSecondarySection({ section }: Props) {
                   {quote && (
                     <div className={`accordion-body ${openIndex === i ? 'open' : ''}`}>
                       <div className="px-5 pb-4 pt-0">
-                        <p className="text-sm leading-relaxed text-slate-600">{quote.body}</p>
+                        <p className="text-sm leading-relaxed" style={{ color: colors.blueMid }}>{quote.body}</p>
                       </div>
                     </div>
                   )}
@@ -175,14 +162,13 @@ export default function InfoSecondarySection({ section }: Props) {
               ))}
             </div>
 
-            {/* ── Donut chart (derecha) ── */}
+            {/* Donut chart (right) */}
             <div
               className={`flex justify-center transition-all duration-700 delay-300 ${
                 isInView ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'
               }`}
             >
               <svg viewBox="0 0 300 300" className="w-full max-w-xs sm:max-w-sm md:max-w-md">
-                {/* Segmentos (porciones gruesas) */}
                 {segments.map(({ d, lp, lines }, i) => {
                   const isHovered = hoveredSeg === i
                   const color = isHovered ? HOVER_COLORS[i % HOVER_COLORS.length] : COLORS[i % COLORS.length]
@@ -202,11 +188,8 @@ export default function InfoSecondarySection({ section }: Props) {
                       }}
                       onMouseEnter={() => setHoveredSeg(i)}
                       onMouseLeave={() => setHoveredSeg(null)}
-                      onClick={() => {
-                        setOpenIndex(i)
-                      }}
+                      onClick={() => setOpenIndex(i)}
                     >
-                      {/* Porción rellena */}
                       <path
                         d={d}
                         fill={color}
@@ -214,7 +197,6 @@ export default function InfoSecondarySection({ section }: Props) {
                         strokeWidth={1}
                         style={{ transition: 'fill 0.25s ease' }}
                       />
-                      {/* Label dentro del segmento */}
                       <text
                         x={lp.x}
                         y={lp.y - ((lines.length - 1) * 6)}
@@ -227,7 +209,7 @@ export default function InfoSecondarySection({ section }: Props) {
                             key={li}
                             x={lp.x}
                             dy={li === 0 ? 0 : 13}
-                            className="fill-white text-[6px] sm:text-[7px] font-sans"
+                            className="fill-white text-[6px] sm:text-[7px] font-primary"
                             style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}
                           >
                             {line}
