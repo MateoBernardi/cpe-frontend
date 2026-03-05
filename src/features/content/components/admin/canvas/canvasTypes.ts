@@ -12,7 +12,6 @@ export interface SectionCanvasEditorProps {
   section: AdminSection | null
   sectionName: string
   sectionId: number
-  onEditText: (textId: number, body: string) => void
   onCreateText: (body: string, role: string, order: number) => void
   onUploadMedia: (file: File, sectionId: number, role: string, order: number) => void
   onDeleteText: (blockId: number, textId: number) => void

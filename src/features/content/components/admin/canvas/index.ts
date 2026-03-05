@@ -8,6 +8,7 @@ export {
   ContactFormLayout,
   ServiceDetailLayout,
   RecruitmentLayout,
+  TeaserLayout,
 } from './serviceLayouts'
 export type {
   SectionCanvasEditorProps,

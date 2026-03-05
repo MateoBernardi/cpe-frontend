@@ -1,17 +1,25 @@
 import { useInView } from '@shared/hooks'
+import type { Section } from '../../models'
+import { textByRole } from './sectionHelpers'
 import { colors, layout } from '../../../../theme'
 
+interface Props { section: Section }
+
 /**
- * Sección teaser no-editable de "Traspaso Generacional" que aparece en la home
+ * Sección teaser editable de "Traspaso Generacional" que aparece en la home
  * debajo del Circuito. Título clickeable que lleva a la página de servicio.
  */
-export default function GenerationalTransferTeaser() {
+export default function GenerationalTransferTeaser({ section }: Props) {
+  const heading = textByRole(section.texts, 'heading')
+  const subtitle = textByRole(section.texts, 'subtitle')
+  const cta = textByRole(section.texts, 'cta')
+
   const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.15 })
 
   return (
     <section
       ref={ref}
-      className="pt-[8vh] sm:pt-[10vh] md:pt-[12vh] pb-[3vh] sm:pb-[4vh] md:pb-[5vh]"
+      className={layout.sectionPadY}
       style={{ backgroundColor: colors.circuitBg }}
     >
       <div className={layout.container}>
@@ -26,7 +34,7 @@ export default function GenerationalTransferTeaser() {
               className="text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-primary"
               style={{ color: colors.blueDark }}
             >
-              Traspaso Generacional.
+              {heading?.body ?? 'Traspaso Generacional.'}
             </h2>
             <p
               className={`text-base sm:text-lg leading-relaxed max-w-lg transition-all duration-700 delay-200 ${
@@ -34,7 +42,7 @@ export default function GenerationalTransferTeaser() {
               }`}
               style={{ color: colors.blueMid }}
             >
-              Acompañamos la transición entre generaciones dentro de tu empresa.
+              {subtitle?.body ?? 'Acompañamos la transición entre generaciones dentro de tu empresa.'}
             </p>
             <a
               href="/servicios/traspaso-generacional"
@@ -43,7 +51,7 @@ export default function GenerationalTransferTeaser() {
               onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.tealBright }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.tealMid }}
             >
-              Conocé más
+              {cta?.body ?? 'Conocé más'}
             </a>
           </div>
 

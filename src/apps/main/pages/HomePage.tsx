@@ -1,6 +1,4 @@
 import { SectionView } from '@features/content/views'
-import CircuitSection from '@features/content/components/sections/CircuitSection'
-import GenerationalTransferTeaser from '@features/content/components/sections/GenerationalTransferTeaser'
 
 /**
  * Secciones de la landing page principal (en orden).
@@ -9,6 +7,9 @@ import GenerationalTransferTeaser from '@features/content/components/sections/Ge
 const PUBLIC_SECTIONS = [
   'hero',
   'about',
+  'teaser_circuit',
+  'teaser_clinica',
+  'teaser_traspaso',
   'info_primary',
   'info_secondary',
   'secondary_hero',
@@ -21,28 +22,7 @@ const PUBLIC_SECTIONS = [
 export default function HomePage() {
   return (
     <div>
-      {/* hero */}
-      <section id="hero">
-        <SectionView sectionName="hero" />
-      </section>
-
-      {/* about */}
-      <section id="about">
-        <SectionView sectionName="about" />
-      </section>
-
-      {/* circuito — no editable */}
-      <section id="action_circuit">
-        <CircuitSection />
-      </section>
-
-      {/* traspaso generacional — teaser no editable */}
-      <section id="traspaso_generacional">
-        <GenerationalTransferTeaser />
-      </section>
-
-      {/* remaining sections */}
-      {PUBLIC_SECTIONS.filter((n) => n !== 'hero' && n !== 'about').map((name) => (
+      {PUBLIC_SECTIONS.map((name) => (
         <section key={name} id={name}>
           <SectionView sectionName={name} />
         </section>

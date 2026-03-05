@@ -28,6 +28,7 @@ import {
   ContactFormLayout,
   ServiceDetailLayout,
   RecruitmentLayout,
+  TeaserLayout,
 } from './canvas'
 import type { SectionCanvasEditorProps, SlotContext, LayoutProps } from './canvas'
 
@@ -43,6 +44,10 @@ const LAYOUT_MAP: Record<string, React.ComponentType<LayoutProps>> = {
   service_seleccion: RecruitmentLayout,
   service_acompanamiento: ServiceDetailLayout,
   traspaso_generacional: ServiceDetailLayout,
+  service_clinica_empresarios: ServiceDetailLayout,
+  teaser_circuit: TeaserLayout as unknown as React.ComponentType<LayoutProps>,
+  teaser_clinica: TeaserLayout as unknown as React.ComponentType<LayoutProps>,
+  teaser_traspaso: TeaserLayout as unknown as React.ComponentType<LayoutProps>,
 }
 
 // ── Layout description map — explica cómo se arma la diapositiva ──
@@ -58,6 +63,10 @@ const LAYOUT_DESCRIPTIONS: Record<string, string> = {
   service_seleccion: '2 bloques: detalle del servicio (arriba) + formulario de postulación CV (abajo).',
   service_acompanamiento: '2 columnas: tarjeta de texto con objetivo/párrafos/ejes (izq) + imagen (der).',
   traspaso_generacional: '2 columnas: tarjeta de texto con objetivo/párrafos/ejes (izq) + imagen (der).',
+  service_clinica_empresarios: '2 columnas: tarjeta de texto con objetivo/párrafos/ejes (izq) + imagen (der).',
+  teaser_circuit: '1 columna: título editable. La animación del circuito se genera automáticamente.',
+  teaser_clinica: '2 columnas: ilustración (izq) + título, subtítulo y CTA (der).',
+  teaser_traspaso: '2 columnas: título, subtítulo y CTA (izq) + ilustración (der).',
 }
 
 // ── Content status calculations ──
@@ -107,7 +116,6 @@ export default function SectionCanvasEditor({
   section,
   sectionName,
   sectionId,
-  onEditText,
   onCreateText,
   onUploadMedia,
   onDeleteText,
@@ -156,7 +164,10 @@ export default function SectionCanvasEditor({
     }
 
     if (editingTextId !== null) {
-      onEditText(editingTextId, editValue.trim())
+      // Editar texto existente → crear nuevo DRAFTED (el PUBLISHED se mantiene)
+      const existingText = section?.texts.find((t) => t.id === editingTextId)
+      const order = existingText?.order ?? (slotConfig.slotIndex + 1)
+      onCreateText(editValue.trim(), slotConfig.role, order)
     } else {
       const existingWithRole = section
         ? section.texts.filter((t) => t.role === slotConfig.role).length
@@ -168,7 +179,7 @@ export default function SectionCanvasEditor({
     }
 
     cancelEdit()
-  }, [editValue, editingTextId, onEditText, onCreateText, section, cancelEdit])
+  }, [editValue, editingTextId, onCreateText, section, cancelEdit])
 
   const uploadToSlot = useCallback((slotConfig: MediaSlotConfig, file: File) => {
     const existingWithRole = section

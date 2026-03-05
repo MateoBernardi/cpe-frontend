@@ -3,6 +3,7 @@ export interface CreateContactDTO {
   name: string
   email: string
   town: string
+  address: string
   phone_number?: string
   number_of_people: number
   message?: string
@@ -20,6 +21,7 @@ export interface ContactDTO {
   name: string
   email: string
   town: string
+  address: string | null
   phone_number: string | null
   number_of_people: number
   message: string | null

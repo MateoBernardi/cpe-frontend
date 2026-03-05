@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   useSectionsList,
@@ -6,7 +6,6 @@ import {
   useDiscardDrafts,
   contentKeys,
 } from '@features/content/viewmodels'
-import type { PendingEdits } from '@features/content/viewmodels'
 import type { AdminSection } from '@features/content/models'
 import type { AdminSectionResponseDTO } from '@features/content/dtos'
 import { contentService } from '@features/content/services'
@@ -22,7 +21,7 @@ import { LoadingSpinner, ErrorMessage } from '@shared/components'
 const PREVIEW_GROUPS = [
   {
     label: 'Página principal',
-    sections: ['hero', 'about', 'info_primary', 'info_secondary', 'secondary_hero'],
+    sections: ['hero', 'about', 'teaser_circuit', 'teaser_clinica', 'teaser_traspaso', 'info_primary', 'info_secondary', 'secondary_hero'],
   },
   {
     label: 'Novedades',
@@ -34,37 +33,15 @@ const PREVIEW_GROUPS = [
   },
   {
     label: 'Servicios',
-    sections: ['service_intervencion', 'service_seleccion', 'service_acompanamiento', 'traspaso_generacional'],
+    sections: ['service_intervencion', 'service_seleccion', 'service_acompanamiento', 'service_clinica_empresarios', 'traspaso_generacional'],
   },
 ] as const
 
 function AdminPreviewSection({ sectionId }: { sectionId: number }) {
-  const qc = useQueryClient()
-
-  // Aplicar ediciones pendientes de texto sobre los datos de preview
-  const applyPendingEdits = useCallback(
-    (dto: AdminSectionResponseDTO): AdminSectionResponseDTO => {
-      const pending = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits())
-      if (!pending || Object.keys(pending.textEdits).length === 0) return dto
-      return {
-        ...dto,
-        section: {
-          ...dto.section,
-          blocks: dto.section.blocks.map((b) =>
-            b.type === 'text' && b.text && pending.textEdits[b.text.id] !== undefined
-              ? { ...b, text: { ...b.text, body: pending.textEdits[b.text.id] } }
-              : b,
-          ),
-        },
-      }
-    },
-    [qc],
-  )
-
   const { data: section, isLoading, error } = useQuery({
     queryKey: contentKeys.preview(sectionId),
     queryFn: ({ signal }) => contentService.getPreviewSection(sectionId, signal),
-    select: (d) => mapAdminSectionDTO(applyPendingEdits(d).section),
+    select: (d) => mapAdminSectionDTO(d.section),
   })
 
   if (isLoading) return <LoadingSpinner className="py-8" />
@@ -104,11 +81,7 @@ export default function AdminPreviewPage() {
     })).filter((g) => g.items.length > 0)
   }, [sectionsList])
 
-  // Detectar si hay cambios pendientes
-  const pending = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits())
-  const hasPendingEdits = pending && Object.keys(pending.textEdits).length > 0
-
-  // Verificar si hay bloques en DRAFTED en las secciones cacheadas
+  // Detectar si hay cambios pendientes (bloques DRAFTED en caché)
   const hasDrafts = useMemo(() => {
     if (!orderedSections.length) return false
     for (const s of orderedSections) {
@@ -121,7 +94,7 @@ export default function AdminPreviewPage() {
     return false
   }, [orderedSections, qc])
 
-  const hasChanges = hasPendingEdits || hasDrafts
+  const hasChanges = hasDrafts
 
   const handlePublish = () => {
     // Solo publicar secciones que realmente tienen bloques DRAFTED

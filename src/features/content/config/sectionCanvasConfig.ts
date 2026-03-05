@@ -345,6 +345,85 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
       { id: 'tg-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },
     ],
   },
+
+  // ── SERVICE: CLÍNICA PARA EMPRESARIOS ──
+  service_clinica_empresarios: {
+    displayName: 'Servicio: Clínica para Empresarios',
+    guide: {
+      description: 'Página de servicio con el mismo layout: tarjeta de texto (título, objetivo, párrafos, viñetas) a la izquierda + imagen a la derecha.',
+      tips: [
+        'El subtítulo se muestra como "Objetivo" en una caja teal.',
+        'Los párrafos y viñetas listan los detalles del servicio.',
+        'La imagen se muestra a la derecha con fondo decorativo.',
+      ],
+      imageTip: 'Resolución recomendada: 800×600 px (4:3).',
+    },
+    textSlots: [
+      { id: 'sce-heading', role: 'heading', slotIndex: 0, label: 'Título del servicio', placeholder: 'Ej: Clínica para Empresarios', display: 'heading' },
+      { id: 'sce-subtitle', role: 'subtitle', slotIndex: 0, label: 'Objetivo', placeholder: 'Descripción del objetivo del servicio', display: 'subheading' },
+      { id: 'sce-paragraph', role: 'paragraph', slotIndex: 0, label: 'Párrafo', placeholder: 'Párrafo descriptivo del servicio...', display: 'body', multiple: true },
+      { id: 'sce-bullet', role: 'bullet', slotIndex: 0, label: 'Eje de trabajo', placeholder: 'Ej: Diagnóstico integral', display: 'bullet', multiple: true },
+    ],
+    mediaSlots: [
+      { id: 'sce-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },
+    ],
+  },
+
+  // ── TEASER: CIRCUITO INTEGRADO ──
+  teaser_circuit: {
+    displayName: 'Teaser: Circuito Integrado',
+    guide: {
+      description: 'Sección del Venn diagram interactivo en la página principal. Solo se edita el título — la visualización animada se genera automáticamente.',
+      tips: [
+        'El encabezado se muestra debajo de la animación del circuito.',
+        'La animación de círculos no es editable — es un componente visual fijo.',
+      ],
+    },
+    textSlots: [
+      { id: 'tc-heading', role: 'heading', slotIndex: 0, label: 'Título del circuito', placeholder: 'Ej: Circuito integrado de acción.', display: 'heading', maxLength: 60 },
+    ],
+    mediaSlots: [],
+  },
+
+  // ── TEASER: CLÍNICA PARA EMPRESARIOS ──
+  teaser_clinica: {
+    displayName: 'Teaser: Clínica para Empresarios',
+    guide: {
+      description: 'Sección teaser en la página principal para el servicio Clínica para Empresarios. Ícono a la izquierda, información a la derecha.',
+      tips: [
+        'El encabezado es el título grande del teaser.',
+        'El subtítulo es una frase corta descriptiva.',
+        'El CTA es el texto del botón que lleva a la página del servicio.',
+        'La ilustración/ícono se genera automáticamente.',
+      ],
+    },
+    textSlots: [
+      { id: 'tcl-heading', role: 'heading', slotIndex: 0, label: 'Título', placeholder: 'Ej: Clínica para Empresarios.', display: 'heading', maxLength: 60 },
+      { id: 'tcl-subtitle', role: 'subtitle', slotIndex: 0, label: 'Subtítulo', placeholder: 'Ej: Atención integral para quienes lideran empresas.', display: 'subheading', maxLength: 120 },
+      { id: 'tcl-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón', placeholder: 'Ej: Conocé más', display: 'cta', maxLength: 40 },
+    ],
+    mediaSlots: [],
+  },
+
+  // ── TEASER: TRASPASO GENERACIONAL ──
+  teaser_traspaso: {
+    displayName: 'Teaser: Traspaso Generacional',
+    guide: {
+      description: 'Sección teaser en la página principal para el servicio Traspaso Generacional. Información a la izquierda, ícono a la derecha.',
+      tips: [
+        'El encabezado es el título grande del teaser.',
+        'El subtítulo es una frase corta descriptiva.',
+        'El CTA es el texto del botón que lleva a la página del servicio.',
+        'La ilustración/ícono se genera automáticamente.',
+      ],
+    },
+    textSlots: [
+      { id: 'tt-heading', role: 'heading', slotIndex: 0, label: 'Título', placeholder: 'Ej: Traspaso Generacional.', display: 'heading', maxLength: 60 },
+      { id: 'tt-subtitle', role: 'subtitle', slotIndex: 0, label: 'Subtítulo', placeholder: 'Ej: Acompañamos la transición entre generaciones.', display: 'subheading', maxLength: 120 },
+      { id: 'tt-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón', placeholder: 'Ej: Conocé más', display: 'cta', maxLength: 40 },
+    ],
+    mediaSlots: [],
+  },
 }
 
 /** Obtiene la config del canvas, o undefined si la sección no tiene config */

@@ -20,6 +20,7 @@ const SERVICE_LINKS = [
   { label: 'Intervención Directa', href: '/servicios/intervencion-directa' },
   { label: 'Selección de Personal', href: '/servicios/seleccion-de-personal' },
   { label: 'Acompañamiento', href: '/servicios/acompanamiento' },
+  { label: 'Clínica para Empresarios', href: '/servicios/clinica-para-empresarios' },
   { label: 'Traspaso Generacional', href: '/servicios/traspaso-generacional' },
 ] as const
 

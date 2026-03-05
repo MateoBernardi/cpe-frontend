@@ -1,10 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import type { AdminSection } from '../models'
 import type {
   AddSectionContentDTO,
   CreateTextInput,
-  AdminSectionResponseDTO,
 } from '../dtos'
 import { contentService, fileService } from '../services'
 import { mapAdminSectionDTO, mapSectionListItem } from '../mappers'
@@ -17,12 +16,6 @@ export const contentKeys = {
   sectionsList: () => [...contentKeys.all, 'sections-list'] as const,
   section: (id: number) => [...contentKeys.all, 'section', id] as const,
   preview: (id: number) => [...contentKeys.all, 'preview', id] as const,
-  pendingEdits: () => [...contentKeys.all, 'pending-edits'] as const,
-}
-
-/** Ediciones locales que aún no se enviaron al backend */
-export interface PendingEdits {
-  textEdits: Record<number, string> // textId → newBody
 }
 
 // ── Hook: listar secciones ──
@@ -61,9 +54,6 @@ interface UseAdminSectionVMResult {
   /** Publicar un texto DRAFTED individual */
   publishText: (textId: number, blockId: number) => void
   isPublishingText: boolean
-
-  /** Edición local de texto (solo caché, no envía al backend) */
-  editText: (textId: number, body: string) => void
 
   /** Soft delete de bloque */
   removeBlock: (blockId: number) => void
@@ -105,9 +95,6 @@ interface UseAdminSectionVMResult {
 
   /** Cantidad de bloques DRAFTED pendientes de publicación */
   draftedBlockCount: number
-
-  /** Hay ediciones de texto pendientes de enviar al backend */
-  hasPendingEdits: boolean
 }
 
 export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMResult {
@@ -125,12 +112,15 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
   // ── Borradores locales ──
   const [draftTexts, setDraftTexts] = useState<CreateTextInput[]>([])
 
-  const invalidate = () => void qc.invalidateQueries({ queryKey: contentKeys.section(sectionId) })
+  /** Refetch forzado — reemplaza la caché con datos frescos del backend */
+  const hardRefetch = useCallback(() => {
+    void qc.refetchQueries({ queryKey: contentKeys.section(sectionId), exact: true })
+  }, [qc, sectionId])
 
   // ── Mutación: agregar contenido (siempre como DRAFTED) ──
   const addMut = useMutation({
     mutationFn: (data: AddSectionContentDTO) => contentService.addContent(sectionId, data),
-    onSuccess: () => { invalidate(); setDraftTexts([]) },
+    onSuccess: () => { hardRefetch(); setDraftTexts([]) },
   })
 
   const submitNewContent = () => {
@@ -143,7 +133,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
   // ── Upload de imagen directo a Cloudflare (PUBLISHED) ──
   const uploadMut = useMutation({
     mutationFn: (fd: FormData) => contentService.uploadMedia(fd),
-    onSuccess: invalidate,
+    onSuccess: hardRefetch,
   })
 
   const uploadFile = (file: File, _sectionId: number, role: string, order: number) => {
@@ -160,14 +150,14 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
   const publishMediaMut = useMutation({
     mutationFn: ({ mediaId, blockId }: { mediaId: number; blockId: number }) =>
       contentService.publishMedia(mediaId, blockId),
-    onSuccess: invalidate,
+    onSuccess: hardRefetch,
   })
 
   // ── Publicar texto DRAFTED individual ──
   const publishTextMut = useMutation({
     mutationFn: ({ textId, blockId }: { textId: number; blockId: number }) =>
       contentService.publishText(textId, blockId),
-    onSuccess: invalidate,
+    onSuccess: hardRefetch,
   })
 
   // ── Upload de archivo a R2 (3 pasos: presigned → upload → confirm) ──
@@ -179,7 +169,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
         role,
         order,
       }),
-    onSuccess: invalidate,
+    onSuccess: hardRefetch,
   })
 
   // ── Descargar archivo de R2 ──
@@ -193,83 +183,17 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
   }
 
   // ── Eliminar archivo de R2 ──
-  const delFileMut = useMutation({ mutationFn: fileService.deleteFile, onSuccess: invalidate })
+  const delFileMut = useMutation({ mutationFn: fileService.deleteFile, onSuccess: hardRefetch })
 
   // ── Asignar media existente desde galería ──
   const assignGalleryMut = useMutation({
     mutationFn: ({ mediaId, sId, role, order }: { mediaId: number; sId: number; role: string; order: number }) =>
       contentService.assignMediaToSection(sId, [{ media_id: mediaId, role, order }]),
     onSuccess: () => {
-      invalidate()
+      hardRefetch()
       void qc.invalidateQueries({ queryKey: galleryKeys.all })
     },
   })
-
-  // ── Editar texto localmente + auto-save al backend ──
-  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pendingPatchesRef = useRef<Record<number, string>>({})
-
-  // Limpiar timer al desmontar
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
-    }
-  }, [])
-
-  const flushPendingPatches = useCallback(async () => {
-    const patches = { ...pendingPatchesRef.current }
-    pendingPatchesRef.current = {}
-    if (Object.keys(patches).length === 0) return
-    try {
-      await Promise.all(
-        Object.entries(patches).map(([id, body]) =>
-          contentService.patchText(Number(id), { body }),
-        ),
-      )
-      // Limpiar las ediciones ya guardadas del almacén de pendientes
-      const current = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits()) ?? { textEdits: {} }
-      const remaining = { ...current.textEdits }
-      for (const id of Object.keys(patches)) {
-        delete remaining[Number(id)]
-      }
-      qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: remaining })
-    } catch (err) {
-      // Re-encolar los que fallaron para el próximo intento
-      pendingPatchesRef.current = { ...patches, ...pendingPatchesRef.current }
-      console.error('Auto-save falló:', err)
-    }
-  }, [qc])
-
-  const editText = useCallback((textId: number, body: string) => {
-    // 1. Actualizar la caché de la sección de forma optimista
-    qc.setQueryData<AdminSectionResponseDTO>(
-      contentKeys.section(sectionId),
-      (old) => {
-        if (!old) return old
-        return {
-          ...old,
-          section: {
-            ...old.section,
-            blocks: old.section.blocks.map((b) =>
-              b.type === 'text' && b.text?.id === textId
-                ? { ...b, text: { ...b.text!, body } }
-                : b,
-            ),
-          },
-        }
-      },
-    )
-    // 2. Guardar la edición pendiente
-    const current = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits()) ?? { textEdits: {} }
-    qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), {
-      ...current,
-      textEdits: { ...current.textEdits, [textId]: body },
-    })
-    // 3. Auto-save al backend con debounce (1.5s después de dejar de editar)
-    pendingPatchesRef.current[textId] = body
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
-    autoSaveTimerRef.current = setTimeout(() => void flushPendingPatches(), 1500)
-  }, [qc, sectionId, flushPendingPatches])
 
   // ── Crear texto individual desde slot del canvas ──
   const createSlotMut = useMutation({
@@ -277,7 +201,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
       contentService.addContent(sectionId, {
         texts: [{ body: data.body, role: data.role, order: data.order }],
       }),
-    onSuccess: invalidate,
+    onSuccess: hardRefetch,
   })
 
   const createSlotText = (body: string, role: string, order: number) => {
@@ -285,13 +209,13 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
   }
 
   // ── Eliminar bloque (soft delete a nivel de section_blocks) ──
-  const delBlockMut = useMutation({ mutationFn: contentService.deleteBlock, onSuccess: invalidate })
+  const delBlockMut = useMutation({ mutationFn: contentService.deleteBlock, onSuccess: hardRefetch })
 
   // ── Eliminar texto directamente (se usa después de deleteBlock) ──
-  const delTextMut = useMutation({ mutationFn: contentService.deleteText, onSuccess: invalidate })
+  const delTextMut = useMutation({ mutationFn: contentService.deleteText, onSuccess: hardRefetch })
 
   // ── Eliminar media (solo se usa en la galería, NO al desasociar de sección) ──
-  const delMediaMut = useMutation({ mutationFn: contentService.deleteMedia, onSuccess: invalidate })
+  const delMediaMut = useMutation({ mutationFn: contentService.deleteMedia, onSuccess: hardRefetch })
 
   // ── Intercambiar orden (usa PATCH /blocks/:blockId) ──
   const swapBlockMut = useMutation({
@@ -301,7 +225,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
         contentService.patchBlock(blockIdB, { order: orderA }),
       ])
     },
-    onSuccess: invalidate,
+    onSuccess: hardRefetch,
   })
 
   // ── Calcular bloques DRAFTED pendientes ──
@@ -309,15 +233,6 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     (section?.texts.filter((t) => t.status === 'DRAFTED').length ?? 0) +
     (section?.media.filter((m) => m.status === 'DRAFTED').length ?? 0) +
     (section?.files.filter((f) => f.status === 'DRAFTED').length ?? 0)
-
-  // ── ¿Hay ediciones de texto pendientes de guardar? (reactivo) ──
-  const { data: pendingEditsData } = useQuery<PendingEdits>({
-    queryKey: contentKeys.pendingEdits(),
-    queryFn: () => qc.getQueryData<PendingEdits>(contentKeys.pendingEdits()) ?? { textEdits: {} },
-    initialData: { textEdits: {} },
-    staleTime: Infinity,
-  })
-  const hasPendingEdits = Object.keys(pendingEditsData?.textEdits ?? {}).length > 0
 
   return {
     section: section ?? null,
@@ -334,7 +249,6 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     isPublishingMedia: publishMediaMut.isPending,
     publishText: (textId: number, blockId: number) => publishTextMut.mutate({ textId, blockId }),
     isPublishingText: publishTextMut.isPending,
-    editText,
     createSlotText,
     isCreatingSlot: createSlotMut.isPending,
     removeBlock: (blockId) => delBlockMut.mutate(blockId),
@@ -365,7 +279,6 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     existingMediaCount: section?.media.length ?? 0,
     existingFileCount: section?.files.length ?? 0,
     draftedBlockCount,
-    hasPendingEdits,
   }
 }
 
@@ -375,20 +288,9 @@ export function usePublishSection() {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: async (sectionId: number) => {
-      // 1. Enviar ediciones pendientes de texto primero
-      const pending = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits()) ?? { textEdits: {} }
-      const editPromises = Object.entries(pending.textEdits).map(([id, body]) =>
-        contentService.patchText(Number(id), { body }),
-      )
-      await Promise.all(editPromises)
-
-      // 2. Publicar sección (DRAFTED → PUBLISHED en una transacción)
-      await contentService.publishSection(sectionId)
-    },
+    mutationFn: (sectionId: number) => contentService.publishSection(sectionId),
     onSuccess: () => {
-      qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: {} })
-      void qc.invalidateQueries({ queryKey: contentKeys.all })
+      void qc.refetchQueries({ queryKey: contentKeys.all })
     },
   })
 }
@@ -400,29 +302,19 @@ export function usePublishChanges() {
 
   return useMutation({
     mutationFn: async (sectionIds: number[]) => {
-      // 1. Enviar todas las ediciones pendientes de texto
-      const pending = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits()) ?? { textEdits: {} }
-      const editPromises = Object.entries(pending.textEdits).map(([id, body]) =>
-        contentService.patchText(Number(id), { body }),
+      if (sectionIds.length === 0) return
+      const publishPromises = sectionIds.map((id) =>
+        contentService.publishSection(id),
       )
-      await Promise.all(editPromises)
-
-      // 2. Publicar solo las secciones con borradores (puede estar vacío)
-      if (sectionIds.length > 0) {
-        const publishPromises = sectionIds.map((id) =>
-          contentService.publishSection(id),
-        )
-        await Promise.all(publishPromises)
-      }
+      await Promise.all(publishPromises)
     },
     onSuccess: () => {
-      qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: {} })
-      void qc.invalidateQueries({ queryKey: contentKeys.all })
+      void qc.refetchQueries({ queryKey: contentKeys.all })
     },
   })
 }
 
-// ── Hook: descartar todos los borradores y ediciones pendientes ──
+// ── Hook: descartar todos los borradores ──
 
 export function useDiscardDrafts() {
   const qc = useQueryClient()
@@ -439,8 +331,7 @@ export function useDiscardDrafts() {
       await Promise.all(deletePromises)
     },
     onSuccess: () => {
-      qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: {} })
-      void qc.invalidateQueries({ queryKey: contentKeys.all })
+      void qc.refetchQueries({ queryKey: contentKeys.all })
     },
   })
 }

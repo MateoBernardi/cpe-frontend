@@ -53,6 +53,22 @@ export const SECTION_ROLES: Record<string, SectionRoleConfig> = {
     textRoles: ['heading', 'subtitle', 'paragraph', 'bullet'],
     mediaRoles: ['photo'],
   },
+  service_clinica_empresarios: {
+    textRoles: ['heading', 'subtitle', 'paragraph', 'bullet'],
+    mediaRoles: ['photo'],
+  },
+  teaser_circuit: {
+    textRoles: ['heading'],
+    mediaRoles: [],
+  },
+  teaser_clinica: {
+    textRoles: ['heading', 'subtitle', 'cta'],
+    mediaRoles: [],
+  },
+  teaser_traspaso: {
+    textRoles: ['heading', 'subtitle', 'cta'],
+    mediaRoles: [],
+  },
 }
 
 export function getSectionRoles(sectionName: string): SectionRoleConfig {
@@ -76,6 +92,10 @@ export const SECTION_DISPLAY_NAMES: Record<string, string> = {
   service_seleccion: 'Servicio: Selección de Personal',
   service_acompanamiento: 'Servicio: Acompañamiento',
   traspaso_generacional: 'Traspaso Generacional',
+  service_clinica_empresarios: 'Servicio: Clínica para Empresarios',
+  teaser_circuit: 'Teaser: Circuito Integrado',
+  teaser_clinica: 'Teaser: Clínica para Empresarios',
+  teaser_traspaso: 'Teaser: Traspaso Generacional',
 }
 
 export const ROLE_DISPLAY_NAMES: Record<string, string> = {

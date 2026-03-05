@@ -20,7 +20,6 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
     isPublishingMedia,
     publishText,
     isPublishingText,
-    editText,
     createSlotText,
     removeText,
     removeMedia,
@@ -33,7 +32,6 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
     removeFile,
     assignFromGallery,
     draftedBlockCount,
-    hasPendingEdits,
     refetch,
   } = useAdminSectionViewModel(sectionId)
 
@@ -63,7 +61,7 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
           <button
             type="button"
             onClick={() => publishMut.mutate(sectionId)}
-            disabled={publishMut.isPending || (draftedBlockCount === 0 && !hasPendingEdits)}
+            disabled={publishMut.isPending || draftedBlockCount === 0}
             className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {publishMut.isPending ? 'Publicando…' : 'Publicar cambios'}
@@ -84,7 +82,6 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
         section={section}
         sectionName={sectionName}
         sectionId={sectionId}
-        onEditText={editText}
         onCreateText={createSlotText}
         onUploadMedia={uploadFile}
         onDeleteText={(blockId, textId) => { if (confirm('¿Eliminar este texto?')) removeText(blockId, textId) }}

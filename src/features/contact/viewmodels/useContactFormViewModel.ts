@@ -7,6 +7,7 @@ const EMPTY_FORM: CreateContactDTO = {
   name: '',
   email: '',
   town: '',
+  address: '',
   number_of_people: 1,
   phone_number: '',
   message: '',
@@ -28,6 +29,7 @@ export function useContactFormViewModel() {
     if (!form.name.trim()) return 'El nombre es obligatorio'
     if (!form.email.trim()) return 'El email es obligatorio'
     if (!form.town.trim()) return 'La localidad es obligatoria'
+    if (!form.address.trim()) return 'La dirección es obligatoria'
     if (!form.number_of_people || form.number_of_people < 1)
       return 'La cantidad de personas es obligatoria'
     if (!privacyAccepted)
@@ -51,6 +53,7 @@ export function useContactFormViewModel() {
         name: form.name.trim(),
         email: form.email.trim(),
         town: form.town.trim(),
+        address: form.address.trim(),
         number_of_people: form.number_of_people,
         phone_number: form.phone_number?.trim() || undefined,
         message: form.message?.trim() || undefined,

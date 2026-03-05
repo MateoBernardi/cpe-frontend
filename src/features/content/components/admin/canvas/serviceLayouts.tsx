@@ -242,7 +242,7 @@ export function ContactFormLayout({ ctx, textSlots }: { ctx: SlotContext; textSl
           Los campos del formulario no son editables desde el panel de administración.<br />
           Los datos se envían directamente al backend.
         </p>
-        {['Nombre', 'Email', 'Localidad', 'Teléfono', 'N.º de empleados', 'Mensaje'].map((field) => (
+        {['Nombre', 'Email', 'Localidad', 'Dirección', 'Teléfono', 'N.º de empleados', 'Mensaje'].map((field) => (
           <div key={field} className="flex items-center gap-2">
             <div className="w-2 h-2 rounded bg-teal-300 flex-shrink-0" />
             <span className="text-xs text-gray-400">{field}</span>
@@ -360,6 +360,38 @@ export function RecruitmentLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
               <span className="text-xs text-gray-400">{field}</span>
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Teaser Layout (para teasers de la home)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export function TeaserLayout({ ctx, textSlots }: { ctx: SlotContext; textSlots: TextSlotConfig[] }) {
+  const heading = textSlots.find((s) => s.role === 'heading')
+  const subtitle = textSlots.find((s) => s.role === 'subtitle')
+  const cta = textSlots.find((s) => s.role === 'cta')
+
+  return (
+    <div className="rounded-xl bg-gradient-to-br from-teal-50 to-white p-6 space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2 items-center">
+        {/* Left: illustration placeholder */}
+        <div className="flex items-center justify-center rounded-xl bg-teal-100/50 p-8">
+          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-teal-200/50">
+            <svg className="h-12 w-12 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+            </svg>
+          </div>
+          <p className="ml-3 text-[10px] text-teal-600">Ilustración autogenerada</p>
+        </div>
+        {/* Right: editable text slots */}
+        <div className="space-y-3">
+          {heading && <ConnectedTextSlot config={heading} ctx={ctx} />}
+          {subtitle && <ConnectedTextSlot config={subtitle} ctx={ctx} />}
+          {cta && <ConnectedTextSlot config={cta} ctx={ctx} />}
         </div>
       </div>
     </div>

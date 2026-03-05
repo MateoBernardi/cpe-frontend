@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useScrollProgress } from '@shared/hooks'
 import { useNavigate } from 'react-router-dom'
+import type { Section } from '../../models'
+import { textByRole } from './sectionHelpers'
 import { colors, layout } from '../../../../theme'
 
 /** Service slugs matching subsection routes */
@@ -42,7 +44,11 @@ function useSpreadFactor() {
   return factor
 }
 
-export default function CircuitSection() {
+interface Props { section: Section }
+
+export default function CircuitSection({ section }: Props) {
+  const heading = textByRole(section.texts, 'heading')
+
   const { ref, progress } = useScrollProgress<HTMLElement>()
   const navigate = useNavigate()
   const spreadFactor = useSpreadFactor()
@@ -50,17 +56,17 @@ export default function CircuitSection() {
   const t = Math.min(1, Math.max(0, (progress - 0.15) / 0.28))
   const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
 
-  const spread = ease * 220 * spreadFactor
+  const spread = ease * 205 * spreadFactor
   const positions = [
-    { x: -spread * 0.58, y: -spread * 0.36 },
-    { x: spread * 0.58,  y: -spread * 0.36 },
-    { x: 0,              y: spread * 0.58 },
+    { x: -spread * 0.56, y: -spread * 0.35 },
+    { x: spread * 0.56,  y: -spread * 0.35 },
+    { x: 0,              y: spread * 0.41 },
   ]
 
   return (
     <section
       ref={ref}
-      className={`relative pt-[6vh] sm:pt-[8vh] md:pt-[10vh] pb-0 min-h-[auto]`}
+      className={`relative ${layout.sectionPadY} min-h-[auto]`}
       style={{ backgroundColor: colors.circuitBg }}
     >
       <div className={layout.container}>
@@ -76,7 +82,7 @@ export default function CircuitSection() {
                 transition: 'opacity 0.1s, transform 0.1s',
               }}
             >
-              Circuito integrado de acción.
+              {heading?.body ?? 'Circuito integrado de acción.'}
             </h2>
           </div>
 
@@ -85,16 +91,16 @@ export default function CircuitSection() {
             className="relative mx-auto flex w-full items-center justify-center"
             style={{ height: 'clamp(340px, 55vw, 620px)', maxWidth: 'min(100%, 550px)' }}
           >
-            {/* Center label */}
+            {/* Center label – placed at the centroid of the three circles */}
             <div
-              className="absolute z-20 rounded-md bg-white/90 px-2 py-1 text-[9px] font-bold uppercase tracking-wider shadow-sm ring-1 ring-slate-200 backdrop-blur sm:px-3 sm:py-1.5 sm:text-xs"
+              className="absolute z-20 px-2 py-1 text-center text-[9px] font-bold uppercase tracking-wider text-white drop-shadow-md sm:text-xs"
               style={{
-                color: colors.blueDark,
                 opacity: ease > 0.7 ? 1 : 0,
+                transform: `translate(${(positions[0].x + positions[1].x + positions[2].x) / 3}px, ${(positions[0].y + positions[1].y + positions[2].y) / 3 - spread * 0.06}px)`,
                 transition: 'opacity 0.5s',
               }}
             >
-              Empresa + CPE
+              Empresa<br />+ CPE
             </div>
 
             {CIRCLE_LABELS.map((label, i) => (

@@ -58,8 +58,7 @@ export default function InlineMediaSlot({
   const handleReplaceInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || replacingId === null) return
-    // Eliminar la imagen vieja, luego subir la nueva
-    onDelete(replacingId)
+    // Subir la nueva imagen como borrador (la vieja PUBLISHED se mantiene hasta publicar)
     onUpload(file)
     setReplacingId(null)
     e.target.value = ''

@@ -6,7 +6,6 @@ import type {
   SectionListResponseDTO,
   AddSectionContentDTO,
   AddSectionContentResponseDTO,
-  PatchTextDTO,
   PatchMediaDTO,
   PatchBlockDTO,
   UploadMediaResponseDTO,
@@ -121,15 +120,6 @@ export const contentService = {
   },
 
   // ── Admin: editar contenido ──
-
-  /** PATCH /content/texts/:textId */
-  patchText(textId: number, data: PatchTextDTO) {
-    return apiRequest<unknown, PatchTextDTO>({
-      method: 'PATCH',
-      endpoint: `${BASE}/texts/${textId}`,
-      body: data,
-    })
-  },
 
   /** PATCH /content/media/:mediaId */
   patchMedia(mediaId: number, data: PatchMediaDTO) {

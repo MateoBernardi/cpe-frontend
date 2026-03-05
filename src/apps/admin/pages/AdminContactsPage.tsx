@@ -50,6 +50,7 @@ export default function AdminContactsPage() {
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Nombre</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Email</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Localidad</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Dirección</th>
                 <th className="px-4 py-3 text-center font-medium text-gray-600">Personas</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Teléfono</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Mensaje</th>
@@ -69,6 +70,7 @@ export default function AdminContactsPage() {
                     </a>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{c.town}</td>
+                  <td className="px-4 py-3 text-gray-600">{c.address ?? '—'}</td>
                   <td className="px-4 py-3 text-center text-gray-600">{c.number_of_people}</td>
                   <td className="px-4 py-3 text-gray-600">{c.phone_number ?? '—'}</td>
                   <td className="max-w-[200px] truncate px-4 py-3 text-gray-600" title={c.message ?? ''}>

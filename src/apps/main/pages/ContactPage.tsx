@@ -13,7 +13,7 @@ export default function ContactPage() {
     <div className="min-h-screen pt-[10vh]" style={{ backgroundColor: colors.lightGray }}>
       <div className="mx-auto max-w-2xl px-4 py-12">
         <h1 className="mb-2 text-3xl font-bold" style={{ color: colors.blueDark }}>
-          Contacto
+          Solicitá tu presupuesto
         </h1>
         <p className="mb-8 text-gray-600">
           Completá el formulario y nos pondremos en contacto a la brevedad.
@@ -92,6 +92,24 @@ export default function ContactPage() {
                 onFocus={(e) => (e.target.style.borderColor = colors.inputFocus)}
                 onBlur={(e) => (e.target.style.borderColor = colors.inputBorder)}
                 placeholder="San Isidro"
+              />
+            </div>
+
+            {/* Dirección */}
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Dirección <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.address}
+                onChange={(e) => setField('address', e.target.value)}
+                required
+                className="w-full rounded-lg border px-4 py-2.5 text-sm outline-none transition-colors"
+                style={{ borderColor: colors.inputBorder, color: colors.blueDark }}
+                onFocus={(e) => (e.target.style.borderColor = colors.inputFocus)}
+                onBlur={(e) => (e.target.style.borderColor = colors.inputBorder)}
+                placeholder="Av. Siempre Viva 742"
               />
             </div>
 

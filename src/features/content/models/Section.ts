@@ -11,7 +11,7 @@ export interface Section {
   name: string
   texts: TextContent[]
   media: MediaContent[]
-  files: { id: number; title: string | null; role: string; order: number }[]
+  files: { id: number; title: string | null; role: string | null; order: number }[]
 }
 
 /** Modelo admin con datos completos para edición */
