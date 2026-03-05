@@ -1,8 +1,10 @@
-import { useState, useRef } from 'react'
+import { useRef } from 'react'
+import { Link } from 'react-router-dom'
 import type { Section } from '../../models'
 import { textByRole, textsByRole, mediaByRole } from './sectionHelpers'
 import { useInView } from '@shared/hooks'
 import { colors, layout } from '../../../../theme'
+import { useCandidateFormViewModel } from '@features/contact/viewmodels/useCandidateFormViewModel'
 
 interface Props { section: Section }
 
@@ -11,28 +13,19 @@ export default function RecruitmentFormSection({ section }: Props) {
   const subtitle = textByRole(section.texts, 'subtitle')
   const paragraphs = textsByRole(section.texts, 'paragraph')
   const bullets = textsByRole(section.texts, 'bullet')
+  const formHeading = textByRole(section.texts, 'form_heading')
+  const formParagraph = textByRole(section.texts, 'form_paragraph')
   const photo = mediaByRole(section.media, 'photo')
-
-  const qArea = textByRole(section.texts, 'label_area')
-  const qExperience = textByRole(section.texts, 'label_experience')
-  const qModality = textByRole(section.texts, 'label_modality')
-  const qAvailability = textByRole(section.texts, 'label_availability')
 
   const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
 
-  const [form, setForm] = useState({
-    name: '', email: '', phone: '', area: '', experience: '', modality: '', availability: '', message: '',
-  })
-  const [cvFile, setCvFile] = useState<File | null>(null)
-  const [submitted, setSubmitted] = useState(false)
+  const vm = useCandidateFormViewModel()
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); setSubmitted(true) }
 
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault()
     const file = e.dataTransfer.files[0]
-    if (file) setCvFile(file)
+    if (file) vm.selectFile(file)
   }
 
   const inputClasses = 'w-full rounded-lg border bg-white px-4 py-2.5 text-sm placeholder-slate-400 focus:outline-none focus:ring-1 transition-colors'
@@ -104,6 +97,24 @@ export default function RecruitmentFormSection({ section }: Props) {
       {/* Bottom: CV form */}
       <div className={layout.sectionPadY} style={{ backgroundColor: colors.lightGray }}>
         <div className={layout.container}>
+          {/* Editable title + paragraph above form grid */}
+          {(formHeading || formParagraph) && (
+            <div
+              className={`mb-[4vh] max-w-none space-y-2 transition-all duration-1000 ${
+                isInView ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+              }`}
+            >
+              {formHeading && (
+                <h3 className="text-xl font-bold sm:text-2xl font-primary" style={{ color: colors.blueDark }}>
+                  {formHeading.body}
+                </h3>
+              )}
+              {formParagraph && (
+                <p className="leading-relaxed" style={{ color: colors.blueMid }}>{formParagraph.body}</p>
+              )}
+            </div>
+          )}
+
           <div className="grid gap-[6vh] lg:grid-cols-2 lg:items-start">
             {/* Left: form */}
             <div
@@ -112,7 +123,7 @@ export default function RecruitmentFormSection({ section }: Props) {
               }`}
               style={{ borderColor: colors.tealBright }}
             >
-              {submitted ? (
+              {vm.success ? (
                 <div className="py-[6vh] text-center">
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: `${colors.tealBright}20` }}>
                     <svg className="h-8 w-8" style={{ color: colors.tealMid }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -121,74 +132,103 @@ export default function RecruitmentFormSection({ section }: Props) {
                   </div>
                   <h3 className="text-lg font-semibold" style={{ color: colors.blueDark }}>¡Postulación recibida!</h3>
                   <p className="mt-2 text-sm" style={{ color: colors.blueMid }}>Gracias por tu interés. Nos pondremos en contacto pronto.</p>
+                  <button
+                    onClick={() => vm.setSuccess(false)}
+                    className="mt-4 text-sm font-medium underline"
+                    style={{ color: colors.tealMid }}
+                  >
+                    Enviar otra postulación
+                  </button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={(e) => { e.preventDefault(); void vm.handleSubmit() }} className="space-y-5">
                   <h3 className="text-lg font-semibold" style={{ color: colors.blueDark }}>Dejanos tu postulación</h3>
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Nombre completo</label>
-                      <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                        className={inputClasses} style={inputStyle} placeholder="Juan Pérez"
+                      <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Nombre <span className="text-red-500">*</span></label>
+                      <input type="text" required value={vm.form.name} onChange={(e) => vm.setField('name', e.target.value)}
+                        className={inputClasses} style={inputStyle} placeholder="Juan"
                         onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
                         onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Email</label>
-                      <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Apellido <span className="text-red-500">*</span></label>
+                      <input type="text" required value={vm.form.surname} onChange={(e) => vm.setField('surname', e.target.value)}
+                        className={inputClasses} style={inputStyle} placeholder="Pérez"
+                        onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Email <span className="text-red-500">*</span></label>
+                      <input type="email" required value={vm.form.email} onChange={(e) => vm.setField('email', e.target.value)}
                         className={inputClasses} style={inputStyle} placeholder="juan@email.com"
                         onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
                         onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
                       />
                     </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Teléfono</label>
+                      <input type="tel" value={vm.form.phone_number} onChange={(e) => vm.setField('phone_number', e.target.value)}
+                        className={inputClasses} style={inputStyle} placeholder="+54 11 1234-5678"
+                        onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Teléfono</label>
-                    <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className={inputClasses} style={inputStyle} placeholder="+54 11 1234-5678"
+                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Puesto de interés <span className="text-red-500">*</span></label>
+                    <select value={vm.form.id_interest ?? ''} onChange={(e) => vm.setField('id_interest', Number(e.target.value) || null)}
+                      required
+                      className={inputClasses} style={inputStyle}
                       onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
                       onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
-                    />
+                    >
+                      <option value="">{vm.isLoadingInterests ? 'Cargando puestos…' : 'Seleccionar…'}</option>
+                      {vm.interests.map((i) => (
+                        <option key={i.id} value={i.id}>{i.name}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>{qArea?.body ?? '¿En qué área te gustaría trabajar?'}</label>
-                    <input type="text" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}
-                      className={inputClasses} style={inputStyle} placeholder="Ej: Administración, RRHH, IT..."
-                      onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>{qExperience?.body ?? '¿Cuántos años de experiencia tenés?'}</label>
-                    <input type="text" value={form.experience} onChange={(e) => setForm({ ...form, experience: e.target.value })}
-                      className={inputClasses} style={inputStyle} placeholder="Ej: 3 años"
-                      onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>{qModality?.body ?? '¿Qué modalidad de trabajo preferís?'}</label>
-                    <select value={form.modality} onChange={(e) => setForm({ ...form, modality: e.target.value })}
+                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Años de experiencia <span className="text-red-500">*</span></label>
+                    <select required value={vm.form.experience} onChange={(e) => vm.setField('experience', e.target.value)}
                       className={inputClasses} style={inputStyle}
                       onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
                       onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
                     >
                       <option value="">Seleccionar...</option>
-                      <option value="presencial">Presencial</option>
-                      <option value="remoto">Remoto</option>
-                      <option value="hibrido">Híbrido</option>
+                      <option value="0">0</option>
+                      <option value="De 0 a 3">De 0 a 3</option>
+                      <option value="3 o más">3 o más</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>{qAvailability?.body ?? '¿Cuándo podrías incorporarte?'}</label>
-                    <input type="text" value={form.availability} onChange={(e) => setForm({ ...form, availability: e.target.value })}
+                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>¿Qué modalidad de trabajo preferís? <span className="text-red-500">*</span></label>
+                    <select value={vm.form.modality} onChange={(e) => vm.setField('modality', e.target.value)}
+                      required
+                      className={inputClasses} style={inputStyle}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="Presencial">Presencial</option>
+                      <option value="Remoto">Remoto</option>
+                      <option value="Híbrido">Híbrido</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>¿Cuándo podrías incorporarte? <span className="text-red-500">*</span></label>
+                    <input type="text" required value={vm.form.incorporation_time} onChange={(e) => vm.setField('incorporation_time', e.target.value)}
                       className={inputClasses} style={inputStyle} placeholder="Ej: Inmediata, en 15 días..."
                       onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
                       onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
@@ -197,20 +237,49 @@ export default function RecruitmentFormSection({ section }: Props) {
 
                   <div>
                     <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Mensaje adicional</label>
-                    <textarea rows={3} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
+                    <textarea rows={3} value={vm.form.message} onChange={(e) => vm.setField('message', e.target.value)}
                       className={inputClasses} style={inputStyle} placeholder="Contanos algo más sobre vos..."
                       onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
                       onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
                     />
                   </div>
 
+                  {vm.error && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                      <p className="text-sm text-red-700">{vm.error}</p>
+                    </div>
+                  )}
+
+                  {vm.step && (
+                    <p className="text-sm font-medium" style={{ color: colors.tealMid }}>{vm.step}</p>
+                  )}
+
+                  {/* Privacidad */}
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={vm.privacyAccepted}
+                      onChange={(e) => vm.setPrivacyAccepted(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 accent-teal-600"
+                      required
+                    />
+                    <span className="text-xs leading-relaxed" style={{ color: colors.blueMid }}>
+                      He leído y acepto la{' '}
+                      <Link to="/politica-de-privacidad" className="font-medium underline" style={{ color: colors.tealMid }} target="_blank">
+                        Política de Privacidad
+                      </Link>
+                      , y consiento el tratamiento de mis datos personales para los fines indicados.
+                    </span>
+                  </label>
+
                   <button type="submit"
-                    className="w-full rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5"
+                    disabled={vm.isSubmitting}
+                    className="w-full rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0"
                     style={{ backgroundColor: colors.tealMid, boxShadow: `0 4px 14px ${colors.ctaShadow}` }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.tealBright }}
+                    onMouseEnter={(e) => { if (!vm.isSubmitting) e.currentTarget.style.backgroundColor = colors.tealBright }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.tealMid }}
                   >
-                    Enviar postulación
+                    {vm.isSubmitting ? 'Enviando…' : 'Enviar postulación'}
                   </button>
                 </form>
               )}
@@ -221,19 +290,25 @@ export default function RecruitmentFormSection({ section }: Props) {
               <div className="space-y-[3vh]">
                 <div>
                   <h3 className="text-xl font-bold" style={{ color: colors.blueDark }}>Adjuntá tu CV</h3>
-                  <p className="mt-2 text-sm" style={{ color: colors.blueMid }}>Arrastrá el archivo o hacé clic para seleccionarlo.</p>
+                  <p className="mt-2 text-sm" style={{ color: colors.blueMid }}>
+                    {vm.isFormComplete
+                      ? 'Arrastrá el archivo o hacé clic para seleccionarlo.'
+                      : 'Completá los campos obligatorios del formulario para habilitar la subida.'}
+                  </p>
                 </div>
 
                 <div
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleFileDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="cv-upload-zone group relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed bg-white p-6 sm:p-8 md:p-12 transition-all"
+                  onDragOver={(e) => { if (vm.isFormComplete) e.preventDefault() }}
+                  onDrop={(e) => { if (vm.isFormComplete) handleFileDrop(e); else e.preventDefault() }}
+                  onClick={() => { if (vm.isFormComplete) fileInputRef.current?.click() }}
+                  className={`cv-upload-zone group relative flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed bg-white p-6 sm:p-8 md:p-12 transition-all ${
+                    vm.isFormComplete ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                  }`}
                   style={{ borderColor: colors.tealBright }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.tealMid; e.currentTarget.style.backgroundColor = `${colors.tealBright}08` }}
+                  onMouseEnter={(e) => { if (vm.isFormComplete) { e.currentTarget.style.borderColor = colors.tealMid; e.currentTarget.style.backgroundColor = `${colors.tealBright}08` } }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.tealBright; e.currentTarget.style.backgroundColor = colors.white }}
                 >
-                  <div className="cv-pulse-ring absolute inset-0 rounded-2xl" />
+                  {vm.isFormComplete && <div className="cv-pulse-ring absolute inset-0 rounded-2xl" />}
 
                   <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl transition-transform group-hover:scale-110"
                     style={{ backgroundColor: `${colors.tealBright}20`, color: colors.tealMid }}
@@ -243,20 +318,21 @@ export default function RecruitmentFormSection({ section }: Props) {
                     </svg>
                   </div>
 
-                  {cvFile ? (
+                  {vm.file ? (
                     <div className="text-center">
-                      <p className="font-medium" style={{ color: colors.tealMid }}>{cvFile.name}</p>
-                      <p className="mt-1 text-xs" style={{ color: colors.blueMid }}>{(cvFile.size / 1024).toFixed(0)} KB — Clic para cambiar</p>
+                      <p className="font-medium" style={{ color: colors.tealMid }}>{vm.file.name}</p>
+                      <p className="mt-1 text-xs" style={{ color: colors.blueMid }}>{(vm.file.size / 1024).toFixed(0)} KB — Clic para cambiar</p>
                     </div>
                   ) : (
                     <div className="text-center">
                       <p className="font-medium" style={{ color: colors.blueMid }}>Subí tu CV</p>
-                      <p className="mt-1 text-xs" style={{ color: colors.blueMid }}>PDF, DOC o DOCX (máx. 5 MB)</p>
+                      <p className="mt-1 text-xs" style={{ color: colors.blueMid }}>Solo PDF (máx. 5 MB)</p>
                     </div>
                   )}
 
-                  <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" className="hidden"
-                    onChange={(e) => { const file = e.target.files?.[0]; if (file) setCvFile(file) }}
+                  <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden"
+                    disabled={!vm.isFormComplete}
+                    onChange={(e) => { const file = e.target.files?.[0]; if (file) vm.selectFile(file) }}
                   />
                 </div>
               </div>

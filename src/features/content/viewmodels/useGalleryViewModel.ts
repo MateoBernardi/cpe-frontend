@@ -4,6 +4,7 @@ import { contentService } from '../services'
 import { contentKeys } from './useAdminSectionViewModel'
 import type { GalleryMediaDTO, AssignMediaInput } from '../dtos'
 import { ApiError } from '@shared/api/apiRequest'
+import { resolveMediaUrl } from '../mappers'
 
 // ── Query keys ──
 
@@ -32,7 +33,7 @@ export interface GalleryMedia {
 function mapGalleryMedia(dto: GalleryMediaDTO): GalleryMedia {
   return {
     id: dto.id,
-    url: dto.url,
+    url: resolveMediaUrl(dto.url),
     mimeType: dto.mime_type,
     title: dto.title,
     origin: dto.origin,

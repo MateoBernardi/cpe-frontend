@@ -96,13 +96,12 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
     guide: {
       description: 'La portada tiene 5 segundos para captar al visitante. Seguimos la fórmula de hero efectiva: título directo al dolor del cliente, subtítulo que muestre la transformación, dos botones de acción y una barra de confianza.',
       tips: [
-        '01 — Título: máximo 8 palabras. Atacá el problema #1 de tu cliente. Evitá frases genéricas.',
-        '02 — Subtítulo: mostrá la transformación. Dónde están hoy → dónde van a estar.',
-        '03 — CTA Primario: un solo botón. Específico al resultado. Ej: "Solicitar presupuesto".',
-        '04 — CTA Secundario: bajo compromiso, para los que no están listos. Ej: "Ver cómo funciona".',
-        '05 — Barra de confianza: un dato específico o logos. Ej: "Más de 200 empresas atendidas".',
+        '01 — Título: máximo 8 palabras.',
+        '02 — Subtítulo',
+        '03 — CTA Primario: un solo botón. Envía hacia la sección de contacto.',
+        '04 — CTA Secundario: Envía hacia la sección de servicios.',
+        '05 — Barra de confianza: un dato específico que genere confianza (ej: cantidad de clientes, años de experiencia, etc.).',
         'Si un CTA no tiene texto, no se renderiza en la página.',
-        'Test de 5 segundos: ¿Qué hace tu empresa? ¿Por qué me importa? ¿Qué hago ahora?',
       ],
       imageTip: 'Resolución recomendada: 1920×1080 px (16:9). Formato: JPG o WebP. Se aplica zoom sutil a la imagen activa del carrusel.',
       colorTip: 'Se superpone un degradado oscuro sobre las imágenes para garantizar legibilidad del texto blanco.',
@@ -199,8 +198,7 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
       description: 'Sección de 2 columnas: diagrama/imagen a la izquierda y lista de puntos clave a la derecha.',
       tips: [
         'La imagen o diagrama se muestra en la columna izquierda.',
-        'Cada viñeta se lista con un punto teal. Si subís íconos, aparecen en vez del punto.',
-        'Los íconos se asignan por orden: el 1er ícono va con la 1ra viñeta, etc.',
+        'Cada viñeta se lista con un punto.',
       ],
       imageTip: 'Diagrama: hasta 600×600 px. Íconos: 40×40 px (SVG o PNG transparente recomendado).',
       colorTip: 'Fondo slate-100. Puntos de viñeta teal-800.',
@@ -241,27 +239,16 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
   contact_form: {
     displayName: 'Formulario de Contacto',
     guide: {
-      description: 'Sección de 2 columnas: textos informativos + estimador de presupuesto a la izquierda, formulario de contacto a la derecha.',
+      description: 'Formulario de contacto centrado con un texto informativo debajo.',
       tips: [
-        'El encabezado y los párrafos explican el servicio.',
-        'El CTA aparece destacado en teal.',
         'El texto "info" se muestra abajo del formulario en una tarjeta informativa con ícono.',
-        'Las etiquetas del formulario (label_*) personalizan los nombres de los campos.',
-        'El estimador de presupuesto es automático — no requiere configuración.',
+        'Los campos del formulario no son editables desde el panel — se envían directamente al backend.',
       ],
       colorTip: 'Fondo teal claro (teal-50). Formulario con bordes y campos teal.',
     },
     textSlots: [
-      { id: 'cf-heading', role: 'heading', slotIndex: 0, label: 'Título de sección', placeholder: 'Ej: Contactanos', display: 'heading' },
-      { id: 'cf-paragraph', role: 'paragraph', slotIndex: 0, label: 'Párrafo informativo', placeholder: 'Texto explicativo de la sección...', display: 'body', multiple: true },
-      { id: 'cf-cta', role: 'cta', slotIndex: 0, label: 'Llamada a la acción', placeholder: 'Ej: Consultanos sin compromiso', display: 'cta' },
       { id: 'cf-info', role: 'info', slotIndex: 0, label: 'Información adicional', placeholder: 'Texto informativo que aparece debajo del formulario', display: 'body' },
-      { id: 'cf-lbl-name', role: 'label_name', slotIndex: 0, label: 'Etiqueta: Nombre', placeholder: 'Nombre', display: 'label' },
-      { id: 'cf-lbl-email', role: 'label_email', slotIndex: 0, label: 'Etiqueta: Email', placeholder: 'Email', display: 'label' },
-      { id: 'cf-lbl-location', role: 'label_location', slotIndex: 0, label: 'Etiqueta: Localidad', placeholder: 'Localidad', display: 'label' },
-      { id: 'cf-lbl-phone', role: 'label_phone', slotIndex: 0, label: 'Etiqueta: Teléfono', placeholder: 'Teléfono', display: 'label' },
-      { id: 'cf-lbl-employees', role: 'label_employees', slotIndex: 0, label: 'Etiqueta: Empleados', placeholder: 'N.º de empleados', display: 'label' },
-      { id: 'cf-lbl-message', role: 'label_message', slotIndex: 0, label: 'Etiqueta: Mensaje', placeholder: 'Mensaje', display: 'label' },
+      // Los campos del formulario no son editables desde el admin — se envían directamente al backend
     ],
     mediaSlots: [],
   },
@@ -296,8 +283,6 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
       description: 'Página de servicio + formulario de postulación. Mismo layout de detalle arriba, formulario de CV abajo.',
       tips: [
         'El layout superior es igual a los otros servicios (título, objetivo, párrafos, viñetas, foto).',
-        'Abajo se muestra un formulario de postulación con preguntas personalizables.',
-        'Las etiquetas (label_*) cambian las preguntas del formulario de CV.',
         'El formulario incluye zona de subida de CV con drag-and-drop.',
       ],
       imageTip: 'Resolución recomendada: 800×600 px (4:3).',
@@ -307,10 +292,9 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
       { id: 'ss-subtitle', role: 'subtitle', slotIndex: 0, label: 'Objetivo', placeholder: 'Descripción del objetivo del servicio', display: 'subheading' },
       { id: 'ss-paragraph', role: 'paragraph', slotIndex: 0, label: 'Párrafo', placeholder: 'Párrafo descriptivo del servicio...', display: 'body', multiple: true },
       { id: 'ss-bullet', role: 'bullet', slotIndex: 0, label: 'Eje de trabajo', placeholder: 'Ej: Búsqueda y preselección', display: 'bullet', multiple: true },
-      { id: 'ss-lbl-area', role: 'label_area', slotIndex: 0, label: 'Pregunta: Área de trabajo', placeholder: '¿En qué área te gustaría trabajar?', display: 'label' },
-      { id: 'ss-lbl-exp', role: 'label_experience', slotIndex: 0, label: 'Pregunta: Experiencia', placeholder: '¿Cuántos años de experiencia tenés?', display: 'label' },
-      { id: 'ss-lbl-mod', role: 'label_modality', slotIndex: 0, label: 'Pregunta: Modalidad', placeholder: '¿Qué modalidad de trabajo preferís?', display: 'label' },
-      { id: 'ss-lbl-avail', role: 'label_availability', slotIndex: 0, label: 'Pregunta: Disponibilidad', placeholder: '¿Cuándo podrías incorporarte?', display: 'label' },
+      { id: 'ss-form-heading', role: 'form_heading', slotIndex: 0, label: 'Título del formulario', placeholder: 'Ej: ¿Querés sumarte a nuestro equipo?', display: 'heading' },
+      { id: 'ss-form-paragraph', role: 'form_paragraph', slotIndex: 0, label: 'Párrafo del formulario', placeholder: 'Texto introductorio del formulario de postulación', display: 'body' },
+      // Los campos del formulario de postulación no son editables desde el admin — se envían directamente al backend
     ],
     mediaSlots: [
       { id: 'ss-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },

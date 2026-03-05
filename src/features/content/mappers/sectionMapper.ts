@@ -11,7 +11,7 @@ import ENV from '@shared/api/apiConfig'
  * para que el navegador la resuelva contra el backend y no contra el
  * servidor de desarrollo del frontend.
  */
-function resolveMediaUrl(url: string): string {
+export function resolveMediaUrl(url: string): string {
   if (url.startsWith('/')) return `${ENV.API_BASE_URL}${url}`
   return url
 }
@@ -20,7 +20,6 @@ function resolveMediaUrl(url: string): string {
 
 function mapPublicTextBlock(block: PublicBlockDTO): TextContent {
   return {
-    title: null,
     body: block.text?.body ?? '',
     role: block.role,
     order: block.order ?? 0,
@@ -39,12 +38,19 @@ function mapPublicMediaBlock(block: PublicBlockDTO): MediaContent {
 export function mapPublicSectionDTO(dto: PublicSectionDTO): Section {
   const textBlocks = (dto.blocks ?? []).filter((b) => b.type === 'text')
   const mediaBlocks = (dto.blocks ?? []).filter((b) => b.type === 'media')
+  const fileBlocks = (dto.blocks ?? []).filter((b) => b.type === 'file' && b.file)
 
   return {
     id: dto.id,
     name: dto.name,
     texts: textBlocks.map(mapPublicTextBlock).sort((a, b) => a.order - b.order),
     media: mediaBlocks.map(mapPublicMediaBlock).sort((a, b) => a.order - b.order),
+    files: fileBlocks.map((b) => ({
+      id: b.file!.id,
+      title: b.file!.title,
+      role: b.role ?? 'attachment',
+      order: b.order ?? 0,
+    })).sort((a, b) => a.order - b.order),
   }
 }
 
@@ -53,7 +59,6 @@ export function mapPublicSectionDTO(dto: PublicSectionDTO): Section {
 function mapAdminTextBlock(block: BlockDTO): AdminTextContent {
   return {
     id: block.text!.id,
-    title: block.text!.title,
     body: block.text!.body,
     status: block.status,
     role: block.role,

@@ -333,7 +333,7 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
                         input.onchange = (e) => {
                           const file = (e.target as HTMLInputElement).files?.[0]
                           if (file) {
-                            ctx.deleteMedia(thumb.id)
+                            ctx.deleteMedia(thumb.blockId)
                             uploadThumb(file)
                           }
                         }
@@ -349,7 +349,7 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
                     {/* Eliminar */}
                     <button
                       type="button"
-                      onClick={() => { if (confirm('¿Eliminar imagen?')) ctx.deleteMedia(thumb.id) }}
+                      onClick={() => { if (confirm('¿Eliminar imagen?')) ctx.deleteMedia(thumb.blockId) }}
                       className="rounded-full bg-red-500 p-1"
                     >
                       <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -386,7 +386,7 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
                   onSaveEdit={() => ctx.saveEdit({ ...paraConfig, id: slotId, slotIndex: i })}
                   onCancelEdit={ctx.cancelEdit}
                   onChangeValue={ctx.setEditValue}
-                  onDelete={() => ctx.deleteText(p.id)}
+                  onDelete={() => ctx.deleteText(p.blockId, p.id)}
                 />
               </div>
             </div>

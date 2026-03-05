@@ -31,7 +31,7 @@ export default function HomePage() {
         <SectionView sectionName="about" />
       </section>
 
-      {/* circuito — hardcoded, no editable */}
+      {/* circuito — no editable */}
       <section id="action_circuit">
         <CircuitSection />
       </section>

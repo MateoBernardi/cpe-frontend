@@ -1,47 +1,39 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { Section } from '../../models'
-import { textByRole, textsByRole } from './sectionHelpers'
+import { textByRole } from './sectionHelpers'
 import { useInView } from '@shared/hooks'
 import { colors, layout } from '../../../../theme'
 
 interface Props { section: Section }
 
-const PRICE_TIERS = [
-  { max: 10, rate: 15000 },
-  { max: 50, rate: 45000 },
-  { max: 200, rate: 88000 },
-  { max: Infinity, rate: 95000 },
-]
-
-function calcBudget(employees: number): number {
-  const tier = PRICE_TIERS.find((t) => employees <= t.max)!
-  return employees * tier.rate
-}
-
-function formatARS(n: number): string {
-  return n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
-}
+// ── Estimador de presupuesto (deshabilitado temporalmente) ──
+// const PRICE_TIERS = [
+//   { max: 10, rate: 15000 },
+//   { max: 50, rate: 45000 },
+//   { max: 200, rate: 88000 },
+//   { max: Infinity, rate: 95000 },
+// ]
+//
+// function calcBudget(employees: number): number {
+//   const tier = PRICE_TIERS.find((t) => employees <= t.max)!
+//   return employees * tier.rate
+// }
+//
+// function formatARS(n: number): string {
+//   return n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
+// }
 
 export default function ContactFormSection({ section }: Props) {
-  const heading = textByRole(section.texts, 'heading')
-  const paragraphs = textsByRole(section.texts, 'paragraph')
-  const cta = textByRole(section.texts, 'cta')
   const info = textByRole(section.texts, 'info')
 
-  const labelName = textByRole(section.texts, 'label_name')
-  const labelEmail = textByRole(section.texts, 'label_email')
-  const labelLocation = textByRole(section.texts, 'label_location')
-  const labelPhone = textByRole(section.texts, 'label_phone')
-  const labelEmployees = textByRole(section.texts, 'label_employees')
-  const labelMessage = textByRole(section.texts, 'label_message')
+  // Los labels del formulario son fijos — el form se envía al backend directamente
 
   const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
 
-  const [form, setForm] = useState({ name: '', email: '', company: '', phone: '', message: '' })
-  const [employees, setEmployees] = useState(25)
+  const [form, setForm] = useState({ name: '', email: '', company: '', phone: '', employees: 25, message: '' })
+  const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-
-  const budget = useMemo(() => calcBudget(employees), [employees])
 
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); setSubmitted(true) }
 
@@ -57,26 +49,9 @@ export default function ContactFormSection({ section }: Props) {
   return (
     <section ref={ref} className={layout.sectionPadY} style={{ backgroundColor: colors.contactBg }}>
       <div className={layout.container}>
-        <div className="grid gap-[6vh] lg:grid-cols-2 lg:items-start">
-          {/* Left column: text + estimator */}
-          <div
-            className={`space-y-[3vh] transition-all duration-1000 ${
-              isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-            }`}
-          >
-            {heading && (
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl font-primary" style={{ color: colors.blueDark }}>
-                {heading.body}
-              </h2>
-            )}
-            {paragraphs.map((p, i) => (
-              <p key={i} className="leading-relaxed" style={{ color: colors.blueMid }}>{p.body}</p>
-            ))}
-            {cta && (
-              <p className="text-lg font-semibold" style={{ color: colors.tealMid }}>{cta.body}</p>
-            )}
 
-            {/* Budget estimator */}
+
+            {/* ── Estimador de presupuesto (deshabilitado temporalmente) ──
             <div
               className={`rounded-2xl border bg-white p-6 shadow-sm transition-all duration-1000 delay-300 ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
@@ -132,11 +107,11 @@ export default function ContactFormSection({ section }: Props) {
                 </p>
               </div>
             </div>
-          </div>
+            ── Fin estimador de presupuesto ── */}
 
-          {/* Right column: form */}
+          {/* Centered form */}
           <div
-            className={`rounded-2xl border bg-white p-5 sm:p-6 md:p-8 shadow-sm transition-all duration-1000 delay-200 ${
+            className={`mx-auto max-w-3xl rounded-2xl border bg-white p-5 sm:p-6 md:p-8 shadow-sm transition-all duration-1000 delay-200 ${
               isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
             }`}
             style={{ borderColor: colors.tealBright }}
@@ -157,7 +132,7 @@ export default function ContactFormSection({ section }: Props) {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>{labelName?.body ?? 'Nombre'}</label>
+                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Nombre</label>
                     <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
                       className={inputClasses} style={inputStyle} placeholder="Juan Pérez"
                       onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
@@ -165,7 +140,7 @@ export default function ContactFormSection({ section }: Props) {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>{labelEmail?.body ?? 'Email'}</label>
+                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Email</label>
                     <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
                       className={inputClasses} style={inputStyle} placeholder="juan@empresa.com"
                       onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
@@ -176,7 +151,7 @@ export default function ContactFormSection({ section }: Props) {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>{labelLocation?.body ?? 'Localidad'}</label>
+                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Localidad</label>
                     <input type="text" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })}
                       className={inputClasses} style={inputStyle} placeholder="San Basilio, Córdoba"
                       onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
@@ -184,7 +159,7 @@ export default function ContactFormSection({ section }: Props) {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>{labelPhone?.body ?? 'Teléfono'}</label>
+                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Teléfono</label>
                     <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
                       className={inputClasses} style={inputStyle} placeholder="+54 11 1234-5678"
                       onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
@@ -195,19 +170,43 @@ export default function ContactFormSection({ section }: Props) {
 
                 <div>
                   <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>
-                    {labelEmployees?.body ?? 'N.º de empleados'}:{' '}
-                    <span className="font-semibold" style={{ color: colors.tealMid }}>{employees}</span>
+                    Cantidad estimada de personas a intervenir:{' '}
+                    <span className="font-semibold" style={{ color: colors.tealMid }}>{form.employees}</span>
                   </label>
+                  <input
+                    type="range" min={1} max={500} value={form.employees}
+                    onChange={(e) => setForm({ ...form, employees: Number(e.target.value) })}
+                    className="w-full cursor-pointer"
+                    style={{ accentColor: colors.tealMid }}
+                  />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>{labelMessage?.body ?? 'Mensaje'}</label>
+                  <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Mensaje</label>
                   <textarea required rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })}
                     className={inputClasses} style={inputStyle} placeholder="Contanos sobre tu necesidad..."
                     onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
                     onBlur={(e) => { e.currentTarget.style.borderColor = colors.tealBright }}
                   />
                 </div>
+
+                {/* Privacidad */}
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={privacyAccepted}
+                    onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-gray-300 accent-teal-600"
+                    required
+                  />
+                  <span className="text-xs leading-relaxed" style={{ color: colors.blueMid }}>
+                    He leído y acepto la{' '}
+                    <Link to="/politica-de-privacidad" className="font-medium underline" style={{ color: colors.tealMid }} target="_blank">
+                      Política de Privacidad
+                    </Link>
+                    , y consiento el tratamiento de mis datos personales para los fines indicados.
+                  </span>
+                </label>
 
                 <button type="submit"
                   className="w-full rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5"
@@ -220,7 +219,6 @@ export default function ContactFormSection({ section }: Props) {
               </form>
             )}
           </div>
-        </div>
 
         {/* Info text */}
         {info && (

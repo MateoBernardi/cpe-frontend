@@ -2,7 +2,8 @@ import { SectionView } from '@features/content/views'
 import { colors } from '../../../theme'
 
 /**
- * Página de servicio: Selección de Personal (con formulario de CV)
+ * Página de servicio: Selección de Personal
+ * El formulario de postulación vive dentro de RecruitmentFormSection (renderizado por SectionView).
  */
 export default function SeleccionPersonalPage() {
   return (

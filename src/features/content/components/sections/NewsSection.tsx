@@ -53,22 +53,12 @@ export default function NewsSection({ section }: Props) {
                     <div className="mb-[3vh] overflow-hidden rounded-2xl">
                       <img
                         src={imgUrl}
-                        alt={p.title ?? ''}
+                        alt=""
                         className="aspect-[16/9] w-full object-cover"
                         loading="lazy"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                       />
                     </div>
-                  )}
-
-                  {/* Title */}
-                  {p.title && (
-                    <h3
-                      className="text-lg font-semibold sm:text-xl md:text-2xl font-primary"
-                      style={{ color: colors.blueDark }}
-                    >
-                      {p.title}
-                    </h3>
                   )}
 
                   {/* Body */}

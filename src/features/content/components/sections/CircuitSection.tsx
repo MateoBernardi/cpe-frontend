@@ -12,8 +12,8 @@ const SERVICE_ROUTES = [
 
 const CIRCLE_LABELS = [
   'Intervención directa.',
-  'Acompañamiento a las personas.',
   'Selección del personal.',
+  'Acompañamiento a las personas.',
 ]
 
 /** Circle colors from theme palette */

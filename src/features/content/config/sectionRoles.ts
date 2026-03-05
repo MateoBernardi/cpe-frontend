@@ -34,7 +34,7 @@ export const SECTION_ROLES: Record<string, SectionRoleConfig> = {
     mediaRoles: [],
   },
   contact_form: {
-    textRoles: ['heading', 'paragraph', 'cta', 'info', 'label_name', 'label_email', 'label_location', 'label_phone', 'label_employees', 'label_message'],
+    textRoles: ['heading', 'paragraph', 'cta', 'info'],
     mediaRoles: [],
   },
   service_intervencion: {
@@ -42,7 +42,7 @@ export const SECTION_ROLES: Record<string, SectionRoleConfig> = {
     mediaRoles: ['photo'],
   },
   service_seleccion: {
-    textRoles: ['heading', 'subtitle', 'paragraph', 'bullet', 'label_area', 'label_experience', 'label_modality', 'label_availability'],
+    textRoles: ['heading', 'subtitle', 'paragraph', 'bullet', 'form_heading', 'form_paragraph'],
     mediaRoles: ['photo'],
   },
   service_acompanamiento: {

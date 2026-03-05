@@ -1,9 +1,12 @@
+/** Estados posibles de un archivo en R2 */
+export type FileState = 'PENDING' | 'QUARANTINE' | 'VERIFIED' | 'REJECTED'
+
 /** Archivo en la respuesta admin — incluido dentro de BlockDTO.file */
 export interface AdminFileDTO {
   id: number
   title: string | null
   tamaño: number | null
-  state: 'PENDING' | 'UPLOADED'
+  state: FileState
   role: string | null
   order: number | null
   pivot_id: number
@@ -37,7 +40,7 @@ export interface ConfirmUploadDTO {
 
 export interface ConfirmUploadResponseDTO {
   id: number
-  state: 'UPLOADED'
+  state: FileState
 }
 
 /** GET /content/files/:fileId/download-url */
@@ -73,7 +76,6 @@ export interface DraftMediaResponseDTO {
     mime_type: string
     title: string | null
     origin: string | null
-    status: 'DRAFTED'
     block_id?: number
   }
 }
@@ -81,12 +83,17 @@ export interface DraftMediaResponseDTO {
 /** POST /content/media/:mediaId/publish */
 export interface PublishMediaResponseDTO {
   media: {
-    id: number
-    url: string
-    mime_type: string
-    title: string | null
-    origin: string | null
+    media_id: number
+    block_id: number
     status: 'PUBLISHED'
-    block_id?: number
+  }
+}
+
+/** POST /content/texts/:textId/publish */
+export interface PublishTextResponseDTO {
+  text: {
+    text_id: number
+    block_id: number
+    status: 'PUBLISHED'
   }
 }

@@ -42,6 +42,7 @@ const LAYOUT_MAP: Record<string, React.ComponentType<LayoutProps>> = {
   service_intervencion: ServiceDetailLayout,
   service_seleccion: RecruitmentLayout,
   service_acompanamiento: ServiceDetailLayout,
+  traspaso_generacional: ServiceDetailLayout,
 }
 
 // ── Layout description map — explica cómo se arma la diapositiva ──
@@ -52,10 +53,11 @@ const LAYOUT_DESCRIPTIONS: Record<string, string> = {
   news: 'Carrusel horizontal de tarjetas. Cada tarjeta = imagen miniatura + texto de novedad.',
   info_primary: '2 columnas: diagrama/imagen (izq) + título con lista de viñetas (der). Íconos opcionales.',
   info_secondary: '2 columnas: acordeones con secciones (izq) + gráfico dona interactivo (der). Sin imágenes.',
-  contact_form: '2 columnas: textos informativos (izq) + formulario de contacto (der). Labels personalizables.',
+  contact_form: '1 columna: formulario de contacto centrado + texto informativo abajo. Los campos del formulario no son editables.',
   service_intervencion: '2 columnas: tarjeta de texto con objetivo/párrafos/ejes (izq) + imagen (der).',
   service_seleccion: '2 bloques: detalle del servicio (arriba) + formulario de postulación CV (abajo).',
   service_acompanamiento: '2 columnas: tarjeta de texto con objetivo/párrafos/ejes (izq) + imagen (der).',
+  traspaso_generacional: '2 columnas: tarjeta de texto con objetivo/párrafos/ejes (izq) + imagen (der).',
 }
 
 // ── Content status calculations ──
@@ -115,6 +117,8 @@ export default function SectionCanvasEditor({
   isUploading,
   onPublishMedia,
   isPublishingMedia,
+  onPublishText,
+  isPublishingText,
   onUploadR2File,
   isUploadingR2,
   onDownloadFile,
@@ -219,6 +223,8 @@ export default function SectionCanvasEditor({
     swapMediaOrder: onSwapMediaOrder,
     publishMedia: onPublishMedia,
     isPublishingMedia,
+    publishText: onPublishText,
+    isPublishingText,
     uploadR2File: onUploadR2File,
     isUploadingR2,
     downloadFile: onDownloadFile,
@@ -278,7 +284,7 @@ export default function SectionCanvasEditor({
           <span className="mr-1">📋</span> Guía
         </button>
 
-        {(onUploadR2File || hasFiles) && (
+        {sectionName === 'news' && (onUploadR2File || hasFiles) && (
           <button
             type="button"
             onClick={() => setShowFiles(!showFiles)}
@@ -435,8 +441,8 @@ export default function SectionCanvasEditor({
         </div>
       )}
 
-      {/* ━━━ FILES PANEL (R2) ━━━ */}
-      {showFiles && (
+      {/* ━━━ FILES PANEL (R2) — Solo para novedades ━━━ */}
+      {showFiles && sectionName === 'news' && (
         <FilesPanel
           files={files}
           sectionId={sectionId}

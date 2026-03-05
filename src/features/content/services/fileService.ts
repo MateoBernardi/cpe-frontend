@@ -11,6 +11,7 @@ import type {
 } from '../dtos'
 
 const BASE = ENV.CONTENT_PREFIX
+const PUBLIC = ENV.PUBLIC_PREFIX
 
 /**
  * Servicio de archivos (R2).
@@ -160,5 +161,53 @@ export const fileService = {
       method: 'DELETE',
       endpoint: `${BASE}/files/${fileId}`,
     })
+  },
+
+  // ── Público: subida de CV (solo PDF, máx 5 MB) ──
+
+  /** POST /public/files/upload-url — solicitar URL de subida pública (solo PDF) */
+  requestPublicUploadUrl(
+    data: Pick<RequestUploadUrlDTO, 'filename' | 'content_type' | 'title'>,
+    signal?: AbortSignal,
+  ) {
+    return apiRequest<UploadUrlResponseDTO, Pick<RequestUploadUrlDTO, 'filename' | 'content_type' | 'title'>>({
+      method: 'POST',
+      endpoint: `${PUBLIC}/files/upload-url`,
+      body: data,
+      signal,
+    })
+  },
+
+  /** POST /public/files/:fileId/confirm — confirmar subida pública */
+  confirmPublicUpload(fileId: number, data?: ConfirmUploadDTO) {
+    return apiRequest<ConfirmUploadResponseDTO, ConfirmUploadDTO | undefined>({
+      method: 'POST',
+      endpoint: `${PUBLIC}/files/${fileId}/confirm`,
+      body: data,
+    })
+  },
+
+  /**
+   * Ciclo completo público: solicitar URL → subir a R2 → confirmar.
+   * Solo acepta PDF. El backend fuerza máx 5 MB automáticamente.
+   */
+  async uploadPublicFile(
+    file: File,
+    title?: string,
+  ): Promise<{ fileId: number }> {
+    // Paso 1
+    const { file_id, upload } = await fileService.requestPublicUploadUrl({
+      filename: file.name,
+      content_type: 'application/pdf',
+      title,
+    })
+
+    // Paso 2
+    await fileService.uploadToR2(upload.url, upload.fields, 'application/pdf', file)
+
+    // Paso 3
+    await fileService.confirmPublicUpload(file_id, { tamaño: file.size })
+
+    return { fileId: file_id }
   },
 }

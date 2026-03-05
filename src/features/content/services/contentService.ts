@@ -12,6 +12,7 @@ import type {
   UploadMediaResponseDTO,
   DraftMediaResponseDTO,
   PublishMediaResponseDTO,
+  PublishTextResponseDTO,
   GalleryResponseDTO,
   AssignMediaInput,
 } from '../dtos'
@@ -100,10 +101,21 @@ export const contentService = {
   },
 
   /** POST /content/media/:mediaId/publish — publicar imagen (local → Cloudflare CDN) */
-  publishMedia(mediaId: number, signal?: AbortSignal) {
-    return apiRequest<PublishMediaResponseDTO>({
+  publishMedia(mediaId: number, blockId: number, signal?: AbortSignal) {
+    return apiRequest<PublishMediaResponseDTO, { block_id: number }>({
       method: 'POST',
       endpoint: `${BASE}/media/${mediaId}/publish`,
+      body: { block_id: blockId },
+      signal,
+    })
+  },
+
+  /** POST /content/texts/:textId/publish — publicar texto individual */
+  publishText(textId: number, blockId: number, signal?: AbortSignal) {
+    return apiRequest<PublishTextResponseDTO, { block_id: number }>({
+      method: 'POST',
+      endpoint: `${BASE}/texts/${textId}/publish`,
+      body: { block_id: blockId },
       signal,
     })
   },
@@ -167,7 +179,7 @@ export const contentService = {
     })
   },
 
-  /** Asignar media existente a una sección (via addContent con assign_media) */
+  /** Asignar media existente a una sección */
   assignMediaToSection(
     sectionId: number,
     items: AssignMediaInput[],
@@ -176,7 +188,7 @@ export const contentService = {
     return apiRequest<AddSectionContentResponseDTO, AddSectionContentDTO>({
       method: 'POST',
       endpoint: `${BASE}/sections/${sectionId}/content`,
-      body: { assign_media: items },
+      body: { media: items },
       signal,
     })
   },

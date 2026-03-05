@@ -15,14 +15,17 @@ export interface SectionCanvasEditorProps {
   onEditText: (textId: number, body: string) => void
   onCreateText: (body: string, role: string, order: number) => void
   onUploadMedia: (file: File, sectionId: number, role: string, order: number) => void
-  onDeleteText: (textId: number) => void
-  onDeleteMedia: (mediaId: number) => void
+  onDeleteText: (blockId: number, textId: number) => void
+  onDeleteMedia: (blockId: number) => void
   onSwapTextOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
   onSwapMediaOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
   isUploading: boolean
   // ── Nuevas operaciones de media (draft/publish) ──
-  onPublishMedia?: (mediaId: number) => void
+  onPublishMedia?: (mediaId: number, blockId: number) => void
   isPublishingMedia?: boolean
+  // ── Publicar texto individual ──
+  onPublishText?: (textId: number, blockId: number) => void
+  isPublishingText?: boolean
   // ── Operaciones de archivo (R2) ──
   onUploadR2File?: (file: File, sectionId: number, role: string, order: number) => void
   isUploadingR2?: boolean
@@ -44,6 +47,8 @@ export interface TextSlotProps {
   onCancelEdit: () => void
   onChangeValue: (v: string) => void
   onDelete?: () => void
+  onPublish?: () => void
+  isPublishing?: boolean
   className?: string
 }
 
@@ -52,7 +57,7 @@ export interface MediaSlotProps {
   mediaItems: import('../../../models').AdminMediaContent[]
   onUpload: (file: File) => void
   onDelete: (id: number) => void
-  onPublish?: (mediaId: number) => void
+  onPublish?: (mediaId: number, blockId: number) => void
   isPublishing?: boolean
   onPickFromGallery?: () => void
   className?: string
@@ -70,13 +75,16 @@ export interface SlotContext {
   setEditValue: (v: string) => void
   editingTextId: number | null
   uploadToSlot: (config: MediaSlotConfig, file: File) => void
-  deleteText: (id: number) => void
-  deleteMedia: (id: number) => void
+  deleteText: (blockId: number, textId: number) => void
+  deleteMedia: (blockId: number) => void
   swapTextOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
   swapMediaOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
   // ── Nuevas: media draft/publish ──
-  publishMedia?: (mediaId: number) => void
+  publishMedia?: (mediaId: number, blockId: number) => void
   isPublishingMedia?: boolean
+  // ── Nuevas: publicar texto individual ──
+  publishText?: (textId: number, blockId: number) => void
+  isPublishingText?: boolean
   // ── Nuevas: archivos R2 ──
   uploadR2File?: (file: File, sectionId: number, role: string, order: number) => void
   isUploadingR2?: boolean

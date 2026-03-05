@@ -6,7 +6,8 @@ import { mapPublicSectionDTO } from '../mappers'
 interface UseSectionViewModelResult {
   section: Section | null
   isLoading: boolean
-  error: string | null
+  /** The raw error object (if any) — can be ApiError, TypeError, etc. */
+  error: Error | null
   refetch: () => void
 }
 
@@ -17,7 +18,7 @@ interface UseSectionViewModelResult {
 export function useSectionViewModel(sectionName: string): UseSectionViewModelResult {
   const [section, setSection] = useState<Section | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchSection = async () => {
     setIsLoading(true)
@@ -26,8 +27,7 @@ export function useSectionViewModel(sectionName: string): UseSectionViewModelRes
       const response = await contentService.getPublicSection(sectionName)
       setSection(mapPublicSectionDTO(response.section))
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error desconocido'
-      setError(message)
+      setError(err instanceof Error ? err : new Error('Error desconocido'))
     } finally {
       setIsLoading(false)
     }

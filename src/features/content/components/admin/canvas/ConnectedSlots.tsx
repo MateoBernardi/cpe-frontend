@@ -51,7 +51,9 @@ export function ConnectedTextSlot({
       onSaveEdit={() => ctx.saveEdit(config)}
       onCancelEdit={ctx.cancelEdit}
       onChangeValue={ctx.setEditValue}
-      onDelete={text ? () => ctx.deleteText(text.id) : undefined}
+      onDelete={text ? () => ctx.deleteText(text.blockId, text.id) : undefined}
+      onPublish={text && ctx.publishText ? () => ctx.publishText!(text.id, text.blockId) : undefined}
+      isPublishing={ctx.isPublishingText}
       className={className}
     />
   )
@@ -74,8 +76,14 @@ export function ConnectedMediaSlot({
       config={config}
       mediaItems={items}
       onUpload={(file) => ctx.uploadToSlot(config, file)}
-      onDelete={ctx.deleteMedia}
-      onPublish={ctx.publishMedia}
+      onDelete={(mediaId) => {
+        const media = items.find((m) => m.id === mediaId)
+        if (media) ctx.deleteMedia(media.blockId)
+      }}
+      onPublish={ctx.publishMedia
+        ? (mediaId, blockId) => ctx.publishMedia!(mediaId, blockId)
+        : undefined
+      }
       isPublishing={ctx.isPublishingMedia}
       onPickFromGallery={ctx.pickFromGallery ? () => ctx.pickFromGallery!(config) : undefined}
       className={className}
@@ -154,7 +162,9 @@ export function MultipleTextSlots({
                 onSaveEdit={() => ctx.saveEdit({ ...config, id: slotId, slotIndex: i })}
                 onCancelEdit={ctx.cancelEdit}
                 onChangeValue={ctx.setEditValue}
-                onDelete={() => ctx.deleteText(t.id)}
+                onDelete={() => ctx.deleteText(t.blockId, t.id)}
+                onPublish={ctx.publishText ? () => ctx.publishText!(t.id, t.blockId) : undefined}
+                isPublishing={ctx.isPublishingText}
               />
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { AdminSection } from '../models'
 import type {
   AddSectionContentDTO,
@@ -55,8 +55,12 @@ interface UseAdminSectionVMResult {
   isUploading: boolean
 
   /** Publicar una imagen DRAFTED → Cloudflare CDN */
-  publishMedia: (mediaId: number) => void
+  publishMedia: (mediaId: number, blockId: number) => void
   isPublishingMedia: boolean
+
+  /** Publicar un texto DRAFTED individual */
+  publishText: (textId: number, blockId: number) => void
+  isPublishingText: boolean
 
   /** Edición local de texto (solo caché, no envía al backend) */
   editText: (textId: number, body: string) => void
@@ -64,9 +68,10 @@ interface UseAdminSectionVMResult {
   /** Soft delete de bloque */
   removeBlock: (blockId: number) => void
 
-  /** DELETE soft del contenido directamente (texto o media) */
-  removeText: (textId: number) => void
-  removeMedia: (mediaId: number) => void
+  /** Eliminar texto: primero deleteBlock(blockId) + luego deleteText(textId) */
+  removeText: (blockId: number, textId: number) => void
+  /** Eliminar media de sección: solo deleteBlock(blockId), la imagen queda en galería */
+  removeMedia: (blockId: number) => void
 
   /** Crear un texto individual desde un slot del canvas (auto-role, auto-order) */
   createSlotText: (body: string, role: string, order: number) => void
@@ -100,6 +105,9 @@ interface UseAdminSectionVMResult {
 
   /** Cantidad de bloques DRAFTED pendientes de publicación */
   draftedBlockCount: number
+
+  /** Hay ediciones de texto pendientes de enviar al backend */
+  hasPendingEdits: boolean
 }
 
 export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMResult {
@@ -150,7 +158,15 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
 
   // ── Publicar imagen DRAFTED → Cloudflare CDN ──
   const publishMediaMut = useMutation({
-    mutationFn: (mediaId: number) => contentService.publishMedia(mediaId),
+    mutationFn: ({ mediaId, blockId }: { mediaId: number; blockId: number }) =>
+      contentService.publishMedia(mediaId, blockId),
+    onSuccess: invalidate,
+  })
+
+  // ── Publicar texto DRAFTED individual ──
+  const publishTextMut = useMutation({
+    mutationFn: ({ textId, blockId }: { textId: number; blockId: number }) =>
+      contentService.publishText(textId, blockId),
     onSuccess: invalidate,
   })
 
@@ -189,7 +205,41 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     },
   })
 
-  // ── Editar texto localmente (solo caché) ──
+  // ── Editar texto localmente + auto-save al backend ──
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingPatchesRef = useRef<Record<number, string>>({})
+
+  // Limpiar timer al desmontar
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    }
+  }, [])
+
+  const flushPendingPatches = useCallback(async () => {
+    const patches = { ...pendingPatchesRef.current }
+    pendingPatchesRef.current = {}
+    if (Object.keys(patches).length === 0) return
+    try {
+      await Promise.all(
+        Object.entries(patches).map(([id, body]) =>
+          contentService.patchText(Number(id), { body }),
+        ),
+      )
+      // Limpiar las ediciones ya guardadas del almacén de pendientes
+      const current = qc.getQueryData<PendingEdits>(contentKeys.pendingEdits()) ?? { textEdits: {} }
+      const remaining = { ...current.textEdits }
+      for (const id of Object.keys(patches)) {
+        delete remaining[Number(id)]
+      }
+      qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: remaining })
+    } catch (err) {
+      // Re-encolar los que fallaron para el próximo intento
+      pendingPatchesRef.current = { ...patches, ...pendingPatchesRef.current }
+      console.error('Auto-save falló:', err)
+    }
+  }, [qc])
+
   const editText = useCallback((textId: number, body: string) => {
     // 1. Actualizar la caché de la sección de forma optimista
     qc.setQueryData<AdminSectionResponseDTO>(
@@ -215,7 +265,11 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
       ...current,
       textEdits: { ...current.textEdits, [textId]: body },
     })
-  }, [qc, sectionId])
+    // 3. Auto-save al backend con debounce (1.5s después de dejar de editar)
+    pendingPatchesRef.current[textId] = body
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = setTimeout(() => void flushPendingPatches(), 1500)
+  }, [qc, sectionId, flushPendingPatches])
 
   // ── Crear texto individual desde slot del canvas ──
   const createSlotMut = useMutation({
@@ -233,8 +287,10 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
   // ── Eliminar bloque (soft delete a nivel de section_blocks) ──
   const delBlockMut = useMutation({ mutationFn: contentService.deleteBlock, onSuccess: invalidate })
 
-  // ── Eliminar contenido directamente (si se necesita) ──
+  // ── Eliminar texto directamente (se usa después de deleteBlock) ──
   const delTextMut = useMutation({ mutationFn: contentService.deleteText, onSuccess: invalidate })
+
+  // ── Eliminar media (solo se usa en la galería, NO al desasociar de sección) ──
   const delMediaMut = useMutation({ mutationFn: contentService.deleteMedia, onSuccess: invalidate })
 
   // ── Intercambiar orden (usa PATCH /blocks/:blockId) ──
@@ -254,6 +310,15 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     (section?.media.filter((m) => m.status === 'DRAFTED').length ?? 0) +
     (section?.files.filter((f) => f.status === 'DRAFTED').length ?? 0)
 
+  // ── ¿Hay ediciones de texto pendientes de guardar? (reactivo) ──
+  const { data: pendingEditsData } = useQuery<PendingEdits>({
+    queryKey: contentKeys.pendingEdits(),
+    queryFn: () => qc.getQueryData<PendingEdits>(contentKeys.pendingEdits()) ?? { textEdits: {} },
+    initialData: { textEdits: {} },
+    staleTime: Infinity,
+  })
+  const hasPendingEdits = Object.keys(pendingEditsData?.textEdits ?? {}).length > 0
+
   return {
     section: section ?? null,
     isLoading,
@@ -265,14 +330,24 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     submitError: addMut.error instanceof Error ? addMut.error.message : addMut.error ? 'Error al guardar' : null,
     uploadFile,
     isUploading: uploadMut.isPending,
-    publishMedia: (mediaId: number) => publishMediaMut.mutate(mediaId),
+    publishMedia: (mediaId: number, blockId: number) => publishMediaMut.mutate({ mediaId, blockId }),
     isPublishingMedia: publishMediaMut.isPending,
+    publishText: (textId: number, blockId: number) => publishTextMut.mutate({ textId, blockId }),
+    isPublishingText: publishTextMut.isPending,
     editText,
     createSlotText,
     isCreatingSlot: createSlotMut.isPending,
     removeBlock: (blockId) => delBlockMut.mutate(blockId),
-    removeText: (id) => delTextMut.mutate(id),
-    removeMedia: (id) => delMediaMut.mutate(id),
+    /** Eliminar texto: primero desasocia el bloque, luego borra la entrada de texto */
+    removeText: (blockId: number, textId: number) => {
+      contentService.deleteBlock(blockId).then(() => {
+        delTextMut.mutate(textId)
+      })
+    },
+    /** Eliminar media de sección: solo desasocia el bloque (la imagen queda en galería) */
+    removeMedia: (blockId: number) => {
+      delBlockMut.mutate(blockId)
+    },
     swapTextOrder: (blockIdA, orderA, blockIdB, orderB) =>
       swapBlockMut.mutate({ blockIdA, orderA, blockIdB, orderB }),
     swapMediaOrder: (blockIdA, orderA, blockIdB, orderB) =>
@@ -290,6 +365,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     existingMediaCount: section?.media.length ?? 0,
     existingFileCount: section?.files.length ?? 0,
     draftedBlockCount,
+    hasPendingEdits,
   }
 }
 
@@ -331,11 +407,13 @@ export function usePublishChanges() {
       )
       await Promise.all(editPromises)
 
-      // 2. Publicar cada sección
-      const publishPromises = sectionIds.map((id) =>
-        contentService.publishSection(id),
-      )
-      await Promise.all(publishPromises)
+      // 2. Publicar solo las secciones con borradores (puede estar vacío)
+      if (sectionIds.length > 0) {
+        const publishPromises = sectionIds.map((id) =>
+          contentService.publishSection(id),
+        )
+        await Promise.all(publishPromises)
+      }
     },
     onSuccess: () => {
       qc.setQueryData<PendingEdits>(contentKeys.pendingEdits(), { textEdits: {} })

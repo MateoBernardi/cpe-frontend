@@ -18,9 +18,7 @@ export interface CreateMediaInput {
 
 export interface AddSectionContentDTO {
   texts?: CreateTextInput[]
-  media?: CreateMediaInput[]
-  /** Asignar medias existentes (por media_id) a esta sección */
-  assign_media?: AssignMediaInput[]
+  media?: AssignMediaInput[]
 }
 
 /** Respuesta de POST /content/sections/:sectionId/content */

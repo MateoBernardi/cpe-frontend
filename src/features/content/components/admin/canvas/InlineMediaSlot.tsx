@@ -164,7 +164,7 @@ export default function InlineMediaSlot({
                 {onPublish && m.status === 'DRAFTED' && (
                   <button
                     type="button"
-                    onClick={() => onPublish(m.id)}
+                    onClick={() => onPublish(m.id, m.blockId)}
                     disabled={isPublishing}
                     className="rounded-full bg-emerald-500 p-1 shadow transition-colors hover:bg-emerald-600 disabled:opacity-50"
                     title="Publicar imagen"

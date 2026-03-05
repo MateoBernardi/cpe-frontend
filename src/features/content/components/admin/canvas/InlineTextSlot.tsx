@@ -24,6 +24,8 @@ export default function InlineTextSlot({
   onCancelEdit,
   onChangeValue,
   onDelete,
+  onPublish,
+  isPublishing,
   className = '',
 }: TextSlotProps) {
   const textStyle = DISPLAY_STYLES[config.display] || DISPLAY_STYLES.body
@@ -143,22 +145,46 @@ export default function InlineTextSlot({
             Borrador
           </span>
         )}
-        <span className="absolute -right-1 -top-1 hidden rounded-full bg-blue-600 p-1 shadow-sm group-hover:inline-flex">
-          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-          </svg>
-        </span>
-        {onDelete && (
+        <span className="absolute -right-1 -top-1 hidden gap-1 group-hover:flex">
+          {/* Publicar (solo para DRAFTED) */}
+          {onPublish && text.status === 'DRAFTED' && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onPublish() }}
+              disabled={isPublishing}
+              className="rounded-full bg-emerald-500 p-1 shadow-sm transition-colors hover:bg-emerald-600 disabled:opacity-50"
+              title="Publicar texto"
+            >
+              <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          )}
+          {/* Editar */}
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este texto?')) onDelete() }}
-            className="absolute -bottom-1 -right-1 hidden rounded-full bg-red-500 p-1 shadow-sm group-hover:inline-flex"
+            onClick={onStartEdit}
+            className="rounded-full bg-blue-600 p-1 shadow-sm"
+            title="Editar"
           >
             <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
             </svg>
           </button>
-        )}
+          {/* Eliminar */}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); if (confirm('¿Eliminar este texto?')) onDelete() }}
+              className="rounded-full bg-red-500 p-1 shadow-sm"
+              title="Eliminar"
+            >
+              <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </span>
       </div>
     )
   }

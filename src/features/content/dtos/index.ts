@@ -10,6 +10,7 @@ export type {
 export type { PublicTextDTO, AdminTextDTO } from './TextDTO'
 export type { PublicMediaDTO, AdminMediaDTO, UploadMediaResponseDTO } from './MediaDTO'
 export type {
+  FileState,
   AdminFileDTO,
   RequestUploadUrlDTO,
   UploadUrlResponseDTO,
@@ -21,6 +22,7 @@ export type {
   PatchFileBlockDTO,
   DraftMediaResponseDTO,
   PublishMediaResponseDTO,
+  PublishTextResponseDTO,
 } from './FileDTO'
 export type {
   PublicSectionDTO,

@@ -18,6 +18,8 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
     isUploading,
     publishMedia,
     isPublishingMedia,
+    publishText,
+    isPublishingText,
     editText,
     createSlotText,
     removeText,
@@ -31,6 +33,7 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
     removeFile,
     assignFromGallery,
     draftedBlockCount,
+    hasPendingEdits,
     refetch,
   } = useAdminSectionViewModel(sectionId)
 
@@ -57,16 +60,14 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
           )}
         </div>
         <div className="flex items-center gap-2">
-          {draftedBlockCount > 0 && (
-            <button
-              type="button"
-              onClick={() => publishMut.mutate(sectionId)}
-              disabled={publishMut.isPending}
-              className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
-            >
-              {publishMut.isPending ? 'Publicando…' : 'Publicar cambios'}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => publishMut.mutate(sectionId)}
+            disabled={publishMut.isPending || (draftedBlockCount === 0 && !hasPendingEdits)}
+            className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {publishMut.isPending ? 'Publicando…' : 'Publicar cambios'}
+          </button>
           <Link
             to="/preview"
             className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
@@ -75,7 +76,6 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
           </Link>
         </div>
       </div>
-
       {submitError && <ErrorMessage message={submitError} />}
       {publishMut.isError && <ErrorMessage message="Error al publicar la sección" />}
 
@@ -87,13 +87,15 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
         onEditText={editText}
         onCreateText={createSlotText}
         onUploadMedia={uploadFile}
-        onDeleteText={(id) => { if (confirm('¿Eliminar este texto?')) removeText(id) }}
-        onDeleteMedia={(id) => { if (confirm('¿Eliminar este archivo?')) removeMedia(id) }}
+        onDeleteText={(blockId, textId) => { if (confirm('¿Eliminar este texto?')) removeText(blockId, textId) }}
+        onDeleteMedia={(blockId) => { if (confirm('¿Eliminar este archivo?')) removeMedia(blockId) }}
         onSwapTextOrder={swapTextOrder}
         onSwapMediaOrder={swapMediaOrder}
         isUploading={isUploading}
         onPublishMedia={publishMedia}
         isPublishingMedia={isPublishingMedia}
+        onPublishText={publishText}
+        isPublishingText={isPublishingText}
         onUploadR2File={uploadR2File}
         isUploadingR2={isUploadingR2}
         onDownloadFile={downloadFile}

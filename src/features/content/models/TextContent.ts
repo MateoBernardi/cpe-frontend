@@ -1,7 +1,6 @@
 import type { BlockStatus } from '../dtos/BlockDTO'
 
 export interface TextContent {
-  title: string | null
   body: string
   role: string | null
   order: number

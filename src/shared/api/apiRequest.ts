@@ -34,7 +34,6 @@ export class ApiError extends Error {
 
 /**
  * Fábrica de requests HTTP (JSON).
- * Incluye x-tenant-id en todos los requests.
  */
 export async function apiRequest<TResponse, TBody = unknown>(
   options: ApiRequestOptions<TBody>,

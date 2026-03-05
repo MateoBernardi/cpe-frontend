@@ -115,7 +115,7 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
                       onSaveEdit={() => ctx.saveEdit({ ...paraConfig, id: pSlotId, slotIndex: i })}
                       onCancelEdit={ctx.cancelEdit}
                       onChangeValue={ctx.setEditValue}
-                      onDelete={() => ctx.deleteText(p.id)}
+                      onDelete={() => ctx.deleteText(p.blockId, p.id)}
                     />
                   </div>
                 </div>
@@ -130,7 +130,7 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
                       onSaveEdit={() => ctx.saveEdit({ ...quoteConfig, id: qSlotId, slotIndex: i })}
                       onCancelEdit={ctx.cancelEdit}
                       onChangeValue={ctx.setEditValue}
-                      onDelete={() => ctx.deleteText(quote.id)}
+                      onDelete={() => ctx.deleteText(quote.blockId, quote.id)}
                     />
                   ) : (
                     <InlineTextSlot
@@ -231,35 +231,23 @@ function DonutPreview({ count }: { count: number }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function ContactFormLayout({ ctx, textSlots }: { ctx: SlotContext; textSlots: TextSlotConfig[] }) {
-  const heading = textSlots.find((s) => s.role === 'heading')!
-  const paraConfig = textSlots.find((s) => s.role === 'paragraph')!
-  const cta = textSlots.find((s) => s.role === 'cta')!
   const info = textSlots.find((s) => s.role === 'info')!
-  const labels = textSlots.filter((s) => s.role.startsWith('label_'))
 
   return (
     <div className="rounded-xl bg-teal-50 p-6 space-y-6">
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Izquierda: textos informativos */}
-        <div className="space-y-4">
-          <ConnectedTextSlot config={heading} ctx={ctx} />
-          <MultipleTextSlots config={paraConfig} ctx={ctx} addLabel="Agregar párrafo" />
-          <ConnectedTextSlot config={cta} ctx={ctx} />
-        </div>
-        {/* Derecha: formulario (wireframe) con valores actuales */}
-        <div className="rounded-xl bg-white p-5 ring-1 ring-teal-200 space-y-3">
-          <p className="text-sm font-semibold text-slate-700">Formulario de contacto</p>
-          <p className="text-[10px] text-gray-400 mb-3">
-            Las etiquetas personalizan los campos del formulario.
-            Si no se personaliza, se usa el valor por defecto.
-          </p>
-          {labels.map((label) => (
-            <div key={label.id} className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded bg-teal-300 flex-shrink-0" />
-              <ConnectedTextSlot config={label} ctx={ctx} className="flex-1" />
-            </div>
-          ))}
-        </div>
+      {/* Formulario (solo lectura — se envía al backend) */}
+      <div className="mx-auto max-w-lg rounded-xl bg-white p-5 ring-1 ring-teal-200 space-y-3">
+        <p className="text-sm font-semibold text-slate-700">Formulario de contacto</p>
+        <p className="text-[10px] text-gray-400 mb-3">
+          Los campos del formulario no son editables desde el panel de administración.<br />
+          Los datos se envían directamente al backend.
+        </p>
+        {['Nombre', 'Email', 'Localidad', 'Teléfono', 'N.º de empleados', 'Mensaje'].map((field) => (
+          <div key={field} className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded bg-teal-300 flex-shrink-0" />
+            <span className="text-xs text-gray-400">{field}</span>
+          </div>
+        ))}
       </div>
       {/* Info adicional */}
       <div className="rounded-xl bg-white p-4 ring-1 ring-teal-200">
@@ -320,12 +308,13 @@ export function RecruitmentLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
   const subtitle = textSlots.find((s) => s.role === 'subtitle')!
   const paraConfig = textSlots.find((s) => s.role === 'paragraph')!
   const bulletConfig = textSlots.find((s) => s.role === 'bullet')!
-  const labels = textSlots.filter((s) => s.role.startsWith('label_'))
+  const formHeading = textSlots.find((s) => s.role === 'form_heading')!
+  const formParagraph = textSlots.find((s) => s.role === 'form_paragraph')!
   const photo = mediaSlots.find((s) => s.role === 'photo')!
 
   return (
     <div className="space-y-6">
-      {/* Detalle del servicio */}
+      {/* Detalle del servicio (editable) */}
       <div className="rounded-xl bg-white p-6 ring-1 ring-slate-200">
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-2xl bg-white/90 p-5 shadow-md ring-1 ring-slate-200/60 space-y-4">
@@ -351,16 +340,24 @@ export function RecruitmentLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
         </div>
       </div>
 
-      {/* Formulario de postulación (wireframe con valores actuales) */}
+      {/* Título y párrafo editables sobre el formulario */}
+      <div className="rounded-xl bg-white p-6 ring-1 ring-slate-200 space-y-3">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Título y párrafo del formulario</p>
+        <ConnectedTextSlot config={formHeading} ctx={ctx} />
+        <ConnectedTextSlot config={formParagraph} ctx={ctx} />
+      </div>
+
+      {/* Formulario de postulación (solo lectura — se envía al backend) */}
       <div className="rounded-xl bg-teal-50 p-6 ring-1 ring-teal-200">
         <p className="mb-3 text-sm font-semibold text-slate-800">Formulario de postulación</p>
         <p className="mb-4 text-[10px] text-gray-500">
-          Las preguntas del formulario de CV. Si no se personaliza, se usa el valor por defecto.
+          Los campos del formulario no son editables desde el panel de administración.<br />
+          Los datos se envían directamente al backend.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          {labels.map((label) => (
-            <div key={label.id} className="rounded-lg bg-white p-3 ring-1 ring-teal-100">
-              <ConnectedTextSlot config={label} ctx={ctx} />
+          {['¿En qué área te gustaría trabajar?', 'Años de experiencia (0 / 1 a 3 / 3 o más)', '¿Qué modalidad de trabajo preferís?', '¿Cuándo podrías incorporarte?'].map((field) => (
+            <div key={field} className="rounded-lg bg-white p-3 ring-1 ring-teal-100">
+              <span className="text-xs text-gray-400">{field}</span>
             </div>
           ))}
         </div>

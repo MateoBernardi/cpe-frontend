@@ -1,4 +1,4 @@
-const WHATSAPP_NUMBER = '5491112345678'
+const WHATSAPP_NUMBER = '5493512180273'
 const WHATSAPP_MESSAGE = 'Hola, me gustaría obtener más información sobre los servicios de Clínica para Empresas.'
 
 /**

@@ -7,7 +7,6 @@ export type BlockStatus = 'DRAFTED' | 'PUBLISHED'
 export interface BlockTextContent {
   id: number
   body: string
-  title: string | null
 }
 
 export interface BlockMediaContent {
@@ -46,5 +45,5 @@ export interface PublicBlockDTO {
   order: number | null
   text?: { body: string }
   media?: { url: string; mime_type: string | null }
-  file?: { title: string | null }
+  file?: { id: number; title: string | null }
 }

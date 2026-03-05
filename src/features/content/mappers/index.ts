@@ -1,1 +1,1 @@
-export { mapPublicSectionDTO, mapAdminSectionDTO, mapSectionListItem } from './sectionMapper'
+export { mapPublicSectionDTO, mapAdminSectionDTO, mapSectionListItem, resolveMediaUrl } from './sectionMapper'
