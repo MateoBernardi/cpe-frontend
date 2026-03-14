@@ -1,8 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState, useCallback } from 'react'
-import type { AdminSection } from '../models'
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useCallback, useMemo } from 'react'
+import type { AdminSection, SectionListItem } from '../models'
 import type {
   AddSectionContentDTO,
+  AdminSectionResponseDTO,
   CreateTextInput,
 } from '../dtos'
 import { contentService, fileService } from '../services'
@@ -67,12 +68,15 @@ interface UseAdminSectionVMResult {
   createSlotText: (body: string, role: string, order: number) => void
   isCreatingSlot: boolean
 
+  /** Editar el body de un texto DRAFTED existente (PATCH in-place) */
+  patchSlotText: (textId: number, body: string) => void
+
   /** Intercambiar orden de dos bloques por blockId */
   swapTextOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
   /** Intercambiar orden de dos bloques de media por blockId */
   swapMediaOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
 
-  /** Upload de archivo a R2 (Presigned POST) */
+  /** Upload de archivo a R2 (Presigned PUT) */
   uploadR2File: (file: File, sectionId: number, role: string, order: number) => void
   isUploadingR2: boolean
 
@@ -130,9 +134,9 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     })
   }
 
-  // ── Upload de imagen directo a Cloudflare (PUBLISHED) ──
+  // ── Upload de imagen como DRAFTED (permite reordenar antes de publicar) ──
   const uploadMut = useMutation({
-    mutationFn: (fd: FormData) => contentService.uploadMedia(fd),
+    mutationFn: (fd: FormData) => contentService.uploadMediaDraft(fd),
     onSuccess: hardRefetch,
   })
 
@@ -208,6 +212,17 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     createSlotMut.mutate({ body, role, order })
   }
 
+  // ── Editar texto DRAFTED existente (PATCH body) ──
+  const patchSlotMut = useMutation({
+    mutationFn: (data: { textId: number; body: string }) =>
+      contentService.patchText(data.textId, { body: data.body }),
+    onSuccess: hardRefetch,
+  })
+
+  const patchSlotText = (textId: number, body: string) => {
+    patchSlotMut.mutate({ textId, body })
+  }
+
   // ── Eliminar bloque (soft delete a nivel de section_blocks) ──
   const delBlockMut = useMutation({ mutationFn: contentService.deleteBlock, onSuccess: hardRefetch })
 
@@ -251,6 +266,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     isPublishingText: publishTextMut.isPending,
     createSlotText,
     isCreatingSlot: createSlotMut.isPending,
+    patchSlotText,
     removeBlock: (blockId) => delBlockMut.mutate(blockId),
     /** Eliminar texto: primero desasocia el bloque, luego borra la entrada de texto */
     removeText: (blockId: number, textId: number) => {
@@ -334,4 +350,46 @@ export function useDiscardDrafts() {
       void qc.refetchQueries({ queryKey: contentKeys.all })
     },
   })
+}
+
+// ── Hook: cargar todas las secciones de preview en paralelo ──
+
+export interface PreviewSectionEntry {
+  id: number
+  name: string
+  section: AdminSection
+  hasDrafts: boolean
+}
+
+export function usePreviewSections(sectionItems: SectionListItem[]) {
+  const results = useQueries({
+    queries: sectionItems.map((item) => ({
+      queryKey: contentKeys.preview(item.id),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        contentService.getPreviewSection(item.id, signal),
+      refetchOnMount: 'always' as const,
+    })),
+  })
+
+  const isLoading = results.some((r) => r.isLoading)
+  const isError = results.some((r) => r.isError)
+
+  const entries = useMemo<PreviewSectionEntry[]>(() => {
+    return sectionItems
+      .map((item, i) => {
+        const dto = results[i]?.data
+        if (!dto) return null
+        const mapped = mapAdminSectionDTO(dto.section)
+        const hasDrafts = dto.section.blocks?.some((b) => b.status === 'DRAFTED') ?? false
+        return { id: item.id, name: item.name, section: mapped, hasDrafts }
+      })
+      .filter((e): e is PreviewSectionEntry => e != null)
+  }, [sectionItems, results])
+
+  const sectionsWithDrafts = useMemo(
+    () => entries.filter((e) => e.hasDrafts),
+    [entries],
+  )
+
+  return { entries, isLoading, isError, sectionsWithDrafts, hasDrafts: sectionsWithDrafts.length > 0 }
 }

@@ -16,7 +16,7 @@ const PUBLIC = ENV.PUBLIC_PREFIX
 /**
  * Servicio de archivos (R2).
  * El archivo nunca pasa por el backend: se sube directo a Cloudflare R2
- * usando un Presigned POST generado por el backend.
+ * usando un Presigned PUT generado por el backend.
  */
 export const fileService = {
 
@@ -35,32 +35,18 @@ export const fileService = {
   // ── Paso 2: subir directo a R2 ──
 
   /**
-   * Sube el archivo directamente a Cloudflare R2 usando el presigned POST.
+   * Sube el archivo directamente a Cloudflare R2 usando un presigned PUT.
    * NO pasa por el backend.
    */
   async uploadToR2(
     uploadUrl: string,
-    fields: Record<string, string>,
     contentType: string,
     file: File,
   ): Promise<void> {
-    const formData = new FormData()
-
-    // Primero todos los campos del presigned POST
-    for (const [key, value] of Object.entries(fields)) {
-      formData.append(key, value)
-    }
-
-    // Content-Type DEBE coincidir con el declarado al solicitar la URL
-    formData.append('Content-Type', contentType)
-
-    // El archivo va AL FINAL del FormData
-    formData.append('file', file)
-
     const res = await fetch(uploadUrl, {
-      method: 'POST',
-      body: formData,
-      // NO poner Content-Type header, el browser lo pone con boundary
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': contentType },
     })
 
     if (!res.ok) {
@@ -109,7 +95,6 @@ export const fileService = {
     // Paso 2
     await fileService.uploadToR2(
       upload.url,
-      upload.fields,
       file.type || 'application/octet-stream',
       file,
     )
@@ -203,7 +188,7 @@ export const fileService = {
     })
 
     // Paso 2
-    await fileService.uploadToR2(upload.url, upload.fields, 'application/pdf', file)
+    await fileService.uploadToR2(upload.url, 'application/pdf', file)
 
     // Paso 3
     await fileService.confirmPublicUpload(file_id, { tamaño: file.size })

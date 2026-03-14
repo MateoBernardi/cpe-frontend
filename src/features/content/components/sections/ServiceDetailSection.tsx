@@ -11,6 +11,8 @@ export default function ServiceDetailSection({ section }: Props) {
   const paragraphs = textsByRole(section.texts, 'paragraph')
   const bullets = textsByRole(section.texts, 'bullet')
   const photo = mediaByRole(section.media, 'photo')
+  const ctaHeading = textByRole(section.texts, 'cta_heading')
+  const cta = textByRole(section.texts, 'cta')
 
   const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
 
@@ -79,15 +81,39 @@ export default function ServiceDetailSection({ section }: Props) {
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'
               }`}
             >
-              <div className="group relative">
-                <div className="absolute -inset-4 rounded-3xl" style={{ backgroundColor: `${colors.tealBright}15` }} />
-                <div className="relative overflow-hidden rounded-2xl shadow-xl ring-1 ring-slate-200">
-                  <img src={photo.url} alt="" className="aspect-[4/3] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
-                </div>
+              <div className="group overflow-hidden rounded-2xl shadow-xl ring-1 ring-slate-200">
+                <img src={photo.url} alt="" className="aspect-[4/3] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
               </div>
             </div>
           )}
         </div>
+
+        {/* CTA */}
+        {(ctaHeading || cta) && (
+          <div
+            className={`mt-[4vh] rounded-2xl p-8 sm:p-10 text-center transition-all duration-1000 delay-500 ${
+              isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
+            }`}
+            style={{ backgroundColor: colors.secondaryHeroBg }}
+          >
+            {ctaHeading && (
+              <h3 className="text-xl font-bold sm:text-2xl md:text-3xl font-primary" style={{ color: colors.white }}>
+                {ctaHeading.body}
+              </h3>
+            )}
+            {cta && (
+              <a
+                href="/contact"
+                className="mt-4 inline-block rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 sm:px-8 sm:py-4 sm:text-base"
+                style={{ backgroundColor: colors.ctaPrimary, boxShadow: `0 8px 24px ${colors.ctaShadow}` }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.ctaPrimaryHover }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.ctaPrimary }}
+              >
+                {cta.body}
+              </a>
+            )}
+          </div>
+        )}
       </div>
     </section>
   )

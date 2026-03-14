@@ -68,10 +68,43 @@ export default function AboutSection({ section }: Props) {
             </div>
           </div>
         </div>
-        {/* Desktop: 4-column grid (lg+) */}
-        <div className="hidden lg:grid lg:grid-cols-4 lg:items-center lg:gap-[3vw] xl:gap-[4vw]">
-          <div className={`transition-all duration-1000 delay-200 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
+        {/* Desktop: 4-column × 2-row grid so both paragraphs align (lg+) */}
+        <div className="hidden lg:grid lg:grid-cols-4 lg:gap-x-[3vw] xl:gap-x-[4vw] lg:gap-y-3">
+          {/* Bio 0 – bottom of row 1 */}
+          <div className={`self-end transition-all duration-1000 delay-200 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+            style={{ gridColumn: '1', gridRow: '1' }}>
             {bio0 && <h3 className="mb-3 text-lg font-semibold xl:text-xl" style={{ color: colors.blueDark }}>{bio0.body}</h3>}
+          </div>
+          {/* Photo 0 – spans both rows */}
+          <div className={`self-center transition-all duration-1000 delay-300 ${isInView ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}
+            style={{ gridColumn: '2', gridRow: '1 / 3' }}>
+            {photo0 && (
+              <div className="group relative">
+                <div className="overflow-hidden rounded-2xl shadow-lg ring-1 ring-slate-200">
+                  <img src={photo0.url} alt="" className="aspect-[3/4] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Bio 1 – bottom of row 1 */}
+          <div className={`self-end transition-all duration-1000 delay-500 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+            style={{ gridColumn: '3', gridRow: '1' }}>
+            {bio1 && <h3 className="mb-3 text-lg font-semibold xl:text-xl" style={{ color: colors.blueDark }}>{bio1.body}</h3>}
+          </div>
+          {/* Photo 1 – spans both rows */}
+          <div className={`self-center transition-all duration-1000 delay-300 ${isInView ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'}`}
+            style={{ gridColumn: '4', gridRow: '1 / 3' }}>
+            {photo1 && (
+              <div className="group relative">
+                <div className="overflow-hidden rounded-2xl shadow-lg ring-1 ring-slate-200">
+                  <img src={photo1.url} alt="" className="aspect-[3/4] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Paragraph 0 – top of row 2 */}
+          <div className={`self-start transition-all duration-1000 delay-200 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+            style={{ gridColumn: '1', gridRow: '2' }}>
             {text0 && (
               <div className="rounded-xl border p-5 shadow-sm xl:p-6"
                 style={{
@@ -82,17 +115,9 @@ export default function AboutSection({ section }: Props) {
               </div>
             )}
           </div>
-          <div className={`transition-all duration-1000 delay-300 ${isInView ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
-            {photo0 && (
-              <div className="group relative">
-                <div className="overflow-hidden rounded-2xl shadow-lg ring-1 ring-slate-200">
-                  <img src={photo0.url} alt="" className="aspect-[3/4] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
-                </div>
-              </div>
-            )}
-          </div>
-          <div className={`transition-all duration-1000 delay-500 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
-            {bio1 && <h3 className="mb-3 text-lg font-semibold xl:text-xl" style={{ color: colors.blueDark }}>{bio1.body}</h3>}
+          {/* Paragraph 1 – top of row 2 */}
+          <div className={`self-start transition-all duration-1000 delay-500 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}
+            style={{ gridColumn: '3', gridRow: '2' }}>
             {text1 && (
               <div className="rounded-xl border p-5 shadow-sm xl:p-6"
                 style={{
@@ -100,15 +125,6 @@ export default function AboutSection({ section }: Props) {
                   borderColor: colors.lightGray,
                 }}>
                 <p className="text-sm font-medium leading-relaxed xl:text-base" style={{ color: colors.blueDark }}>{text1.body}</p>
-              </div>
-            )}
-          </div>
-          <div className={`transition-all duration-1000 delay-300 ${isInView ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'}`}>
-            {photo1 && (
-              <div className="group relative">
-                <div className="overflow-hidden rounded-2xl shadow-lg ring-1 ring-slate-200">
-                  <img src={photo1.url} alt="" className="aspect-[3/4] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
-                </div>
               </div>
             )}
           </div>

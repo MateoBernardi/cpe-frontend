@@ -58,7 +58,7 @@ export default function GenerationalTransferSection({ section }: Props) {
             <img
               src={photo.url}
               alt=""
-              className="aspect-[16/9] w-full object-cover"
+              className="aspect-[4/3] w-full object-cover"
               loading="lazy"
             />
           </div>

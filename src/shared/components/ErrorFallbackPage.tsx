@@ -1,7 +1,7 @@
 import { colors, fonts } from '../../theme'
 
 const WHATSAPP_NUMBER = '5493512180273'
-const WHATSAPP_MESSAGE = 'Hola, estoy teniendo problemas para acceder a la página web de Clínica para Empresas.'
+const WHATSAPP_MESSAGE = 'Hola, quiero información respecto a los servicios de Clínica para Empresas.'
 const EMAIL = 'contacto@clinicaparaempresas.com'
 const PHONE = '+54 9 351 218-0273'
 

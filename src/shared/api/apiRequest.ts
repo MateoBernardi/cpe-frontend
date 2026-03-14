@@ -32,6 +32,11 @@ export class ApiError extends Error {
   }
 }
 
+function getCfAccessToken(): string | null {
+  const match = document.cookie.match(/CF_Authorization=([^;]+)/)
+  return match ? match[1] : null
+}
+
 /**
  * Fábrica de requests HTTP (JSON).
  */
@@ -48,6 +53,11 @@ export async function apiRequest<TResponse, TBody = unknown>(
     'x-tenant-id': ENV.TENANT_ID,
   }
 
+  const cfToken = getCfAccessToken()
+  if (cfToken) {
+    headers['cf-access-jwt-assertion'] = cfToken
+  }
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
@@ -55,6 +65,7 @@ export async function apiRequest<TResponse, TBody = unknown>(
   const config: RequestInit = {
     method,
     headers,
+    credentials: 'include',
     signal,
   }
 
@@ -89,11 +100,19 @@ export async function apiUpload<TResponse>(
 ): Promise<TResponse> {
   const url = `${ENV.API_BASE_URL}${endpoint}`
 
+  const uploadHeaders: Record<string, string> = {
+    'x-tenant-id': ENV.TENANT_ID,
+  }
+
+  const cfToken = getCfAccessToken()
+  if (cfToken) {
+    uploadHeaders['cf-access-jwt-assertion'] = cfToken
+  }
+
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'x-tenant-id': ENV.TENANT_ID,
-    },
+    headers: uploadHeaders,
+    credentials: 'include',
     body: formData,
     signal,
   })

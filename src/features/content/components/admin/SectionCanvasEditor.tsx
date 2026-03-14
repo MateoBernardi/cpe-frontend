@@ -117,6 +117,7 @@ export default function SectionCanvasEditor({
   sectionName,
   sectionId,
   onCreateText,
+  onPatchText,
   onUploadMedia,
   onDeleteText,
   onDeleteMedia,
@@ -164,10 +165,15 @@ export default function SectionCanvasEditor({
     }
 
     if (editingTextId !== null) {
-      // Editar texto existente → crear nuevo DRAFTED (el PUBLISHED se mantiene)
       const existingText = section?.texts.find((t) => t.id === editingTextId)
-      const order = existingText?.order ?? (slotConfig.slotIndex + 1)
-      onCreateText(editValue.trim(), slotConfig.role, order)
+      if (existingText?.status === 'DRAFTED' && onPatchText) {
+        // Texto DRAFTED → actualizar body in-place
+        onPatchText(existingText.id, editValue.trim())
+      } else {
+        // Texto PUBLISHED → crear nuevo DRAFTED de reemplazo
+        const order = existingText?.order ?? (slotConfig.slotIndex + 1)
+        onCreateText(editValue.trim(), slotConfig.role, order)
+      }
     } else {
       const existingWithRole = section
         ? section.texts.filter((t) => t.role === slotConfig.role).length

@@ -1,9 +1,14 @@
+import { useEffect } from 'react'
+
 /**
  * Página de Política de Privacidad — contenido hardcodeado.
  */
 export default function PrivacyPolicyPage() {
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
   return (
-    <div className="min-h-screen bg-white pt-[12vh] pb-16">
+    <div className="min-h-screen bg-white pt-[15vh] pb-16">
       <div className="mx-auto max-w-3xl px-4">
         <h1 className="mb-8 text-3xl font-bold text-black">Política de Privacidad</h1>
 

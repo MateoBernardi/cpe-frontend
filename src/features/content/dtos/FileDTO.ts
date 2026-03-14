@@ -29,7 +29,7 @@ export interface UploadUrlResponseDTO {
   block_id?: number
   upload: {
     url: string
-    fields: Record<string, string>
+    fields?: Record<string, string>
   }
 }
 

@@ -1,4 +1,6 @@
 export { useSectionViewModel } from './useSectionViewModel'
-export { useAdminSectionViewModel, useSectionsList, usePublishSection, usePublishChanges, useDiscardDrafts, contentKeys } from './useAdminSectionViewModel'
+export { useMultipleSectionsViewModel } from './useMultipleSectionsViewModel'
+export { useAdminSectionViewModel, useSectionsList, usePublishSection, usePublishChanges, useDiscardDrafts, usePreviewSections, contentKeys } from './useAdminSectionViewModel'
+export type { PreviewSectionEntry } from './useAdminSectionViewModel'
 export { useGalleryViewModel, useGalleryList, galleryKeys } from './useGalleryViewModel'
 export type { GalleryMedia, DeleteMediaError } from './useGalleryViewModel'

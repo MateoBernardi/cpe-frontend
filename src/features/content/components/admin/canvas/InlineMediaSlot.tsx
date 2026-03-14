@@ -173,8 +173,8 @@ export default function InlineMediaSlot({
                     </svg>
                   </button>
                 )}
-                {/* Botón cambiar (solo para slots no-múltiples, o siempre disponible) */}
-                {!config.multiple && (
+                {/* Botón cambiar (disponible siempre para reemplazar imagen) */}
+                {(
                   <button
                     type="button"
                     onClick={() => startReplace(m.id)}

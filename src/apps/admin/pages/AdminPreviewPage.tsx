@@ -1,15 +1,11 @@
 import { useMemo } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   useSectionsList,
   usePublishChanges,
   useDiscardDrafts,
-  contentKeys,
+  usePreviewSections,
 } from '@features/content/viewmodels'
-import type { AdminSection } from '@features/content/models'
-import type { AdminSectionResponseDTO } from '@features/content/dtos'
-import { contentService } from '@features/content/services'
-import { mapAdminSectionDTO } from '@features/content/mappers'
+import type { PreviewSectionEntry } from '@features/content/viewmodels'
 import { SectionRenderer } from '@features/content/components'
 import { getSectionDisplayName } from '@features/content/config/sectionRoles'
 import { LoadingSpinner, ErrorMessage } from '@shared/components'
@@ -37,24 +33,14 @@ const PREVIEW_GROUPS = [
   },
 ] as const
 
-function AdminPreviewSection({ sectionId }: { sectionId: number }) {
-  const { data: section, isLoading, error } = useQuery({
-    queryKey: contentKeys.preview(sectionId),
-    queryFn: ({ signal }) => contentService.getPreviewSection(sectionId, signal),
-    select: (d) => mapAdminSectionDTO(d.section),
-  })
-
-  if (isLoading) return <LoadingSpinner className="py-8" />
-  if (error || !section) return null
-
-  return <SectionRenderer section={section} />
+function AdminPreviewSection({ entry }: { entry: PreviewSectionEntry }) {
+  return <SectionRenderer section={entry.section} />
 }
 
 export default function AdminPreviewPage() {
   const { data: sectionsList, isLoading: listLoading, error: listError } = useSectionsList()
   const publishMut = usePublishChanges()
   const discardMut = useDiscardDrafts()
-  const qc = useQueryClient()
 
   // Aplanar todos los nombres de sección en orden
   const allSectionNames = useMemo(
@@ -70,60 +56,35 @@ export default function AdminPreviewPage() {
       .filter((s): s is NonNullable<typeof s> => s != null)
   }, [sectionsList, allSectionNames])
 
-  // Agrupar secciones resueltas por grupo
+  // Cargar todas las secciones de preview en paralelo (refetch en cada mount)
+  const { entries, isLoading: previewLoading, hasDrafts, sectionsWithDrafts } =
+    usePreviewSections(orderedSections)
+
+  // Agrupar secciones resueltas por grupo usando los datos reales de preview
   const resolvedGroups = useMemo(() => {
-    if (!sectionsList) return []
+    if (!entries.length) return []
     return PREVIEW_GROUPS.map((g) => ({
       label: g.label,
       items: g.sections
-        .map((name) => sectionsList.find((s) => s.name === name))
-        .filter((s): s is NonNullable<typeof s> => s != null),
+        .map((name) => entries.find((e) => e.name === name))
+        .filter((e): e is PreviewSectionEntry => e != null),
     })).filter((g) => g.items.length > 0)
-  }, [sectionsList])
-
-  // Detectar si hay cambios pendientes (bloques DRAFTED en caché)
-  const hasDrafts = useMemo(() => {
-    if (!orderedSections.length) return false
-    for (const s of orderedSections) {
-      // Revisar tanto la caché del editor como la del preview
-      const cached =
-        qc.getQueryData<AdminSectionResponseDTO>(contentKeys.section(s.id)) ??
-        qc.getQueryData<AdminSectionResponseDTO>(contentKeys.preview(s.id))
-      if (cached?.section.blocks?.some((b) => b.status === 'DRAFTED')) return true
-    }
-    return false
-  }, [orderedSections, qc])
+  }, [entries])
 
   const hasChanges = hasDrafts
 
   const handlePublish = () => {
-    // Solo publicar secciones que realmente tienen bloques DRAFTED
-    const sectionIds = orderedSections
-      .filter((s) => {
-        const cached =
-          qc.getQueryData<AdminSectionResponseDTO>(contentKeys.section(s.id)) ??
-          qc.getQueryData<AdminSectionResponseDTO>(contentKeys.preview(s.id))
-        return cached?.section.blocks?.some((b) => b.status === 'DRAFTED')
-      })
-      .map((s) => s.id)
+    const sectionIds = sectionsWithDrafts.map((e) => e.id)
     publishMut.mutate(sectionIds)
   }
 
   const handleDiscard = () => {
     if (!confirm('¿Descartar todos los borradores y ediciones sin guardar? Esta acción no se puede deshacer.')) return
-    const adminSections: AdminSection[] = []
-    for (const s of orderedSections) {
-      const cached = qc.getQueryData<AdminSectionResponseDTO>(
-        contentKeys.section(s.id),
-      )
-      if (cached) {
-        adminSections.push(mapAdminSectionDTO(cached.section))
-      }
-    }
+    const adminSections = sectionsWithDrafts.map((e) => e.section)
     discardMut.mutate(adminSections)
   }
 
-  if (listLoading) return <LoadingSpinner className="py-12" />
+  if (listLoading || previewLoading) return <LoadingSpinner className="py-12" />
   if (listError) return <ErrorMessage message="Error cargando secciones" />
 
   return (
@@ -226,8 +187,8 @@ export default function AdminPreviewPage() {
               )}
 
               <div className="space-y-0">
-                {group.items.map((s, si) => (
-                  <section key={s.id} id={s.name}>
+                {group.items.map((entry, si) => (
+                  <section key={entry.id} id={entry.name}>
                     {/* Separador entre secciones dentro del mismo grupo */}
                     {si > 0 && group.items.length > 1 && (
                       <div className="my-4 border-t border-dashed border-gray-200" />
@@ -236,10 +197,10 @@ export default function AdminPreviewPage() {
                     <div className="mb-2 flex items-center gap-2 px-2">
                       <span className="h-2 w-2 rounded-full bg-teal-500" />
                       <span className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
-                        {getSectionDisplayName(s.name)}
+                        {getSectionDisplayName(entry.name)}
                       </span>
                     </div>
-                    <AdminPreviewSection sectionId={s.id} />
+                    <AdminPreviewSection entry={entry} />
                   </section>
                 ))}
               </div>

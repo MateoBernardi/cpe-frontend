@@ -8,14 +8,14 @@ import { colors, layout } from '../../../../theme'
 /** Service slugs matching subsection routes */
 const SERVICE_ROUTES = [
   '/servicios/intervencion-directa',
-  '/servicios/seleccion-de-personal',
   '/servicios/acompanamiento',
+  '/servicios/seleccion-de-personal',
 ]
 
 const CIRCLE_LABELS = [
-  'Intervención directa.',
-  'Selección del personal.',
-  'Acompañamiento a las personas.',
+  'Intervención directa',
+  'Acompañamiento a las personas',
+  'Selección del personal',
 ]
 
 /** Circle colors from theme palette */
@@ -26,8 +26,8 @@ function useSpreadFactor() {
   const getBreakpoint = useCallback(() => {
     if (typeof window === 'undefined') return 1
     const w = window.innerWidth
-    if (w < 480) return 0.46
-    if (w < 640) return 0.52
+    if (w < 480) return 0.48
+    if (w < 640) return 0.48
     if (w < 768) return 0.92
     if (w < 1024) return 0.96
     return 1

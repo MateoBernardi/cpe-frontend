@@ -48,14 +48,29 @@ export interface SectionCanvasConfig {
 
 import type { AdminTextContent, AdminMediaContent } from '../models'
 
+/**
+ * Dado un array de items con `order` y `status`, si para un mismo `order`
+ * existen un DRAFTED y un PUBLISHED, conserva solo el DRAFTED.
+ */
+function applyDraftOverride<T extends { order: number; status: string }>(items: T[]): T[] {
+  const byOrder = new Map<number, T>()
+  for (const item of items) {
+    const existing = byOrder.get(item.order)
+    if (!existing || item.status === 'DRAFTED') {
+      byOrder.set(item.order, item)
+    }
+  }
+  return Array.from(byOrder.values()).sort((a, b) => a.order - b.order)
+}
+
 /** Obtiene el texto existente que corresponde a un slot (por rol + índice) */
 export function matchTextToSlot(
   texts: AdminTextContent[],
   slot: TextSlotConfig,
 ): AdminTextContent | undefined {
-  const matching = texts
-    .filter((t) => t.role === slot.role)
-    .sort((a, b) => a.order - b.order)
+  const matching = applyDraftOverride(
+    texts.filter((t) => t.role === slot.role)
+  )
   return matching[slot.slotIndex]
 }
 
@@ -64,9 +79,9 @@ export function matchAllTextsForRole(
   texts: AdminTextContent[],
   role: string,
 ): AdminTextContent[] {
-  return texts
-    .filter((t) => t.role === role)
-    .sort((a, b) => a.order - b.order)
+  return applyDraftOverride(
+    texts.filter((t) => t.role === role)
+  )
 }
 
 /** Obtiene el/los media que corresponden a un slot */
@@ -74,9 +89,9 @@ export function matchMediaToSlot(
   media: AdminMediaContent[],
   slot: MediaSlotConfig,
 ): AdminMediaContent[] {
-  const matching = media
-    .filter((m) => m.role === slot.role)
-    .sort((a, b) => a.order - b.order)
+  const matching = applyDraftOverride(
+    media.filter((m) => m.role === slot.role)
+  )
   if (slot.multiple) return matching
   const item = matching[slot.slotIndex]
   return item ? [item] : []
@@ -242,7 +257,7 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
       description: 'Formulario de contacto centrado con un texto informativo debajo.',
       tips: [
         'El texto "info" se muestra abajo del formulario en una tarjeta informativa con ícono.',
-        'Los campos del formulario no son editables desde el panel — se envían directamente al backend.',
+        'Los campos del formulario no son editables desde el panel — se envían directamente a la base de datos.',
       ],
       colorTip: 'Fondo teal claro (teal-50). Formulario con bordes y campos teal.',
     },
@@ -271,6 +286,8 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
       { id: 'si-subtitle', role: 'subtitle', slotIndex: 0, label: 'Objetivo', placeholder: 'Descripción del objetivo del servicio', display: 'subheading' },
       { id: 'si-paragraph', role: 'paragraph', slotIndex: 0, label: 'Párrafo', placeholder: 'Párrafo descriptivo del servicio...', display: 'body', multiple: true },
       { id: 'si-bullet', role: 'bullet', slotIndex: 0, label: 'Eje de trabajo', placeholder: 'Ej: Diagnóstico organizacional', display: 'bullet', multiple: true },
+      { id: 'si-cta-heading', role: 'cta_heading', slotIndex: 0, label: 'Título CTA', placeholder: 'Ej: ¿Querés saber más?', display: 'heading', maxLength: 80 },
+      { id: 'si-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón CTA', placeholder: 'Ej: Contactanos', display: 'cta', maxLength: 40 },
     ],
     mediaSlots: [
       { id: 'si-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },
@@ -295,6 +312,8 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
       { id: 'ss-form-heading', role: 'form_heading', slotIndex: 0, label: 'Título del formulario', placeholder: 'Ej: ¿Querés sumarte a nuestro equipo?', display: 'heading' },
       { id: 'ss-form-paragraph', role: 'form_paragraph', slotIndex: 0, label: 'Párrafo del formulario', placeholder: 'Texto introductorio del formulario de postulación', display: 'body' },
       // Los campos del formulario de postulación no son editables desde el admin — se envían directamente al backend
+      { id: 'ss-cta-heading', role: 'cta_heading', slotIndex: 0, label: 'Título CTA', placeholder: 'Ej: ¿Querés saber más?', display: 'heading', maxLength: 80 },
+      { id: 'ss-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón CTA', placeholder: 'Ej: Contactanos', display: 'cta', maxLength: 40 },
     ],
     mediaSlots: [
       { id: 'ss-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },
@@ -317,6 +336,8 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
       { id: 'sa-subtitle', role: 'subtitle', slotIndex: 0, label: 'Objetivo', placeholder: 'Descripción del objetivo del servicio', display: 'subheading' },
       { id: 'sa-paragraph', role: 'paragraph', slotIndex: 0, label: 'Párrafo', placeholder: 'Párrafo descriptivo del servicio...', display: 'body', multiple: true },
       { id: 'sa-bullet', role: 'bullet', slotIndex: 0, label: 'Eje de trabajo', placeholder: 'Ej: Coaching ejecutivo', display: 'bullet', multiple: true },
+      { id: 'sa-cta-heading', role: 'cta_heading', slotIndex: 0, label: 'Título CTA', placeholder: 'Ej: ¿Querés saber más?', display: 'heading', maxLength: 80 },
+      { id: 'sa-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón CTA', placeholder: 'Ej: Contactanos', display: 'cta', maxLength: 40 },
     ],
     mediaSlots: [
       { id: 'sa-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },
@@ -340,6 +361,8 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
       { id: 'tg-subtitle', role: 'subtitle', slotIndex: 0, label: 'Objetivo', placeholder: 'Descripción del objetivo del servicio', display: 'subheading' },
       { id: 'tg-paragraph', role: 'paragraph', slotIndex: 0, label: 'Párrafo', placeholder: 'Párrafo descriptivo del servicio...', display: 'body', multiple: true },
       { id: 'tg-bullet', role: 'bullet', slotIndex: 0, label: 'Eje de trabajo', placeholder: 'Ej: Planificación sucesoria', display: 'bullet', multiple: true },
+      { id: 'tg-cta-heading', role: 'cta_heading', slotIndex: 0, label: 'Título CTA', placeholder: 'Ej: ¿Querés saber más?', display: 'heading', maxLength: 80 },
+      { id: 'tg-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón CTA', placeholder: 'Ej: Contactanos', display: 'cta', maxLength: 40 },
     ],
     mediaSlots: [
       { id: 'tg-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },
@@ -363,6 +386,8 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
       { id: 'sce-subtitle', role: 'subtitle', slotIndex: 0, label: 'Objetivo', placeholder: 'Descripción del objetivo del servicio', display: 'subheading' },
       { id: 'sce-paragraph', role: 'paragraph', slotIndex: 0, label: 'Párrafo', placeholder: 'Párrafo descriptivo del servicio...', display: 'body', multiple: true },
       { id: 'sce-bullet', role: 'bullet', slotIndex: 0, label: 'Eje de trabajo', placeholder: 'Ej: Diagnóstico integral', display: 'bullet', multiple: true },
+      { id: 'sce-cta-heading', role: 'cta_heading', slotIndex: 0, label: 'Título CTA', placeholder: 'Ej: ¿Querés saber más?', display: 'heading', maxLength: 80 },
+      { id: 'sce-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón CTA', placeholder: 'Ej: Contactanos', display: 'cta', maxLength: 40 },
     ],
     mediaSlots: [
       { id: 'sce-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },
@@ -385,11 +410,11 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
     mediaSlots: [],
   },
 
-  // ── TEASER: CLÍNICA PARA EMPRESARIOS ──
+  // ── TEASER: CONSULTORÍA PARA EMPRESARIOS ──
   teaser_clinica: {
-    displayName: 'Teaser: Clínica para Empresarios',
+    displayName: 'Teaser: Consultoría para Empresarios',
     guide: {
-      description: 'Sección teaser en la página principal para el servicio Clínica para Empresarios. Ícono a la izquierda, información a la derecha.',
+      description: 'Sección teaser en la página principal para el servicio Consultoría para Empresarios. Ícono a la izquierda, información a la derecha.',
       tips: [
         'El encabezado es el título grande del teaser.',
         'El subtítulo es una frase corta descriptiva.',

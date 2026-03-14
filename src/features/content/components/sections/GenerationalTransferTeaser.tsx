@@ -30,29 +30,35 @@ export default function GenerationalTransferTeaser({ section }: Props) {
               isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
             }`}
           >
-            <h2
-              className="text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-primary"
-              style={{ color: colors.blueDark }}
-            >
-              {heading?.body ?? 'Traspaso Generacional.'}
-            </h2>
-            <p
-              className={`text-base sm:text-lg leading-relaxed max-w-lg transition-all duration-700 delay-200 ${
-                isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
-              }`}
-              style={{ color: colors.blueMid }}
-            >
-              {subtitle?.body ?? 'Acompañamos la transición entre generaciones dentro de tu empresa.'}
-            </p>
-            <a
-              href="/servicios/traspaso-generacional"
-              className="inline-flex items-center rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-[1.03] hover:shadow-lg sm:px-8 sm:py-4 sm:text-base"
-              style={{ backgroundColor: colors.tealMid }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.tealBright }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.tealMid }}
-            >
-              {cta?.body ?? 'Conocé más'}
-            </a>
+            {heading && (
+              <h2
+                className="text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-primary"
+                style={{ color: colors.blueDark }}
+              >
+                {heading.body}
+              </h2>
+            )}
+            {subtitle && (
+              <p
+                className={`w-full max-w-lg text-base sm:text-lg leading-relaxed text-center lg:text-justify transition-all duration-700 delay-200 ${
+                  isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
+                }`}
+                style={{ color: colors.blueMid }}
+              >
+                {subtitle.body}
+              </p>
+            )}
+            {cta && (
+              <a
+                href="/servicios/traspaso-generacional"
+                className="inline-flex items-center rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-md transition-all duration-300 hover:scale-[1.03] hover:shadow-lg sm:px-8 sm:py-4 sm:text-base"
+                style={{ backgroundColor: colors.tealMid }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.tealBright }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.tealMid }}
+              >
+                {cta.body}
+              </a>
+            )}
           </div>
 
           {/* Right: Illustration icon */}

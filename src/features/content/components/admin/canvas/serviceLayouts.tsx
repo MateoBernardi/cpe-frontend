@@ -8,6 +8,7 @@ import type { LayoutProps, SlotContext } from './canvasTypes'
 import type { TextSlotConfig } from '../../../config/sectionCanvasConfig'
 import InlineTextSlot from './InlineTextSlot'
 import { ConnectedTextSlot, ConnectedMediaSlot, MultipleTextSlots } from './ConnectedSlots'
+import { colors } from '../../../../../theme'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Info Primary
@@ -240,7 +241,7 @@ export function ContactFormLayout({ ctx, textSlots }: { ctx: SlotContext; textSl
         <p className="text-sm font-semibold text-slate-700">Formulario de contacto</p>
         <p className="text-[10px] text-gray-400 mb-3">
           Los campos del formulario no son editables desde el panel de administración.<br />
-          Los datos se envían directamente al backend.
+          Los datos se envían directamente a la base de datos.
         </p>
         {['Nombre', 'Email', 'Localidad', 'Dirección', 'Teléfono', 'N.º de empleados', 'Mensaje'].map((field) => (
           <div key={field} className="flex items-center gap-2">
@@ -269,6 +270,8 @@ export function ServiceDetailLayout({ ctx, textSlots, mediaSlots }: LayoutProps)
   const subtitle = textSlots.find((s) => s.role === 'subtitle')!
   const paraConfig = textSlots.find((s) => s.role === 'paragraph')!
   const bulletConfig = textSlots.find((s) => s.role === 'bullet')!
+  const ctaHeading = textSlots.find((s) => s.role === 'cta_heading')
+  const cta = textSlots.find((s) => s.role === 'cta')
   const photo = mediaSlots.find((s) => s.role === 'photo')!
 
   return (
@@ -295,6 +298,14 @@ export function ServiceDetailLayout({ ctx, textSlots, mediaSlots }: LayoutProps)
           </div>
         </div>
       </div>
+      {/* CTA */}
+      {(ctaHeading || cta) && (
+        <div className="rounded-2xl p-6 text-center space-y-3" style={{ backgroundColor: colors.secondaryHeroBg }}>
+          <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: colors.tealBright }}>Bloque CTA</p>
+          {ctaHeading && <ConnectedTextSlot config={ctaHeading} ctx={ctx} />}
+          {cta && <ConnectedTextSlot config={cta} ctx={ctx} />}
+        </div>
+      )}
     </div>
   )
 }
@@ -310,6 +321,8 @@ export function RecruitmentLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
   const bulletConfig = textSlots.find((s) => s.role === 'bullet')!
   const formHeading = textSlots.find((s) => s.role === 'form_heading')!
   const formParagraph = textSlots.find((s) => s.role === 'form_paragraph')!
+  const ctaHeading = textSlots.find((s) => s.role === 'cta_heading')
+  const cta = textSlots.find((s) => s.role === 'cta')
   const photo = mediaSlots.find((s) => s.role === 'photo')!
 
   return (
@@ -352,7 +365,7 @@ export function RecruitmentLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
         <p className="mb-3 text-sm font-semibold text-slate-800">Formulario de postulación</p>
         <p className="mb-4 text-[10px] text-gray-500">
           Los campos del formulario no son editables desde el panel de administración.<br />
-          Los datos se envían directamente al backend.
+          Los datos se envían directamente a la base de datos. Para agregar o quitar puestos ir a pestaña Postulaciones.  
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {['¿En qué área te gustaría trabajar?', 'Años de experiencia (0 / 1 a 3 / 3 o más)', '¿Qué modalidad de trabajo preferís?', '¿Cuándo podrías incorporarte?'].map((field) => (
@@ -362,6 +375,15 @@ export function RecruitmentLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
           ))}
         </div>
       </div>
+
+      {/* CTA */}
+      {(ctaHeading || cta) && (
+        <div className="rounded-2xl p-6 text-center space-y-3" style={{ backgroundColor: colors.secondaryHeroBg }}>
+          <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: colors.tealBright }}>Bloque CTA</p>
+          {ctaHeading && <ConnectedTextSlot config={ctaHeading} ctx={ctx} />}
+          {cta && <ConnectedTextSlot config={cta} ctx={ctx} />}
+        </div>
+      )}
     </div>
   )
 }

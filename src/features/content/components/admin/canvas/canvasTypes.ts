@@ -13,6 +13,7 @@ export interface SectionCanvasEditorProps {
   sectionName: string
   sectionId: number
   onCreateText: (body: string, role: string, order: number) => void
+  onPatchText?: (textId: number, body: string) => void
   onUploadMedia: (file: File, sectionId: number, role: string, order: number) => void
   onDeleteText: (blockId: number, textId: number) => void
   onDeleteMedia: (blockId: number) => void

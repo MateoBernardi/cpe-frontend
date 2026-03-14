@@ -21,6 +21,7 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
     publishText,
     isPublishingText,
     createSlotText,
+    patchSlotText,
     removeText,
     removeMedia,
     // removeBlock — unused for now
@@ -83,6 +84,7 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
         sectionName={sectionName}
         sectionId={sectionId}
         onCreateText={createSlotText}
+        onPatchText={patchSlotText}
         onUploadMedia={uploadFile}
         onDeleteText={(blockId, textId) => { if (confirm('¿Eliminar este texto?')) removeText(blockId, textId) }}
         onDeleteMedia={(blockId) => { if (confirm('¿Eliminar este archivo?')) removeMedia(blockId) }}

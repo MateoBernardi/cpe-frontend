@@ -71,23 +71,106 @@ export function ConnectedMediaSlot({
   className?: string
 }) {
   const items = ctx.section ? matchMediaToSlot(ctx.section.media, config) : []
+
+  if (!config.multiple) {
+    // Para slots NO múltiples, mostrar normalmente
+    return (
+      <InlineMediaSlot
+        config={config}
+        mediaItems={items}
+        onUpload={(file) => ctx.uploadToSlot(config, file)}
+        onDelete={(mediaId) => {
+          const media = items.find((m) => m.id === mediaId)
+          if (media) ctx.deleteMedia(media.blockId)
+        }}
+        onPublish={ctx.publishMedia
+          ? (mediaId, blockId) => ctx.publishMedia!(mediaId, blockId)
+          : undefined
+        }
+        isPublishing={ctx.isPublishingMedia}
+        onPickFromGallery={ctx.pickFromGallery ? () => ctx.pickFromGallery!(config) : undefined}
+        className={className}
+      />
+    )
+  }
+
+  // Para slots múltiples: mostrar con flechas de reorden
+  const handleMoveUp = (index: number) => {
+    if (index <= 0) return
+    const curr = items[index]
+    const prev = items[index - 1]
+    ctx.swapMediaOrder(curr.blockId, curr.order, prev.blockId, prev.order)
+  }
+
+  const handleMoveDown = (index: number) => {
+    if (index >= items.length - 1) return
+    const curr = items[index]
+    const next = items[index + 1]
+    ctx.swapMediaOrder(curr.blockId, curr.order, next.blockId, next.order)
+  }
+
   return (
-    <InlineMediaSlot
-      config={config}
-      mediaItems={items}
-      onUpload={(file) => ctx.uploadToSlot(config, file)}
-      onDelete={(mediaId) => {
-        const media = items.find((m) => m.id === mediaId)
-        if (media) ctx.deleteMedia(media.blockId)
-      }}
-      onPublish={ctx.publishMedia
-        ? (mediaId, blockId) => ctx.publishMedia!(mediaId, blockId)
-        : undefined
-      }
-      isPublishing={ctx.isPublishingMedia}
-      onPickFromGallery={ctx.pickFromGallery ? () => ctx.pickFromGallery!(config) : undefined}
-      className={className}
-    />
+    <div className={className}>
+      <div className="space-y-2">
+        {items.map((media, i) => (
+          <div key={media.id} className="group/item relative">
+            {/* Flechas de reorden */}
+            {items.length > 1 && (
+              <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex flex-col gap-0.5 opacity-0 transition-opacity group-hover/item:opacity-100">
+                <button
+                  type="button"
+                  onClick={() => handleMoveUp(i)}
+                  disabled={i === 0}
+                  className="rounded p-0.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:invisible"
+                  title="Mover arriba"
+                >
+                  <ArrowUpIcon />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMoveDown(i)}
+                  disabled={i === items.length - 1}
+                  className="rounded p-0.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:invisible"
+                  title="Mover abajo"
+                >
+                  <ArrowDownIcon />
+                </button>
+              </div>
+            )}
+            {/* Imagen con controles */}
+            <div className="relative inline-block">
+              <InlineMediaSlot
+                config={config}
+                mediaItems={[media]}
+                onUpload={() => {}} // No se usa en este contexto
+                onDelete={(mediaId) => {
+                  if (mediaId === media.id) ctx.deleteMedia(media.blockId)
+                }}
+                onPublish={ctx.publishMedia
+                  ? (mediaId, blockId) => ctx.publishMedia!(mediaId, blockId)
+                  : undefined
+                }
+                isPublishing={ctx.isPublishingMedia}
+                onPickFromGallery={undefined}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Zona de upload para agregar nuevos items */}
+      <div className="mt-3">
+        <InlineMediaSlot
+          config={config}
+          mediaItems={[]}
+          onUpload={(file) => ctx.uploadToSlot(config, file)}
+          onDelete={() => {}}
+          onPublish={undefined}
+          isPublishing={false}
+          onPickFromGallery={ctx.pickFromGallery ? () => ctx.pickFromGallery!(config) : undefined}
+        />
+      </div>
+    </div>
   )
 }
 

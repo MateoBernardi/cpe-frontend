@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { useContactFormViewModel } from '@features/contact/viewmodels/useContactFormViewModel'
+import { useSectionViewModel } from '@features/content/viewmodels'
 import { Link } from 'react-router-dom'
 import { colors } from '../../../theme'
 
@@ -6,11 +8,16 @@ import { colors } from '../../../theme'
  * Página de Contacto — Formulario de contacto público.
  */
 export default function ContactPage() {
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
   const { form, setField, handleSubmit, isSubmitting, error, success, setSuccess, privacyAccepted, setPrivacyAccepted } =
     useContactFormViewModel()
+  const { section } = useSectionViewModel('contact_form')
+  const infoText = section?.texts.find((t) => t.role === 'info')
 
   return (
-    <div className="min-h-screen pt-[10vh]" style={{ backgroundColor: colors.lightGray }}>
+    <div className="min-h-screen pt-[15vh]" style={{ backgroundColor: colors.lightGray }}>
       <div className="mx-auto max-w-2xl px-4 py-12">
         <h1 className="mb-2 text-3xl font-bold" style={{ color: colors.blueDark }}>
           Solicitá tu presupuesto
@@ -18,6 +25,17 @@ export default function ContactPage() {
         <p className="mb-8 text-gray-600">
           Completá el formulario y nos pondremos en contacto a la brevedad.
         </p>
+
+        {infoText && (
+          <div
+            className="mb-6 rounded-2xl border bg-white p-6 text-center"
+            style={{ borderColor: colors.tealBright }}
+          >
+            <p className="text-sm leading-relaxed" style={{ color: colors.blueMid }}>
+              {infoText.body}
+            </p>
+          </div>
+        )}
 
         {success && (
           <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">

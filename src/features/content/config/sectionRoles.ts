@@ -92,9 +92,9 @@ export const SECTION_DISPLAY_NAMES: Record<string, string> = {
   service_seleccion: 'Servicio: Selección de Personal',
   service_acompanamiento: 'Servicio: Acompañamiento',
   traspaso_generacional: 'Traspaso Generacional',
-  service_clinica_empresarios: 'Servicio: Clínica para Empresarios',
+  service_clinica_empresarios: 'Servicio: Consultoría para Empresario',
   teaser_circuit: 'Teaser: Circuito Integrado',
-  teaser_clinica: 'Teaser: Clínica para Empresarios',
+  teaser_clinica: 'Teaser: Consultoría para Empresario',
   teaser_traspaso: 'Teaser: Traspaso Generacional',
 }
 

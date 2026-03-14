@@ -13,6 +13,9 @@ export default defineConfig({
       '@apps': path.resolve(__dirname, './src/apps'),
     },
   },
+  server: {
+    allowedHosts: ['ca17-2803-9810-b68f-5d10-c166-a5a5-1f19-8892.ngrok-free.app'],
+  },
   build: {
     rollupOptions: {
       input: {
