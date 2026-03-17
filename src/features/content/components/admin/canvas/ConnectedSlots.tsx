@@ -99,14 +99,14 @@ export function ConnectedMediaSlot({
     if (index <= 0) return
     const curr = items[index]
     const prev = items[index - 1]
-    ctx.swapMediaOrder(curr.blockId, curr.order, prev.blockId, prev.order)
+    ctx.swapMediaOrder(curr, prev)
   }
 
   const handleMoveDown = (index: number) => {
     if (index >= items.length - 1) return
     const curr = items[index]
     const next = items[index + 1]
-    ctx.swapMediaOrder(curr.blockId, curr.order, next.blockId, next.order)
+    ctx.swapMediaOrder(curr, next)
   }
 
   return (
@@ -142,7 +142,9 @@ export function ConnectedMediaSlot({
               <InlineMediaSlot
                 config={config}
                 mediaItems={[media]}
-                onUpload={() => {}} // No se usa en este contexto
+                onUpload={(file, options) => {
+                  ctx.uploadToSlot(config, file, options?.preserveOrder ?? media.order)
+                }}
                 onDelete={(mediaId) => {
                   if (mediaId === media.id) ctx.deleteMedia(media.blockId)
                 }}
@@ -152,6 +154,7 @@ export function ConnectedMediaSlot({
                 }
                 isPublishing={ctx.isPublishingMedia}
                 onPickFromGallery={undefined}
+                showAddButtonWithExistingItems={false}
               />
             </div>
           </div>
@@ -193,14 +196,14 @@ export function MultipleTextSlots({
     if (index <= 0) return
     const curr = texts[index]
     const prev = texts[index - 1]
-    ctx.swapTextOrder(curr.blockId, curr.order, prev.blockId, prev.order)
+    ctx.swapTextOrder(curr, prev)
   }
 
   const handleMoveDown = (index: number) => {
     if (index >= texts.length - 1) return
     const curr = texts[index]
     const next = texts[index + 1]
-    ctx.swapTextOrder(curr.blockId, curr.order, next.blockId, next.order)
+    ctx.swapTextOrder(curr, next)
   }
 
   return (

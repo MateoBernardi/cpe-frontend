@@ -1,13 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { Section } from '../models'
 import { contentService } from '../services'
 import { mapPublicSectionDTO } from '../mappers'
+import { ApiError } from '@shared/api'
+import { useDebouncedValue } from '@shared/hooks'
 
 interface UseSectionViewModelResult {
   section: Section | null
   isLoading: boolean
   /** The raw error object (if any) — can be ApiError, TypeError, etc. */
   error: Error | null
+  isRetrying: boolean
+  canManualRetry: boolean
+  isRateLimited: boolean
+  isNotFound: boolean
   refetch: () => void
 }
 
@@ -16,26 +22,29 @@ interface UseSectionViewModelResult {
  * Usa GET /public/sections/:sectionName.
  */
 export function useSectionViewModel(sectionName: string): UseSectionViewModelResult {
-  const [section, setSection] = useState<Section | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const debouncedSectionName = useDebouncedValue(sectionName, 250)
 
-  const fetchSection = async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const response = await contentService.getPublicSection(sectionName)
-      setSection(mapPublicSectionDTO(response.section))
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error desconocido'))
-    } finally {
-      setIsLoading(false)
-    }
+  const query = useQuery({
+    queryKey: ['public', 'section', debouncedSectionName],
+    queryFn: () => contentService.getPublicSection(debouncedSectionName),
+    select: (response) => mapPublicSectionDTO(response.section),
+    enabled: Boolean(debouncedSectionName),
+  })
+
+  const error = query.error instanceof Error ? query.error : null
+  const isRateLimited = query.error instanceof ApiError && query.error.status === 429
+  const isNotFound = query.error instanceof ApiError && query.error.status === 404
+  const isRetrying = query.isFetching && query.failureCount > 0 && !query.isError
+  const canManualRetry = query.isError
+
+  return {
+    section: query.data ?? null,
+    isLoading: query.isLoading,
+    error,
+    isRetrying,
+    canManualRetry,
+    isRateLimited,
+    isNotFound,
+    refetch: () => void query.refetch(),
   }
-
-  useEffect(() => {
-    void fetchSection()
-  }, [sectionName])
-
-  return { section, isLoading, error, refetch: fetchSection }
 }

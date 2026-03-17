@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { contactService } from '../services'
 import { fileService } from '@features/content/services'
-import { ApiError } from '@shared/api'
-import type { PublicInterestDTO, CreateCandidateDTO } from '../dtos'
+import { ApiError, getApiErrorMessage } from '@shared/api'
+import type { CreateCandidateDTO } from '../dtos'
 
 interface CandidateForm {
   name: string
@@ -34,29 +35,28 @@ export function useCandidateFormViewModel() {
   const [form, setForm] = useState<CandidateForm>({ ...EMPTY_FORM })
   const [file, setFile] = useState<File | null>(null)
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
-  const [interests, setInterests] = useState<PublicInterestDTO[]>([])
-  const [isLoadingInterests, setIsLoadingInterests] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [step, setStep] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  // Cargar puestos al montar
+  const interestsQuery = useQuery({
+    queryKey: ['public', 'interests'],
+    queryFn: () => contactService.getPublicInterests(),
+    select: (res) => res.interests,
+  })
+
+  const interests = interestsQuery.data ?? []
+  const isLoadingInterests = interestsQuery.isLoading || interestsQuery.isFetching
+
   useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        const res = await contactService.getPublicInterests()
-        if (!cancelled) setInterests(res.interests)
-      } catch {
-        if (!cancelled) setInterests([])
-      } finally {
-        if (!cancelled) setIsLoadingInterests(false)
-      }
+    if (!interestsQuery.error) return
+    if (interestsQuery.error instanceof ApiError && interestsQuery.error.status === 429) {
+      setError('Demasiadas solicitudes para cargar puestos. Intentá nuevamente en unos segundos.')
+      return
     }
-    void load()
-    return () => { cancelled = true }
-  }, [])
+    setError(getApiErrorMessage(interestsQuery.error))
+  }, [interestsQuery.error])
 
   const setField = <K extends keyof CandidateForm>(key: K, value: CandidateForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -134,7 +134,7 @@ export function useCandidateFormViewModel() {
         if (err.status === 429) {
           setError('Demasiados envíos. Intentá de nuevo en 24 horas.')
         } else {
-          setError(err.data.message || 'Error al enviar la postulación')
+          setError(getApiErrorMessage(err))
         }
       } else {
         setError('Error de conexión. Intentá de nuevo.')
@@ -162,6 +162,9 @@ export function useCandidateFormViewModel() {
     selectFile,
     interests,
     isLoadingInterests,
+    isRetryingInterests: interestsQuery.isFetching && interestsQuery.failureCount > 0 && !interestsQuery.isError,
+    canRetryInterests: interestsQuery.isError,
+    retryInterests: () => void interestsQuery.refetch(),
     handleSubmit,
     isSubmitting,
     isFormComplete,

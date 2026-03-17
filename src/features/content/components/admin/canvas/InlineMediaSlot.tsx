@@ -20,6 +20,7 @@ export default function InlineMediaSlot({
   onPublish,
   isPublishing,
   onPickFromGallery,
+  showAddButtonWithExistingItems = true,
   className = '',
 }: MediaSlotProps) {
   const fileRef = useRef<HTMLInputElement>(null)
@@ -58,8 +59,9 @@ export default function InlineMediaSlot({
   const handleReplaceInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || replacingId === null) return
+    const replacingMedia = mediaItems.find((m) => m.id === replacingId)
     // Subir la nueva imagen como borrador (la vieja PUBLISHED se mantiene hasta publicar)
-    onUpload(file)
+    onUpload(file, { preserveOrder: replacingMedia?.order })
     setReplacingId(null)
     e.target.value = ''
   }
@@ -90,7 +92,7 @@ export default function InlineMediaSlot({
   // ── Con contenido existente ──
   if (mediaItems.length > 0) {
     const atMaxItems = config.maxItems != null && mediaItems.length >= config.maxItems
-    const canAddMore = config.multiple && !atMaxItems
+    const canAddMore = config.multiple && !atMaxItems && showAddButtonWithExistingItems
 
     return (
       <div className={className}>

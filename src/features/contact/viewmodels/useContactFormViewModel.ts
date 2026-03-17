@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { contactService } from '../services'
-import { ApiError } from '@shared/api'
+import { ApiError, getApiErrorMessage } from '@shared/api'
 import type { CreateContactDTO } from '../dtos'
 
 const EMPTY_FORM: CreateContactDTO = {
@@ -66,7 +66,7 @@ export function useContactFormViewModel() {
         if (err.status === 429) {
           setError('Demasiados envíos. Intentá de nuevo más tarde.')
         } else {
-          setError(err.data.message || 'Error al enviar el formulario')
+          setError(getApiErrorMessage(err))
         }
       } else {
         setError('Error de conexión. Intentá de nuevo.')

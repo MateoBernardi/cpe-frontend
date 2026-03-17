@@ -32,6 +32,8 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
     downloadFile,
     removeFile,
     assignFromGallery,
+    swapError,
+    clearSwapError,
     draftedBlockCount,
     refetch,
   } = useAdminSectionViewModel(sectionId)
@@ -76,6 +78,7 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
         </div>
       </div>
       {submitError && <ErrorMessage message={submitError} />}
+      {swapError && <ErrorMessage message={swapError} onRetry={clearSwapError} />}
       {publishMut.isError && <ErrorMessage message="Error al publicar la sección" />}
 
       {/* ── Canvas visual del editor ── */}

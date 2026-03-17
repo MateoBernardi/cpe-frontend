@@ -16,22 +16,29 @@ export function resolveMediaUrl(url: string): string {
   return url
 }
 
+function normalizeOrder(order: number | null | undefined, fallbackOrder: number): number {
+  if (typeof order !== 'number' || !Number.isFinite(order) || order <= 0) {
+    return fallbackOrder
+  }
+  return order
+}
+
 // ── Public mappers (blocks → texts/media) ──
 
-function mapPublicTextBlock(block: PublicBlockDTO): TextContent {
+function mapPublicTextBlock(block: PublicBlockDTO, fallbackOrder: number): TextContent {
   return {
     body: block.text?.body ?? '',
     role: block.role,
-    order: block.order ?? 0,
+    order: normalizeOrder(block.order, fallbackOrder),
   }
 }
 
-function mapPublicMediaBlock(block: PublicBlockDTO): MediaContent {
+function mapPublicMediaBlock(block: PublicBlockDTO, fallbackOrder: number): MediaContent {
   return {
     url: resolveMediaUrl(block.media?.url ?? ''),
     mimeType: block.media?.mime_type ?? null,
     role: block.role,
-    order: block.order ?? 0,
+    order: normalizeOrder(block.order, fallbackOrder),
   }
 }
 
@@ -43,31 +50,31 @@ export function mapPublicSectionDTO(dto: PublicSectionDTO): Section {
   return {
     id: dto.id,
     name: dto.name,
-    texts: textBlocks.map(mapPublicTextBlock).sort((a, b) => a.order - b.order),
-    media: mediaBlocks.map(mapPublicMediaBlock).sort((a, b) => a.order - b.order),
-    files: fileBlocks.map((b) => ({
+    texts: textBlocks.map((block, idx) => mapPublicTextBlock(block, idx + 1)).sort((a, b) => a.order - b.order),
+    media: mediaBlocks.map((block, idx) => mapPublicMediaBlock(block, idx + 1)).sort((a, b) => a.order - b.order),
+    files: fileBlocks.map((b, idx) => ({
       id: b.file!.id,
       title: b.file!.title,
       role: b.role ?? 'attachment',
-      order: b.order ?? 0,
+      order: normalizeOrder(b.order, idx + 1),
     })).sort((a, b) => a.order - b.order),
   }
 }
 
 // ── Admin mappers (blocks → texts/media/files) ──
 
-function mapAdminTextBlock(block: BlockDTO): AdminTextContent {
+function mapAdminTextBlock(block: BlockDTO, fallbackOrder: number): AdminTextContent {
   return {
     id: block.text!.id,
     body: block.text!.body,
     status: block.status,
     role: block.role,
-    order: block.order ?? 0,
+    order: normalizeOrder(block.order, fallbackOrder),
     blockId: block.id,
   }
 }
 
-function mapAdminMediaBlock(block: BlockDTO): AdminMediaContent {
+function mapAdminMediaBlock(block: BlockDTO, fallbackOrder: number): AdminMediaContent {
   return {
     id: block.media!.id,
     url: resolveMediaUrl(block.media!.url),
@@ -75,20 +82,20 @@ function mapAdminMediaBlock(block: BlockDTO): AdminMediaContent {
     title: block.media!.title,
     origin: block.media!.origin,
     role: block.role,
-    order: block.order ?? 0,
+    order: normalizeOrder(block.order, fallbackOrder),
     blockId: block.id,
     status: block.status,
   }
 }
 
-function mapAdminFileBlock(block: BlockDTO): FileContent {
+function mapAdminFileBlock(block: BlockDTO, fallbackOrder: number): FileContent {
   return {
     id: block.file!.id,
     title: block.file!.title,
     size: block.file!.tamaño,
     state: (block.file!.state as 'PENDING' | 'UPLOADED') ?? 'PENDING',
     role: block.role,
-    order: block.order ?? 0,
+    order: normalizeOrder(block.order, fallbackOrder),
     blockId: block.id,
     status: block.status,
   }
@@ -103,9 +110,9 @@ export function mapAdminSectionDTO(dto: AdminSectionDTO): AdminSection {
   return {
     id: dto.id,
     name: dto.name,
-    texts: textBlocks.map(mapAdminTextBlock).sort((a, b) => a.order - b.order),
-    media: mediaBlocks.map(mapAdminMediaBlock).sort((a, b) => a.order - b.order),
-    files: fileBlocks.map(mapAdminFileBlock).sort((a, b) => a.order - b.order),
+    texts: textBlocks.map((block, idx) => mapAdminTextBlock(block, idx + 1)).sort((a, b) => a.order - b.order),
+    media: mediaBlocks.map((block, idx) => mapAdminMediaBlock(block, idx + 1)).sort((a, b) => a.order - b.order),
+    files: fileBlocks.map((block, idx) => mapAdminFileBlock(block, idx + 1)).sort((a, b) => a.order - b.order),
   }
 }
 

@@ -207,6 +207,11 @@ export default function RecruitmentFormSection({ section }: Props) {
 
                   <div>
                     <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Puesto de interés <span className="text-red-500">*</span></label>
+                    {vm.isRetryingInterests && (
+                      <p className="mb-2 text-xs font-medium text-amber-700">
+                        Reintentando carga de puestos por demasiadas solicitudes...
+                      </p>
+                    )}
                     <select value={vm.form.id_interest ?? ''} onChange={(e) => vm.setField('id_interest', Number(e.target.value) || null)}
                       required
                       className={inputClasses} style={inputStyle}
@@ -218,6 +223,15 @@ export default function RecruitmentFormSection({ section }: Props) {
                         <option key={i.id} value={i.id}>{i.name}</option>
                       ))}
                     </select>
+                    {vm.canRetryInterests && (
+                      <button
+                        type="button"
+                        onClick={vm.retryInterests}
+                        className="mt-2 rounded-md bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-200"
+                      >
+                        Reintentar carga de puestos
+                      </button>
+                    )}
                   </div>
 
                   <div>

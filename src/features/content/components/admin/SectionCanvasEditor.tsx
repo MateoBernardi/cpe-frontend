@@ -146,6 +146,15 @@ export default function SectionCanvasEditor({
   // ── Estado del gallery picker ──
   const [galleryTarget, setGalleryTarget] = useState<MediaSlotConfig | null>(null)
 
+  const getNextOrderForRole = useCallback((role: string, kind: 'text' | 'media') => {
+    if (!section) return 1
+    const source = kind === 'text' ? section.texts : section.media
+    const maxOrder = source
+      .filter((item) => item.role === role)
+      .reduce((max, item) => (Number.isFinite(item.order) && item.order > max ? item.order : max), 0)
+    return maxOrder + 1
+  }, [section])
+
   const startEdit = useCallback((slotId: string, existingText?: AdminTextContent) => {
     setEditingSlotId(slotId)
     setEditValue(existingText?.body ?? '')
@@ -175,27 +184,17 @@ export default function SectionCanvasEditor({
         onCreateText(editValue.trim(), slotConfig.role, order)
       }
     } else {
-      const existingWithRole = section
-        ? section.texts.filter((t) => t.role === slotConfig.role).length
-        : 0
-      const order = slotConfig.multiple
-        ? existingWithRole + 1
-        : slotConfig.slotIndex + 1
+      const order = getNextOrderForRole(slotConfig.role, 'text')
       onCreateText(editValue.trim(), slotConfig.role, order)
     }
 
     cancelEdit()
-  }, [editValue, editingTextId, onCreateText, section, cancelEdit])
+  }, [editValue, editingTextId, onCreateText, section, cancelEdit, getNextOrderForRole, onPatchText])
 
-  const uploadToSlot = useCallback((slotConfig: MediaSlotConfig, file: File) => {
-    const existingWithRole = section
-      ? section.media.filter((m) => m.role === slotConfig.role).length
-      : 0
-    const order = slotConfig.multiple
-      ? existingWithRole + 1
-      : slotConfig.slotIndex + 1
+  const uploadToSlot = useCallback((slotConfig: MediaSlotConfig, file: File, orderOverride?: number) => {
+    const order = orderOverride ?? getNextOrderForRole(slotConfig.role, 'media')
     onUploadMedia(file, sectionId, slotConfig.role, order)
-  }, [section, sectionId, onUploadMedia])
+  }, [sectionId, onUploadMedia, getNextOrderForRole])
 
   const pickFromGallery = useCallback((slotConfig: MediaSlotConfig) => {
     setGalleryTarget(slotConfig)
@@ -203,15 +202,10 @@ export default function SectionCanvasEditor({
 
   const handleGallerySelect = useCallback((media: GalleryMedia) => {
     if (!galleryTarget || !onAssignFromGallery) return
-    const existingWithRole = section
-      ? section.media.filter((m) => m.role === galleryTarget.role).length
-      : 0
-    const order = galleryTarget.multiple
-      ? existingWithRole + 1
-      : galleryTarget.slotIndex + 1
+    const order = getNextOrderForRole(galleryTarget.role, 'media')
     onAssignFromGallery(media.id, sectionId, galleryTarget.role, order)
     setGalleryTarget(null)
-  }, [galleryTarget, section, sectionId, onAssignFromGallery])
+  }, [galleryTarget, sectionId, onAssignFromGallery, getNextOrderForRole])
 
   // Stats
   const stats = useMemo(() => computeSlideStats(section, config), [section, config])

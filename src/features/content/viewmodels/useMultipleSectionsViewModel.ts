@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useMemo } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import type { Section } from '../models'
 import { contentService } from '../services'
 import { mapPublicSectionDTO } from '../mappers'
@@ -7,6 +8,8 @@ interface UseMultipleSectionsViewModelResult {
   sections: Map<string, Section>
   isLoading: boolean
   error: Error | null
+  isRetrying: boolean
+  canManualRetry: boolean
   refetch: () => void
 }
 
@@ -18,45 +21,36 @@ interface UseMultipleSectionsViewModelResult {
 export function useMultipleSectionsViewModel(
   sectionNames: readonly string[]
 ): UseMultipleSectionsViewModelResult {
-  const [sections, setSections] = useState<Map<string, Section>>(new Map())
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
+  const queries = useQueries({
+    queries: sectionNames.map((sectionName) => ({
+      queryKey: ['public', 'section', sectionName],
+      queryFn: () => contentService.getPublicSection(sectionName),
+      select: (response: Awaited<ReturnType<typeof contentService.getPublicSection>>) =>
+        mapPublicSectionDTO(response.section),
+      enabled: Boolean(sectionName),
+    })),
+  })
 
-  const fetchSections = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    setSections(new Map())
+  const sections = useMemo(() => {
+    const map = new Map<string, Section>()
+    sectionNames.forEach((name, index) => {
+      const section = queries[index]?.data
+      if (section) map.set(name, section)
+    })
+    return map
+  }, [sectionNames, queries])
 
-    try {
-      // Cargar todas las secciones en paralelo
-      const promises = sectionNames.map((sectionName) =>
-        contentService
-          .getPublicSection(sectionName)
-          .then((response) => ({
-            name: sectionName,
-            section: mapPublicSectionDTO(response.section),
-          }))
-      )
+  const isLoading = queries.some((q) => q.isLoading)
+  const firstError = queries.find((q) => q.isError)?.error
+  const error = firstError instanceof Error ? firstError : null
+  const isRetrying = queries.some((q) => q.isFetching && q.failureCount > 0 && !q.isError)
+  const canManualRetry = queries.some((q) => q.isError)
 
-      const results = await Promise.all(promises)
-
-      // Construir mapa de secciones
-      const sectionsMap = new Map<string, Section>()
-      for (const { name, section } of results) {
-        sectionsMap.set(name, section)
-      }
-
-      setSections(sectionsMap)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Error desconocido al cargar secciones'))
-    } finally {
-      setIsLoading(false)
+  const refetch = () => {
+    for (const q of queries) {
+      void q.refetch()
     }
-  }, [sectionNames])
+  }
 
-  useEffect(() => {
-    void fetchSections()
-  }, [fetchSections])
-
-  return { sections, isLoading, error, refetch: fetchSections }
+  return { sections, isLoading, error, isRetrying, canManualRetry, refetch }
 }

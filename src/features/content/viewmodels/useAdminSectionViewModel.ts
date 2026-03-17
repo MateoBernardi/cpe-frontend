@@ -1,9 +1,8 @@
 import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useCallback, useMemo } from 'react'
-import type { AdminSection, SectionListItem } from '../models'
+import type { AdminSection, SectionListItem, AdminTextContent, AdminMediaContent } from '../models'
 import type {
   AddSectionContentDTO,
-  AdminSectionResponseDTO,
   CreateTextInput,
 } from '../dtos'
 import { contentService, fileService } from '../services'
@@ -72,9 +71,11 @@ interface UseAdminSectionVMResult {
   patchSlotText: (textId: number, body: string) => void
 
   /** Intercambiar orden de dos bloques por blockId */
-  swapTextOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
+  swapTextOrder: (a: AdminTextContent, b: AdminTextContent) => void
   /** Intercambiar orden de dos bloques de media por blockId */
-  swapMediaOrder: (blockIdA: number, orderA: number, blockIdB: number, orderB: number) => void
+  swapMediaOrder: (a: AdminMediaContent, b: AdminMediaContent) => void
+  swapError: string | null
+  clearSwapError: () => void
 
   /** Upload de archivo a R2 (Presigned PUT) */
   uploadR2File: (file: File, sectionId: number, role: string, order: number) => void
@@ -115,6 +116,7 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
 
   // ── Borradores locales ──
   const [draftTexts, setDraftTexts] = useState<CreateTextInput[]>([])
+  const [swapError, setSwapError] = useState<string | null>(null)
 
   /** Refetch forzado — reemplaza la caché con datos frescos del backend */
   const hardRefetch = useCallback(() => {
@@ -229,11 +231,8 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
   // ── Eliminar texto directamente (se usa después de deleteBlock) ──
   const delTextMut = useMutation({ mutationFn: contentService.deleteText, onSuccess: hardRefetch })
 
-  // ── Eliminar media (solo se usa en la galería, NO al desasociar de sección) ──
-  const delMediaMut = useMutation({ mutationFn: contentService.deleteMedia, onSuccess: hardRefetch })
-
-  // ── Intercambiar orden (usa PATCH /blocks/:blockId) ──
-  const swapBlockMut = useMutation({
+  // ── Intercambiar orden entre dos DRAFTED (PATCH /blocks/:blockId) ──
+  const swapDraftBlocksMut = useMutation({
     mutationFn: async ({ blockIdA, orderA, blockIdB, orderB }: { blockIdA: number; orderA: number; blockIdB: number; orderB: number }) => {
       await Promise.all([
         contentService.patchBlock(blockIdA, { order: orderB }),
@@ -242,6 +241,71 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     },
     onSuccess: hardRefetch,
   })
+
+  // ── Reordenar textos cuando participa PUBLISHED: crear nuevos DRAFTED con orden invertido ──
+  const swapTextByDraftCreationMut = useMutation({
+    mutationFn: async ({ a, b }: { a: AdminTextContent; b: AdminTextContent }) => {
+      await contentService.addContent(sectionId, {
+        texts: [
+          { body: a.body, role: a.role ?? undefined, order: b.order },
+          { body: b.body, role: b.role ?? undefined, order: a.order },
+        ],
+      })
+    },
+    onSuccess: hardRefetch,
+  })
+
+  // ── Reordenar media cuando participa PUBLISHED: crear nuevos bloques DRAFTED con orden invertido ──
+  const swapMediaByDraftCreationMut = useMutation({
+    mutationFn: async ({ a, b }: { a: AdminMediaContent; b: AdminMediaContent }) => {
+      await contentService.assignMediaToSection(sectionId, [
+        { media_id: a.id, role: a.role ?? undefined, order: b.order },
+        { media_id: b.id, role: b.role ?? undefined, order: a.order },
+      ])
+    },
+    onSuccess: hardRefetch,
+  })
+
+  const canSwapByRole = useCallback((roleA: string | null, roleB: string | null) => {
+    if (!roleA || !roleB || roleA !== roleB) {
+      setSwapError('Solo podés cambiar el orden entre contenidos del mismo rol.')
+      return false
+    }
+    setSwapError(null)
+    return true
+  }, [])
+
+  const swapTextOrder = useCallback((a: AdminTextContent, b: AdminTextContent) => {
+    if (!canSwapByRole(a.role, b.role)) return
+
+    if (a.status === 'DRAFTED' && b.status === 'DRAFTED') {
+      swapDraftBlocksMut.mutate({
+        blockIdA: a.blockId,
+        orderA: a.order,
+        blockIdB: b.blockId,
+        orderB: b.order,
+      })
+      return
+    }
+
+    swapTextByDraftCreationMut.mutate({ a, b })
+  }, [canSwapByRole, swapDraftBlocksMut, swapTextByDraftCreationMut])
+
+  const swapMediaOrder = useCallback((a: AdminMediaContent, b: AdminMediaContent) => {
+    if (!canSwapByRole(a.role, b.role)) return
+
+    if (a.status === 'DRAFTED' && b.status === 'DRAFTED') {
+      swapDraftBlocksMut.mutate({
+        blockIdA: a.blockId,
+        orderA: a.order,
+        blockIdB: b.blockId,
+        orderB: b.order,
+      })
+      return
+    }
+
+    swapMediaByDraftCreationMut.mutate({ a, b })
+  }, [canSwapByRole, swapDraftBlocksMut, swapMediaByDraftCreationMut])
 
   // ── Calcular bloques DRAFTED pendientes ──
   const draftedBlockCount =
@@ -278,10 +342,10 @@ export function useAdminSectionViewModel(sectionId: number): UseAdminSectionVMRe
     removeMedia: (blockId: number) => {
       delBlockMut.mutate(blockId)
     },
-    swapTextOrder: (blockIdA, orderA, blockIdB, orderB) =>
-      swapBlockMut.mutate({ blockIdA, orderA, blockIdB, orderB }),
-    swapMediaOrder: (blockIdA, orderA, blockIdB, orderB) =>
-      swapBlockMut.mutate({ blockIdA, orderA, blockIdB, orderB }),
+    swapTextOrder,
+    swapMediaOrder,
+    swapError,
+    clearSwapError: () => setSwapError(null),
     uploadR2File: (file: File, sId: number, role: string, order: number) =>
       uploadR2Mut.mutate({ file, sId, role, order }),
     isUploadingR2: uploadR2Mut.isPending,

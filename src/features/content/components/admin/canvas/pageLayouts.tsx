@@ -269,12 +269,12 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
     const pB = paragraphs[indexB]
     if (!pA || !pB) return
     // Intercambiar textos
-    ctx.swapTextOrder(pA.blockId, pA.order, pB.blockId, pB.order)
+    ctx.swapTextOrder(pA, pB)
     // Intercambiar thumbnails si ambos existen
     const tA = thumbnails[indexA]
     const tB = thumbnails[indexB]
     if (tA && tB) {
-      ctx.swapMediaOrder(tA.blockId, tA.order, tB.blockId, tB.order)
+      ctx.swapMediaOrder(tA, tB)
     }
   }
 
@@ -285,7 +285,8 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
         {paragraphs.map((p, i) => {
           const thumb = thumbnails[i]
           const slotId = `${paraConfig.id}-${i}`
-          const uploadThumb = (file: File) => ctx.uploadToSlot({ ...thumbConfig, slotIndex: i }, file)
+          const uploadThumb = (file: File, orderOverride?: number) =>
+            ctx.uploadToSlot({ ...thumbConfig, slotIndex: i }, file, orderOverride)
 
           return (
             <div key={p.id} className="group/card relative flex-shrink-0 w-64 rounded-xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
@@ -333,8 +334,7 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
                         input.onchange = (e) => {
                           const file = (e.target as HTMLInputElement).files?.[0]
                           if (file) {
-                            ctx.deleteMedia(thumb.blockId)
-                            uploadThumb(file)
+                            uploadThumb(file, thumb.order)
                           }
                         }
                         input.click()

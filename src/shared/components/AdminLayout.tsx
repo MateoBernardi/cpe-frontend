@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 interface AdminLayoutProps {
@@ -17,9 +17,43 @@ const navItems = [
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [tenantForbidden, setTenantForbidden] = useState(false)
+
+  useEffect(() => {
+    const handler = () => setTenantForbidden(true)
+    window.addEventListener('app:forbidden-tenant', handler)
+    return () => window.removeEventListener('app:forbidden-tenant', handler)
+  }, [])
 
   return (
     <div className="relative flex min-h-screen bg-gray-100">
+      {tenantForbidden && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900">Acceso no habilitado</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Tu usuario no tiene tenant asignado.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => { window.location.href = '/cdn-cgi/access/logout' }}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+              >
+                Cerrar sesión
+              </button>
+              <button
+                type="button"
+                onClick={() => { window.location.href = '/admin.html' }}
+                className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-300"
+              >
+                Volver a login
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Backdrop overlay */}
       {sidebarOpen && (
         <div

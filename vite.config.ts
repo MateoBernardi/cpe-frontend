@@ -14,7 +14,7 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: ['ca17-2803-9810-b68f-5d10-c166-a5a5-1f19-8892.ngrok-free.app'],
+    allowedHosts: ['2743-2800-40-86-481-e0ac-9fd4-d4d2-ec86.ngrok-free.app'],
   },
   build: {
     rollupOptions: {
