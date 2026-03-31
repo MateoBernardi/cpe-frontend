@@ -110,7 +110,7 @@ export default function RecruitmentFormSection({ section }: Props) {
               )}
               {cta && (
                 <a
-                  href="/contact"
+                  href="#postulaciones"
                   className="mt-4 inline-block rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 sm:px-8 sm:py-4 sm:text-base"
                   style={{ backgroundColor: colors.ctaPrimary, boxShadow: `0 8px 24px ${colors.ctaShadow}` }}
                   onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.ctaPrimaryHover }}
@@ -125,7 +125,7 @@ export default function RecruitmentFormSection({ section }: Props) {
       )}
 
       {/* Bottom: CV form */}
-      <div className={layout.sectionPadY} style={{ backgroundColor: colors.lightGray }}>
+      <div id="postulaciones" className={layout.sectionPadY} style={{ backgroundColor: colors.lightGray }}>
         <div className={layout.container}>
           {/* Editable title + paragraph above form grid */}
           {(formHeading || formParagraph) && (

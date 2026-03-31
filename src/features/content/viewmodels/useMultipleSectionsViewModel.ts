@@ -3,6 +3,7 @@ import { useQueries } from '@tanstack/react-query'
 import type { Section } from '../models'
 import { contentService } from '../services'
 import { mapPublicSectionDTO } from '../mappers'
+import { contentKeys } from './useAdminSectionViewModel'
 
 interface UseMultipleSectionsViewModelResult {
   sections: Map<string, Section>
@@ -23,7 +24,7 @@ export function useMultipleSectionsViewModel(
 ): UseMultipleSectionsViewModelResult {
   const queries = useQueries({
     queries: sectionNames.map((sectionName) => ({
-      queryKey: ['public', 'section', sectionName],
+      queryKey: contentKeys.publicSection(sectionName),
       queryFn: () => contentService.getPublicSection(sectionName),
       select: (response: Awaited<ReturnType<typeof contentService.getPublicSection>>) =>
         mapPublicSectionDTO(response.section),

@@ -7,8 +7,9 @@
     "dev": "vite --host",
     "dev:admin": "vite --open /admin.html",
     "build": "tsc -b && vite build",
-    "build:main": "tsc -b && vite build --config vite.config.ts",
-    "build:admin": "tsc -b && vite build --config vite.config.ts",
+    "build:main": "tsc -b && vite build --config vite.config.main.ts",
+    "build:admin": "tsc -b && vite build --config vite.config.admin.ts",
+    "build:all": "npm run build:main && npm run build:admin",
     "lint": "eslint .",
     "preview": "vite preview"
   },

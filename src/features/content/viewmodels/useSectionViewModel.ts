@@ -4,6 +4,7 @@ import { contentService } from '../services'
 import { mapPublicSectionDTO } from '../mappers'
 import { ApiError } from '@shared/api'
 import { useDebouncedValue } from '@shared/hooks'
+import { contentKeys } from './useAdminSectionViewModel'
 
 interface UseSectionViewModelResult {
   section: Section | null
@@ -25,7 +26,7 @@ export function useSectionViewModel(sectionName: string): UseSectionViewModelRes
   const debouncedSectionName = useDebouncedValue(sectionName, 250)
 
   const query = useQuery({
-    queryKey: ['public', 'section', debouncedSectionName],
+    queryKey: contentKeys.publicSection(debouncedSectionName),
     queryFn: () => contentService.getPublicSection(debouncedSectionName),
     select: (response) => mapPublicSectionDTO(response.section),
     enabled: Boolean(debouncedSectionName),

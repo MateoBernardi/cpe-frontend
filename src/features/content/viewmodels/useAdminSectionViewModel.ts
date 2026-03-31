@@ -16,6 +16,8 @@ export const contentKeys = {
   sectionsList: () => [...contentKeys.all, 'sections-list'] as const,
   section: (id: number) => [...contentKeys.all, 'section', id] as const,
   preview: (id: number) => [...contentKeys.all, 'preview', id] as const,
+  public: () => ['public'] as const,
+  publicSection: (name: string) => [...contentKeys.public(), 'section', name] as const,
 }
 
 // ── Hook: listar secciones ──

@@ -12,6 +12,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import type { AdminTextContent } from '../../models'
 import { getCanvasConfig, type TextSlotConfig, type MediaSlotConfig } from '../../config/sectionCanvasConfig'
+import { matchTextToSlot } from '../../config/sectionCanvasConfig'
 import SectionGuide from './SectionGuide'
 import GalleryPicker from './GalleryPicker'
 import type { GalleryMedia } from '../../viewmodels'
@@ -173,18 +174,29 @@ export default function SectionCanvasEditor({
       return
     }
 
-    if (editingTextId !== null) {
-      const existingText = section?.texts.find((t) => t.id === editingTextId)
-      if (existingText?.status === 'DRAFTED' && onPatchText) {
+    const existingById = editingTextId !== null
+      ? section?.texts.find((t) => t.id === editingTextId)
+      : undefined
+    const existingBySlot = section
+      ? matchTextToSlot(section.texts, slotConfig)
+      : undefined
+    const existingText = existingById ?? existingBySlot
+
+    if (existingText) {
+      if (existingText.status === 'DRAFTED' && onPatchText) {
         // Texto DRAFTED → actualizar body in-place
         onPatchText(existingText.id, editValue.trim())
       } else {
         // Texto PUBLISHED → crear nuevo DRAFTED de reemplazo
-        const order = existingText?.order ?? (slotConfig.slotIndex + 1)
+        const order = Number.isFinite(existingText.order)
+          ? existingText.order
+          : (slotConfig.slotIndex + 1)
         onCreateText(editValue.trim(), slotConfig.role, order)
       }
     } else {
-      const order = getNextOrderForRole(slotConfig.role, 'text')
+      const order = slotConfig.multiple
+        ? getNextOrderForRole(slotConfig.role, 'text')
+        : (slotConfig.slotIndex + 1)
       onCreateText(editValue.trim(), slotConfig.role, order)
     }
 

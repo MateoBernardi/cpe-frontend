@@ -7,6 +7,13 @@ html, body {
   font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* ── Mobile typography scale ── */
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+}
+
 /* ── Smooth scroll (Lenis) ── */
 html.lenis, html.lenis body {
   height: auto;

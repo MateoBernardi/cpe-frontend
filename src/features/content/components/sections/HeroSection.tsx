@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Section } from '../../models'
 import { textByRole, mediasByRole } from './sectionHelpers'
-import { colors, layout } from '../../../../theme'
+import { colors, layout, fontSizes } from '../../../../theme'
 
 interface Props { section: Section }
 
@@ -46,12 +46,18 @@ export default function HeroSection({ section }: Props) {
       )}
       <div className={`relative z-20 w-full text-center ${layout.containerNarrow}`}>
         {headline && (
-          <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl drop-shadow-lg font-primary">
+          <h1
+            className="text-[length:var(--hero-title-mobile-size)] font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl drop-shadow-lg font-primary"
+            style={{ '--hero-title-mobile-size': fontSizes['3xl'] } as React.CSSProperties}
+          >
             {headline.body}
           </h1>
         )}
         {subheadline && (
-          <p className="mx-auto mt-[2vh] max-w-2xl text-lg leading-relaxed text-white/80 sm:text-xl drop-shadow">
+          <p
+            className="mx-auto mt-[2vh] max-w-2xl text-[length:var(--hero-subtitle-mobile-size)] leading-relaxed text-white/80 sm:text-xl drop-shadow"
+            style={{ '--hero-subtitle-mobile-size': fontSizes.base } as React.CSSProperties}
+          >
             {subheadline.body}
           </p>
         )}
@@ -68,7 +74,7 @@ export default function HeroSection({ section }: Props) {
               </a>
             )}
             {ctaSecondary && (
-              <a href="#about"
+              <a href="/servicios/seleccion-de-personal#postulaciones"
                 className="inline-block rounded-xl border-2 border-white/30 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:border-white/50 hover:bg-white/20 sm:px-8 sm:py-3.5"
                 style={{ backgroundColor: colors.ctaGhost }}
               >
