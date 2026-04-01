@@ -59,7 +59,7 @@ export interface MediaSlotProps {
   onDelete: (id: number) => void
   onPublish?: (mediaId: number, blockId: number) => void
   isPublishing?: boolean
-  onPickFromGallery?: () => void
+  onPickFromGallery?: (options?: { preserveOrder?: number }) => void
   showAddButtonWithExistingItems?: boolean
   className?: string
 }
@@ -93,7 +93,7 @@ export interface SlotContext {
   removeFile?: (fileId: number) => void
   sectionId: number
   // ── Galería ──
-  pickFromGallery?: (config: MediaSlotConfig) => void
+  pickFromGallery?: (config: MediaSlotConfig, options?: { preserveOrder?: number }) => void
 }
 
 // ── Props de layouts de sección ──

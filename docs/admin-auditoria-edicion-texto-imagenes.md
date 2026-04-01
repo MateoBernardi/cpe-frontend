@@ -1,481 +1,258 @@
-# Auditoria tecnica de /admin (edicion de textos e imagenes)
+# Auditoria tecnica backend vs frontend (/admin)
 
-Fecha: 2026-03-31
-Alcance: flujo de contenido del panel admin para secciones, preview y galeria.
-Foco: edicion de texto e imagen, payloads por boton, estados, orden, altas/reemplazos, contratos HTTP, inconsistencias y mejoras.
-
----
-
-## 1) Mapa funcional de /admin (contenido)
-
-- /sections: listado de secciones editables.
-- /sections/:sectionId: editor visual (canvas) de una seccion.
-- /preview: previsualizacion agrupada + publicar/descartar borradores.
-- /gallery: gestion global de imagenes + asignacion a secciones.
-
-Nota: /contacts y /candidates existen en /admin, pero no forman parte del flujo de edicion de textos/imagenes de contenido del sitio.
+Fecha: 2026-03-31  
+Alcance: edicion de textos, imagenes, preview, public y galeria.  
+Objetivo: documentar el funcionamiento real del backend y las inconsistencias con frontend para resolver issues.
 
 ---
 
-## 2) Estados de contenido y modelo operativo
+## 1. Resumen ejecutivo
 
-### 2.1 Estados principales
-
-- Bloques: DRAFTED | PUBLISHED.
-- Texto e imagen heredan estado del bloque.
-- Archivos: a nivel DTO aparecen PENDING | QUARANTINE | VERIFIED | REJECTED, pero en modelo de UI se usan PENDING | UPLOADED (ver inconsistencias).
-
-### 2.2 Regla de visualizacion Draft-over-Published
-
-Para un mismo order, si hay DRAFTED y PUBLISHED, el editor muestra el DRAFTED y oculta el PUBLISHED.
-Esto aplica al matcheo de slots de texto e imagen.
-
-Impacto:
-- Editar contenido publicado no pisa en caliente: crea reemplazo DRAFTED.
-- Hasta publicar, conviven viejo (PUBLISHED) y nuevo (DRAFTED), pero la UI prioriza nuevo.
+- El backend de contenido implementa modelo incremental por eventos (create/patch/delete/swap/publish), no por snapshot completo de seccion.
+- La publicacion backend esta modelada para reemplazar por posicion (`section_id + role + order`) en transaccion.
+- El backend de preview admin ya aplica dedupe por posicion con prioridad de draft.
+- La mayoria de inconsistencias visibles de "sigue mostrando el viejo" vienen de  estrategias de seleccion/render del frontend en capas que no aplican una regla uniforme de prioridad.
+- Hay incoherencias internas de contratos en modulo files (estado `UPLOADED` legacy vs pipeline `QUARANTINE/VERIFIED/REJECTED`, y uso de `tamaño`).
 
 ---
 
-## 3) Reglas de orden (sumar, reemplazar, crear)
+## 2. Contrato backend real (validado en codigo)
 
-### 3.1 Cuandos se suma el orden (+1)
+### 2.1 Endpoints de contenido (admin)
 
-Texto:
-- Alta en slot multiple sin existente especifico: next order del role + 1.
-- Alta en slot simple vacio: slotIndex + 1 (no usa max global del role).
+- `GET /content/gallery`
+- `GET /content/sections`
+- `GET /content/sections/:sectionId` (devuelve bloques activos, draft + published)
+- `GET /content/sections/:sectionId/preview` (dedupe por `role+order` con prioridad draft)
+- `POST /content/sections/:sectionId/content` (crea bloques DRAFTED de texto/media)
+- `POST /content/sections/:sectionId/publish` (publicacion masiva de drafts de la seccion)
+- `POST /content/media/draft` (upload + creacion de media y bloque DRAFTED si viene `section_id`)
+- `POST /content/media/:mediaId/publish` con `{ block_id }`
+- `POST /content/texts/:textId/publish` con `{ block_id }`
+- `PATCH /content/texts/:textId`
+- `PATCH /content/media/:mediaId`
+- `PATCH /content/blocks/:blockId`
+- `DELETE /content/blocks/:blockId`
+- `DELETE /content/texts/:textId`
+- `DELETE /content/media/:mediaId`
 
-Imagen:
-- Upload nuevo en slot multiple/simple: next order del role + 1.
-- En Files panel (R2): usa files.length + 1 para role attachment.
+### 2.2 Endpoints de archivos (admin/public)
 
-### 3.2 Cuandos se reemplaza conservando orden
+- `POST /content/files/upload-url`
+- `POST /content/files/:fileId/confirm`
+- `GET /content/files`
+- `GET /content/files/:fileId/download-url`
+- `PATCH /content/file-blocks/:blockId`
+- `DELETE /content/files/:fileId`
+- `POST /public/files/upload-url` (PDF only, tamano maximo forzado)
+- `POST /public/files/:fileId/confirm`
 
-Texto publicado:
-- Al guardar sobre texto PUBLISHED, NO hace PATCH.
-- Crea nuevo DRAFTED con el mismo order del texto publicado.
+### 2.3 Endpoints publicos de contenido
 
-Imagen publicada:
-- Boton Cambiar imagen sube nueva imagen DRAFTED con preserveOrder = order actual.
-- La imagen publicada vieja queda hasta publicar cambios.
-
-### 3.3 Cuando crea entradas nuevas
-
-Texto:
-- Guardar en slot vacio -> POST content con texts[1].
-- Guardar sobre PUBLISHED -> POST content con texts[1] (reemplazo por borrador).
-- Reordenar texto cuando participa algun PUBLISHED -> POST content con texts[2] (duplicacion de ambos con orden invertido).
-
-Imagen:
-- Upload (drop/click) -> POST media/draft (nueva media + bloque DRAFTED).
-- Asignar desde galeria -> POST content con media[1] (nuevo bloque asociado).
-- Reordenar imagen cuando participa algun PUBLISHED -> POST content con media[2] (nuevos bloques DRAFTED con orden invertido).
-
----
-
-## 4) Botones y payloads exactos
-
-## 4.1 Editor de seccion (/sections/:id)
-
-### Header
-
-1. Boton Publicar cambios
-- Accion: publicar todos los DRAFTED de la seccion.
-- HTTP: POST /content/sections/:sectionId/publish
-- Body: sin body
-- Estado UI: isPending de mutacion + disabled si draftedBlockCount = 0.
-
-2. Boton Previsualizar sitio
-- Accion: navegacion a /preview
-- HTTP: no aplica
-
-### Edicion de texto inline
-
-3. Boton Guardar (editor inline)
-- Caso A: texto DRAFTED existente -> PATCH /content/texts/:textId
-- Body A: { "body": "..." }
-- Caso B: texto PUBLISHED existente -> POST /content/sections/:sectionId/content
-- Body B: {
-  "texts": [{ "body": "...", "role": "...", "order": N }]
-}
-- Caso C: slot vacio -> POST /content/sections/:sectionId/content
-- Body C: igual a B con order calculado por slot/regla.
-
-4. Boton Publicar texto (chip/hover sobre texto DRAFTED)
-- HTTP: POST /content/texts/:textId/publish
-- Body: { "block_id": blockId }
-
-5. Boton Eliminar texto
-- Secuencia:
-  1) DELETE /content/blocks/:blockId
-  2) DELETE /content/texts/:textId
-- Body: sin body en ambos.
-
-6. Flechas reorden texto (arriba/abajo)
-- Caso A: ambos DRAFTED
-  - PATCH /content/blocks/:blockIdA { "order": orderB }
-  - PATCH /content/blocks/:blockIdB { "order": orderA }
-- Caso B: alguno PUBLISHED
-  - POST /content/sections/:sectionId/content
-  - Body:
-    {
-      "texts": [
-        { "body": "textoA", "role": "roleA", "order": orderB },
-        { "body": "textoB", "role": "roleB", "order": orderA }
-      ]
-    }
-
-### Edicion de imagen inline
-
-7. Upload imagen (drop/click en slot)
-- HTTP: POST /content/media/draft (multipart/form-data)
-- Campos form-data:
-  - image: file binario
-  - section_id: string
-  - role: string
-  - order: string
-  - title: string aleatorio basado en timestamp
-
-8. Boton Publicar imagen (hover sobre imagen DRAFTED)
-- HTTP: POST /content/media/:mediaId/publish
-- Body: { "block_id": blockId }
-
-9. Boton Cambiar imagen (reemplazo)
-- HTTP: POST /content/media/draft (multipart)
-- Particularidad: conserva order actual via preserveOrder.
-
-10. Boton Eliminar imagen
-- HTTP: DELETE /content/blocks/:blockId
-- Efecto: desasocia de la seccion; no borra globalmente el media.
-
-11. Boton O elegir de la galeria / Galeria
-- Flujo: abrir modal -> seleccionar -> confirmar.
-- HTTP: POST /content/sections/:sectionId/content
-- Body:
-  {
-    "media": [
-      { "media_id": mediaId, "role": "slotRole", "order": N }
-    ]
-  }
-
-12. Flechas reorden imagen (slots multiples)
-- Caso A: ambos DRAFTED -> PATCH de ambos blocks (swap order).
-- Caso B: alguno PUBLISHED -> POST content con 2 items media (swap por creacion de DRAFTED).
-- Body caso B:
-  {
-    "media": [
-      { "media_id": mediaA, "role": "roleA", "order": orderB },
-      { "media_id": mediaB, "role": "roleB", "order": orderA }
-    ]
-  }
-
-### Files panel (seccion news)
-
-13. Boton Subir archivo
-- Paso 1: POST /content/files/upload-url
-- Body paso 1:
-  {
-    "filename": "...",
-    "content_type": "...",
-    "title": "...",
-    "section_id": sectionId,
-    "role": "attachment",
-    "order": files.length + 1
-  }
-- Paso 2: PUT directo a upload.url (Cloudflare R2)
-- Body paso 2: binario del archivo
-- Paso 3: POST /content/files/:fileId/confirm
-- Body paso 3: { "tamaño": file.size }
-
-14. Boton Descargar archivo
-- HTTP: GET /content/files/:fileId/download-url
-- Efecto: abre URL firmada en nueva pestana.
-
-15. Boton Eliminar archivo
-- HTTP: DELETE /content/files/:fileId
-
-## 4.2 Preview (/preview)
-
-16. Boton Guardar cambios
-- Recolecta secciones con drafts y publica en paralelo.
-- HTTP: POST /content/sections/:id/publish por cada id.
-- Body: sin body.
-
-17. Boton Descartar borradores
-- Busca todos los blocks DRAFTED (text/media/file) de las secciones cargadas.
-- HTTP: DELETE /content/blocks/:blockId por cada bloque.
-- Body: sin body.
-
-## 4.3 Galeria (/gallery)
-
-18. Boton Asignar a seccion (card)
-- Abre modal de asignacion.
-- Confirmar Asignar -> POST /content/sections/:sectionId/content
-- Body:
-  {
-    "media": [
-      { "media_id": mediaId, "role": "roleElegido", "order": order }
-    ]
-  }
-
-19. Boton Eliminar imagen (card)
-- HTTP: DELETE /content/media/:mediaId
-- Si backend rechaza por asociaciones activas, se muestra dialog con asociaciones.
-
-20. Boton Eliminar asociacion (en dialog de error de borrado)
-- HTTP: DELETE /content/blocks/:blockId
-- Luego se refrescan caches de galeria y contenido.
+- `GET /public/sections`
+- `GET /public/sections/:sectionName` (solo bloques PUBLISHED)
 
 ---
 
-## 5) Contratos HTTP relevantes (resumen)
+## 3. Reglas de negocio backend que impactan frontend
 
-### Lectura
-- GET /content/sections
-- GET /content/sections/:sectionId
-- GET /content/sections/:sectionId/preview
-- GET /content/gallery
+### 3.1 Lectura admin vs preview vs public
 
-### Escritura texto/media
-- POST /content/sections/:sectionId/content
-  - texts[]: { body, role?, order? }
-  - media[]: { media_id, role?, order? }
-- PATCH /content/texts/:textId { body? }
-- PATCH /content/media/:mediaId { title?, url?, mime_type?, origin? }
-- PATCH /content/blocks/:blockId { role?, order? }
+- Admin (`/sections/:id`): trae bloques activos sin filtrar por status (coexisten DRAFTED y PUBLISHED).
+- Preview admin (`/sections/:id/preview`): usa `DISTINCT ON (role, order)` y orden por status para priorizar draft en empate de posicion.
+- Public (`/public/sections/:name`): solo `PUBLISHED`.
 
-### Publicacion
-- POST /content/sections/:sectionId/publish
-- POST /content/texts/:textId/publish { block_id }
-- POST /content/media/:mediaId/publish { block_id }
+### 3.2 Publicacion
 
-### Borrado
-- DELETE /content/blocks/:blockId
-- DELETE /content/texts/:textId
-- DELETE /content/media/:mediaId
-- DELETE /content/files/:fileId
+- Publicar bloque individual (`publishBlock`) y publicar seccion (`publishSection`) hacen:
+1. Buscar DRAFTED activo.
+2. Soft-delete de cualquier `PUBLISHED` en la misma posicion (`section_id`, `role`, `order`).
+3. Promocionar DRAFTED a PUBLISHED.
+- Este flujo es transaccional en repositorio.
 
-### Uploads
-- POST /content/media/draft (multipart)
-- POST /content/files/upload-url
-- PUT presigned URL (R2)
-- POST /content/files/:fileId/confirm
-- GET /content/files/:fileId/download-url
+### 3.3 Creacion y mutaciones
+
+- `POST /sections/:id/content` crea nuevos bloques DRAFTED (text/media) en batch transaccional.
+- `PATCH /blocks/:id` solo actualiza metadatos (`role`, `order`).
+- `DELETE /blocks/:id` solo desactiva bloque (soft delete), no borra entidad text/media/file asociada.
+
+### 3.4 Archivos y estados
+
+- Flujo actual de archivos admin/public:
+1. Crear registro en `PENDING` + upload URL.
+2. Confirmar upload -> `QUARANTINE`.
+3. Scanner mueve a `VERIFIED` o `REJECTED`.
+- Descarga firmada exige `VERIFIED`.
 
 ---
 
-## 6) Estados de UI por accion
+## 4. Matriz de alineacion backend vs frontend
 
-- Carga general seccion: isLoading.
-- Error general seccion: error + boton retry.
-- Upload media draft: isUploading.
-- Publicar media: isPublishingMedia.
-- Publicar texto: isPublishingText.
-- Upload R2: isUploadingR2.
-- Publicar seccion: publishMut.isPending.
-- Preview publicar masivo: publishMut.isPending.
-- Preview descartar: discardMut.isPending.
-- Galeria eliminar media: isDeleting.
-- Galeria asignar: isAssigning.
-- Galeria eliminar asociacion: isRemovingAssociation.
+## 4.1 Donde SI hay alineacion
 
-Observacion: varias mutaciones son globales por vista (no por item), entonces un pending puede bloquear/afectar feedback de multiples items a la vez.
+- Estrategia draft-first en edicion: backend soporta coexistencia draft/published y reemplazo al publicar.
+- Reemplazo por misma posicion: backend vacia `PUBLISHED` previo al promocionar draft.
+- Modelo incremental del cliente: backend esta disenado para recibir eventos parciales, no snapshot total.
 
----
+## 4.2 Donde NO hay alineacion (causas de issues)
 
-## 7) Problemas, inconsistencias y riesgos detectados
+1. Seleccion/render frontend no uniforme por status
+- Hecho backend: preview endpoint ya deduplica por `role+order` con prioridad draft.
+- Problema frontend: en vistas que renderizan desde arrays por `find`/primer item de role o helpers por role sin dedupe, puede elegirse el registro viejo por orden de llegada.
+- Efecto: "publique y sigo viendo el viejo" aunque backend haya publicado correctamente.
 
-### Alta prioridad
+2. Uso inconsistente de fuentes de datos para preview
+- Si frontend usa `GET /sections/:id` para preview visual sin aplicar dedupe local, hereda coexistencia draft/published y puede mezclar estado efectivo.
+- Para preview estable deberia usar `GET /sections/:id/preview` o aplicar la misma regla de dedupe en cliente.
 
-1. Reorden de cards de Novedades puede desalinear texto/imagen si falta alguna miniatura
-- Al swap de cards, siempre intercambia textos, pero miniaturas solo si existen ambas.
-- Resultado: posible mismatch texto-imagen por indice.
+3. Delete de texto en dos requests desde frontend
+- Hecho backend: existen endpoints separados para bloque y texto.
+- Problema: frontend puede hacer `DELETE block` y luego `DELETE text`; si falla el segundo queda estado parcial.
+- Impacto: inconsistencia funcional/UX, aunque el backend opere segun contrato.
 
-2. Eliminacion de texto en 2 requests sin transaccion (delete block -> delete text)
-- Si falla el segundo DELETE, puede quedar estado parcial.
-- No hay rollback ni manejo de error intermedio en esa cadena.
+4. Estados de files divergentes entre capas
+- Hecho backend: constraint y repositorio usan `PENDING|UPLOADED|QUARANTINE|VERIFIED|REJECTED`.
+- Problema: flujo operativo real usa `QUARANTINE/VERIFIED/REJECTED`, pero hay consultas legacy por `UPLOADED` (public files list), y algunos modelos UI simplifican estados.
+- Impacto: listados y reglas de botones pueden ocultar estados reales o no mostrar archivos esperados.
 
-3. Asignacion desde galeria cierra modal antes de confirmar exito
-- Se ejecuta onAssign(...) y onClose() inmediatamente.
-- Si falla API, el usuario pierde contexto de intento y no ve error localizado en modal.
+5. Campo `tamaño` en DTO/DB
+- Hecho backend: contratos de files usan `tamaño`.
+- Problema de integracion: clientes tipados suelen esperar `size`; aumenta riesgo de errores de serializacion/mapeo.
 
-### Media prioridad
-
-4. Divergencia de estados de archivo entre DTO y modelo UI
-- DTO: PENDING | QUARANTINE | VERIFIED | REJECTED.
-- Modelo UI: PENDING | UPLOADED.
-- Se castea estado; puede ocultar estados reales y romper reglas (ej: boton descargar solo para UPLOADED).
-
-5. Campo tamaño en contratos de archivo usa clave no estandar
-- Confirm payload usa { "tamaño": number }.
-- Riesgo de interoperabilidad/typing si algun consumidor espera "size".
-
-6. Roles definidos en sectionRoles no reflejan todos los slots del canvas en algunas secciones
-- Ejemplos: slots cta_heading/cta existen en canvas de servicios, pero no en algunas listas de roles.
-- Hoy impacta poco porque canvas domina, pero genera incoherencia y deuda para features que usen role lists.
-
-7. Mutaciones de lote por loops sin await coordinado en algunos caminos
-- Algunos flujos disparan multiples mutaciones item por item.
-- Dificulta feedback preciso por item, retries y consistencia eventual.
-
-8. Render de preview/publico sin prioridad explicita por estado (DRAFTED vs PUBLISHED)
-- El editor canvas SI aplica prioridad DRAFTED por order para slots conectados.
-- Pero el render de secciones (incluyendo /preview) usa helpers por rol que no conocen status.
-- Si backend devuelve para un mismo role/order ambos registros, el frontend puede mostrar el viejo PUBLISHED segun el orden de llegada de blocks.
-
-9. Seleccion por "primer elemento del rol" en muchas secciones
-- textByRole/mediaByRole devuelven el primer match por role.
-- En empates de order (viejo+nuevo), mostrar uno u otro depende del orden del array que devuelve backend.
-- Esto explica por que en algunas secciones se ve bien y en otras queda el anterior.
-
-10. Vista previa de Hero en canvas usa find() directo y puede mostrar publicado viejo
-- En la pestana Preview de Hero, se hace find por role sobre section.texts sin dedupe por status.
-- Aunque en la pestana Textos del canvas se vea el DRAFTED correcto, la mini-preview de Hero puede mostrar el texto anterior.
-
-### Baja prioridad
-
-11. Codigo legacy exportado/no usado (TextEditor, MediaEditor, submitNewContent)
-- Hay piezas antiguas visibles en VM y exports que no participan del canvas actual.
-- Aumenta ruido y costo de mantenimiento.
-
-12. Mensajeria de estados parcial en errores de operaciones especificas
-- Hay buenos errores generales, pero faltan algunos errores granulares por accion (ej. replace image, assign gallery inline).
+6. Publicacion sin drafts devuelve error de dominio no tipado
+- Hecho backend: `publishSection` lanza `No drafted blocks to publish`.
+- Problema: sin error mapping consistente a 4xx, el frontend puede recibir 500 generico y tratarlo como fallo tecnico.
 
 ---
 
-## 8) Lugares con mejoras concretas
+## 5. Inconsistencias tecnicas detectadas en backend
 
-1. Asegurar atomicidad en delete text
-- Opcion A: endpoint backend unico para borrar bloque+texto.
-- Opcion B: manejar fallo del segundo delete con compensacion/retry.
+1. Metodo legacy `findWebUploaded` filtra `state = UPLOADED`
+- Riesgo: no refleja pipeline actual (`QUARANTINE -> VERIFIED`).
+- Resultado probable: `/public/files` puede omitir archivos validos si ya no se usa `UPLOADED` en ese flujo.
 
-2. Reorden robusto en Novedades
-- Reordenar por entidad card explicita (texto + thumb id) o persistir pairing por clave comun, no por indice.
+2. Convencion de nombres no estandar en payload
+- `ConfirmUploadDTO` recibe `{ tamaño?: number }`.
+- Deuda: baja interoperabilidad con clientes JS/TS no hispanizados.
 
-3. Asignacion de galeria con UX transaccional
-- Mantener modal abierto hasta exito.
-- Mostrar error inline en modal y permitir reintento.
+3. Mapeo de errores de dominio insuficiente
+- El codigo lanza `Error` plano en varios servicios/repositorios.
+- Sin middleware de errores tipado, el frontend no puede distinguir con precision conflictos funcionales vs errores internos.
 
-4. Unificar contrato de estados de archivo
-- Resolver mapeo completo QUARANTINE/VERIFIED/REJECTED.
-- Alinear condicion de boton descargar con estado real backend.
-
-5. Estandarizar payload de confirm upload
-- Evaluar migrar de tamaño -> size (con compatibilidad backward).
-
-6. Limpiar codigo legacy
-- Eliminar componentes/acciones sin uso o documentar plan de deprecacion.
-
-7. Instrumentacion y trazabilidad
-- Agregar telemetry por accion critica (swap, replace, assign, delete chain).
-- Incluir IDs de section/block/media para debugging.
+4. `status` modelado como `string` (sin enum fuerte)
+- Afecta robustez en compile time y facilita divergencias de valores entre backend/frontend.
 
 ---
 
-## 9) Matriz rapida: crear vs reemplazar vs sumar orden
+## 6. Plan de resolucion recomendado (issues)
 
-- Crear nuevo texto: slot vacio o agregar item -> POST content.texts[]
-- Reemplazar texto publicado: guardar sobre PUBLISHED -> POST content.texts[] con mismo order
-- Editar texto borrador: guardar sobre DRAFTED -> PATCH text
-- Crear nueva imagen: upload draft -> POST media/draft
-- Reemplazar imagen publicada: boton cambiar -> POST media/draft con preserveOrder
-- Sumar orden texto multiple: max(order role)+1
-- Sumar orden imagen multiple: max(order role)+1
-- Reorden DRAFTED vs DRAFTED: PATCH blocks swap
-- Reorden con PUBLISHED involucrado: crear 2 DRAFTED nuevos con orden invertido
+### Issue 1: Regla unica de seleccion efectiva en frontend
 
----
+- Objetivo: aplicar la misma semantica en canvas, preview y render publico interno de admin.
+- Regla propuesta por posicion: priorizar `DRAFTED` sobre `PUBLISHED` para empate de (`role`, `order`); si no hay draft, usar published.
+- Aceptacion:
+1. Mismo dataset produce misma salida en todas las vistas.
+2. Caso "viejo+nuevo mismo role/order" siempre muestra draft en admin preview.
 
-## 10) Conclusiones
+### Issue 2: Consumir endpoint de preview correcto
 
-- La estrategia general de borradores esta bien planteada: evita pisar contenido publicado y permite preview segura.
-- El comportamiento de orden esta bastante consistente en slots multiples y en reemplazos, con una excepcion importante en Novedades cuando falta miniatura en alguna card.
-- Los principales riesgos actuales son de consistencia transaccional (delete en 2 pasos), de contrato de estado de archivos, de UX/error handling en asignacion desde galeria y de no unificar DRAFTED>PUBLISHED en el render de preview/publico.
+- Objetivo: que la vista de preview admin use `GET /content/sections/:id/preview` como fuente principal.
+- Aceptacion:
+1. Preview no depende del orden de arrays de `/sections/:id`.
+2. Desaparecen regresiones de "muestra publicado viejo" en secciones de riesgo alto.
 
----
+### Issue 3: Delete atomico de texto
 
-## 11) Casos reportados: como actua hoy el frontend vs backend
+- Opcion A (preferida): endpoint backend unico para borrar bloque+texto en transaccion.
+- Opcion B: mantener dos endpoints, pero con compensacion/retry idempotente desde frontend.
+- Aceptacion:
+1. No quedan estados parciales tras fallo intermedio.
+2. Mensaje de error accionable por item.
 
-### 11.1 "Edito texto, queda DRAFTED, publico y sigue el viejo"
+### Issue 4: Normalizar estados de files
 
-Comportamiento esperado por backend (segun tu descripcion):
-- Al publicar, para mismo order debe sobrevivir solo el mas reciente publicado.
+- Tarea backend:
+1. Definir estado canonico (recomendado: `PENDING|QUARANTINE|VERIFIED|REJECTED`).
+2. Corregir consultas legacy (`UPLOADED`) o documentar su uso real.
+3. Exponer enum DTO consistente.
+- Tarea frontend:
+1. Mapear todos los estados del backend.
+2. Habilitar descarga solo para `VERIFIED`.
+- Aceptacion:
+1. UI refleja estado real de backend sin casteos ambiguos.
 
-Comportamiento actual frontend:
-- En canvas editor (slots conectados): suele verse bien porque hay dedupe DRAFTED sobre PUBLISHED por order.
-- En /preview y render de secciones: no hay dedupe por status. Se selecciona por role (primer item) y/o por listas ordenadas solo por order.
-- Si llegan dos bloques con mismo role/order (viejo+nuevo), puede seguir visible el viejo aunque backend ya haya promovido el nuevo, dependiendo del orden de blocks retornado.
+### Issue 5: Estandarizar `tamaño` -> `size`
 
-Resultado:
-- No necesariamente es que el backend "dejo el viejo"; muchas veces el frontend lo vuelve a elegir por estrategia de render.
+- Estrategia gradual:
+1. Backend acepta ambos (`tamaño` y `size`) temporalmente.
+2. Backend responde ambos por una version.
+3. Deprecar `tamaño` con fecha.
+- Aceptacion:
+1. Ningun cliente rompe en migracion.
 
-### 11.2 "Intercambio imagenes y en admin preview se ve la PUBLISHED"
+### Issue 6: Contrato de errores tipado
 
-Comportamiento actual frontend:
-- Reorden con PUBLISHED involucrado crea dos bloques DRAFTED nuevos con order invertido (no parchea los publicados).
-- En el canvas de edicion, los slots conectados suelen priorizar DRAFTED por order.
-- En render de preview/secciones, mediaByRole/mediasByRole no filtran por status: ordenan por order y toman primero o por indice.
-- Si coexisten vieja publicada y nueva draft con mismo order, puede quedar visible la publicada en algunas secciones.
-
-Por que pasa "solo en algunas secciones":
-- Secciones que toman un unico elemento por role (ej. photo/background con mediaByRole) son mas propensas.
-- Secciones con mapeo por indice (ej. about/news/info primaria/secundaria) pueden mezclar pares texto-imagen o mostrar combinaciones inconsistentes.
-
-### 11.3 "Confirmo/publico y sigue la vieja publicada"
-
-Que hace frontend tras publicar:
-- Dispara publish y refetch de queries de content.
-- Si el endpoint de lectura/preview devuelve arrays con duplicados por role/order o con orden no estable para empates, la UI puede volver a elegir el registro viejo por role.
-
-Interpretacion:
-- El problema visible puede persistir aun con publish exitoso por criterio de seleccion en frontend, no solo por persistencia en backend.
-
-### 11.4 Matriz exhaustiva por tipo de seccion (riesgo de mostrar viejo)
-
-Riesgo alto:
-- Hero (render por role + preview de canvas con find directo)
-- Secondary Hero (heading/subtitle/cta/photo por role)
-- ServiceDetail/Recruitment/GenerationalTransfer (heading/subtitle/cta/photo por role)
-- Teasers (heading/subtitle/cta por role)
-
-Riesgo medio-alto (por indice ademas de role):
-- About (bios/paragraphs/photos por indices 0/1)
-- News (paragraphs + thumbnails emparejados por indice)
-- InfoPrimary (bullets + icons por indice)
-- InfoSecondary (paragraphs + quotes por indice)
-
-Riesgo bajo:
-- Canvas de edicion en slots conectados (aca si hay dedupe DRAFTED>PUBLISHED por order).
-
-### 11.5 Veredicto de alineacion frontend vs backend
-
-- El frontend NO esta completamente alineado al contrato backend de "ultimo publicado por mismo order" en las capas de preview/render de secciones.
-- Si backend elimina/reemplaza correctamente, igualmente puede verse viejo por la estrategia de seleccion del frontend cuando hay coexistencia temporal o respuestas con orden ambiguo en empates.
-- Para que quede acorde: la regla de prioridad por status y/o por recencia debe aplicarse de forma uniforme en TODAS las capas (canvas, preview y render de secciones).
+- Tarea backend:
+1. Introducir errores de dominio (`code`, `message`, `details`, `httpStatus`).
+2. Middleware global para mapear errores a 4xx/5xx consistentes.
+- Aceptacion:
+1. Frontend puede manejar UX especifica por causa (ej. 409, 422, 404).
 
 ---
 
-## 12) Aclaracion clave: el frontend NO envia "snapshot completo" de nuevos elementos
+## 7. Casos reportados y diagnostico backend
 
-Expectativa planteada:
-- "El frontend deberia mandar: estos son los nuevos (DRAFTED), backend borra el resto, devuelve solo los nuevos".
+### Caso A: "Edito, publico y sigue el viejo"
 
-Comportamiento real del frontend hoy:
-- No manda el estado final completo de la seccion.
-- Opera por mutaciones incrementales (crear/patch/reorden por pares) y luego llama a publish.
+- Backend: publica por posicion en transaccion y soft-delete del published anterior.
+- Diagnostico: si persiste visualmente, la causa mas probable es seleccion frontend (fuente o dedupe) y no falla de publish.
 
-Que SI envia:
-- Altas puntuales: POST /content/sections/:sectionId/content (texts[] o media[] parciales).
-- Edicion puntual de borrador: PATCH /content/texts/:id.
-- Reorden DRAFTED vs DRAFTED: PATCH /content/blocks/:id (swap de order).
-- Reorden con PUBLISHED involucrado: crea 2 DRAFTED nuevos (solo ese par), no un reemplazo total de la seccion.
-- Publicacion final: POST /content/sections/:sectionId/publish sin snapshot de items.
+### Caso B: "Swap de imagenes y en preview admin aparece la vieja"
 
-Implicancia:
-- El backend recibe "eventos" parciales, no "estado final deseado".
-- Por eso, si el render frontend no aplica una regla uniforme DRAFTED>PUBLISHED, puede verse contenido viejo aun con publish exitoso.
+- Backend: soporta coexistencia de estados y priorizacion en endpoint preview.
+- Diagnostico: si la vista usa colecciones sin dedupe uniforme o mezcla por indice/role, puede emerger published viejo por estrategia de render.
 
-Conclusion operativa:
-- La frase "no siempre" es correcta: con el flujo actual no hay garantia de semantica de reemplazo total desde el cliente.
-- Para lograr esa semantica, se necesita o:
-  1) endpoint de reemplazo atomico por seccion (snapshot), o
-  2) mantener el flujo incremental pero unificar estrictamente la seleccion en frontend para priorizar el ultimo estado efectivo.
+### Caso C: "Confirmo upload y no puedo descargar"
+
+- Backend: descarga solo para `VERIFIED`.
+- Diagnostico: entre confirmacion y verificacion del scanner, el estado esperado es `QUARANTINE`; no es fallo, es estado transitorio.
+
+---
+
+## 8. Recomendaciones de implementacion inmediata
+
+1. Frontend: centralizar helper de "contenido efectivo" por (`role`,`order`,`status`) y reutilizarlo en todas las secciones.
+2. Frontend: para preview admin, consumir endpoint `.../preview` en lugar de arrays completos de admin.
+3. Backend: agregar endpoint atomico para delete text+block.
+4. Backend: corregir/retirar dependencia de `UPLOADED` en consultas publicas de files.
+5. Backend+Frontend: iniciar migracion de `tamaño` a `size` con compatibilidad temporal.
+6. Backend: formalizar middleware de errores con codigos de dominio.
+
+---
+
+## 9. Veredicto final
+
+- Backend de contenido esta bien encaminado en semantica de borradores, publicacion transaccional y reemplazo por posicion.
+- Las inconsistencias que hoy generan issues en /admin se explican principalmente por diferencias de seleccion/render en frontend entre canvas, preview y vistas por seccion.
+- El frente de archivos requiere saneamiento de contrato (estados y naming) para evitar confusiones y bugs de integracion.
+- Con una regla unica de contenido efectivo y pequenos ajustes de contrato, el sistema puede quedar consistente extremo a extremo sin reescribir el modelo incremental actual.
+
+---
+
+## 10. Estado de implementacion (backend, inicio)
+
+Implementado en esta iteracion:
+
+1. Contrato de archivos con compatibilidad `size` + `tamaño`.
+2. Respuestas de archivos y bloques de contenido ahora incluyen alias `size` para migracion gradual.
+3. Listado de archivos web acepta estado `VERIFIED` y mantiene compatibilidad con `UPLOADED` legacy.
+4. Middleware global de errores con soporte para errores de dominio (`code`, `message`, `details`, `httpStatus`).
+5. FilesService migrado a errores de dominio para casos de negocio frecuentes (not found, not verified, conflictos).
+6. Endpoint atomico de borrado texto+bloque agregado: `DELETE /content/text-blocks/:blockId`.
+
+Pendiente para siguientes iteraciones:
+
+1. Extender errores de dominio al resto de modulos (content/public/contacts/candidates).
+2. Exponer y versionar formalmente enums de estado para frontend.
+3. Definir deprecacion definitiva de `tamaño`.
+4. Implementar la regla unica de contenido efectivo en frontend (canvas/preview/render).

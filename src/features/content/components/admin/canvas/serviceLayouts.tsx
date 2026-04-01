@@ -52,6 +52,7 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
 
   const paragraphs = ctx.section ? matchAllTextsForRole(ctx.section.texts, 'paragraph') : []
   const quotes = ctx.section ? matchAllTextsForRole(ctx.section.texts, 'quote') : []
+  const quotesByOrder = new Map(quotes.map((q) => [q.order, q] as const))
 
   /** Reordenar sección de la dona */
   const swapSections = (indexA: number, indexB: number) => {
@@ -59,9 +60,9 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
     const pB = paragraphs[indexB]
     if (!pA || !pB) return
     ctx.swapTextOrder(pA, pB)
-    // También reordenar las quotes asociadas si existen
-    const qA = quotes[indexA]
-    const qB = quotes[indexB]
+    // También reordenar las quotes asociadas por posición (order) si existen
+    const qA = quotesByOrder.get(pA.order)
+    const qB = quotesByOrder.get(pB.order)
     if (qA && qB) {
       ctx.swapTextOrder(qA, qB)
     }
@@ -74,7 +75,7 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
         {/* Collapsibles (izq) */}
         <div className="space-y-3">
           {paragraphs.map((p, i) => {
-            const quote = quotes[i]
+            const quote = quotesByOrder.get(p.order)
             const pSlotId = `${paraConfig.id}-${i}`
             const qSlotId = `${quoteConfig.id}-${i}`
             return (

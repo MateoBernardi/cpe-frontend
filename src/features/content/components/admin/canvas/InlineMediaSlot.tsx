@@ -188,6 +188,19 @@ export default function InlineMediaSlot({
                     </svg>
                   </button>
                 )}
+                {onPickFromGallery && (
+                  <button
+                    type="button"
+                    onClick={() => onPickFromGallery({ preserveOrder: m.order })}
+                    className="rounded-full bg-teal-500 p-1 shadow"
+                    title="Reemplazar desde galería"
+                  >
+                    <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 3h17.25c.621 0 1.125.504 1.125 1.125v15.75c0 .621-.504 1.125-1.125 1.125H3.375A1.125 1.125 0 012.25 19.875V4.125C2.25 3.504 2.754 3 3.375 3z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h.008v.008H7.5V8.25zm2.25 8.25h7.5a.75.75 0 00.6-1.2l-2.026-2.702a.75.75 0 00-1.174-.03l-1.74 2.176-1.062-1.062a.75.75 0 00-1.06 0l-1.818 1.818a.75.75 0 00.53 1.28z" />
+                    </svg>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => { if (confirm('¿Eliminar este archivo?')) onDelete(m.id) }}
@@ -217,7 +230,7 @@ export default function InlineMediaSlot({
               {onPickFromGallery && (
                 <button
                   type="button"
-                  onClick={onPickFromGallery}
+                  onClick={() => onPickFromGallery()}
                   className="rounded-md bg-teal-50 px-2 py-1 text-[10px] font-medium text-teal-700 ring-1 ring-teal-200 transition-colors hover:bg-teal-100"
                 >
                   Galería
@@ -279,7 +292,7 @@ export default function InlineMediaSlot({
       {onPickFromGallery && (
         <button
           type="button"
-          onClick={onPickFromGallery}
+          onClick={() => onPickFromGallery()}
           className="mt-2 w-full rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-700 transition-colors hover:bg-teal-100"
         >
           O elegir de la galería

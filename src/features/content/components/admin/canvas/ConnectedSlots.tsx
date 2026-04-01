@@ -78,7 +78,9 @@ export function ConnectedMediaSlot({
       <InlineMediaSlot
         config={config}
         mediaItems={items}
-        onUpload={(file) => ctx.uploadToSlot(config, file)}
+        onUpload={(file, options) => {
+          ctx.uploadToSlot(config, file, options?.preserveOrder)
+        }}
         onDelete={(mediaId) => {
           const media = items.find((m) => m.id === mediaId)
           if (media) ctx.deleteMedia(media.blockId)
@@ -88,7 +90,10 @@ export function ConnectedMediaSlot({
           : undefined
         }
         isPublishing={ctx.isPublishingMedia}
-        onPickFromGallery={ctx.pickFromGallery ? () => ctx.pickFromGallery!(config) : undefined}
+        onPickFromGallery={ctx.pickFromGallery
+          ? (options) => ctx.pickFromGallery!(config, options)
+          : undefined
+        }
         className={className}
       />
     )
@@ -153,7 +158,10 @@ export function ConnectedMediaSlot({
                   : undefined
                 }
                 isPublishing={ctx.isPublishingMedia}
-                onPickFromGallery={undefined}
+                onPickFromGallery={ctx.pickFromGallery
+                  ? () => ctx.pickFromGallery!(config, { preserveOrder: media.order })
+                  : undefined
+                }
                 showAddButtonWithExistingItems={false}
               />
             </div>
@@ -170,7 +178,10 @@ export function ConnectedMediaSlot({
           onDelete={() => {}}
           onPublish={undefined}
           isPublishing={false}
-          onPickFromGallery={ctx.pickFromGallery ? () => ctx.pickFromGallery!(config) : undefined}
+          onPickFromGallery={ctx.pickFromGallery
+            ? () => ctx.pickFromGallery!(config)
+            : undefined
+          }
         />
       </div>
     </div>

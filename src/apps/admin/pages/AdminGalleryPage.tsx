@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useGalleryViewModel, useSectionsList } from '@features/content/viewmodels'
 import type { GalleryMedia } from '@features/content/viewmodels'
 import { getSectionDisplayName, getSectionRoles, ROLE_DISPLAY_NAMES } from '@features/content/config/sectionRoles'
@@ -94,18 +94,27 @@ function AssignDialog({
   sections,
   onAssign,
   isAssigning,
+  assignError,
   onClose,
 }: {
   media: GalleryMedia
   sections: { id: number; name: string }[]
   onAssign: (sectionId: number, mediaId: number, role: string, order: number) => void
   isAssigning: boolean
+  assignError?: string | null
   onClose: () => void
 }) {
   const [sectionId, setSectionId] = useState<number>(sections[0]?.id ?? 0)
   const [role, setRole] = useState('')
   const [order, setOrder] = useState(1)
   const [rolesOpen, setRolesOpen] = useState(true)
+  const [submitted, setSubmitted] = useState(false)
+
+  useEffect(() => {
+    if (submitted && !isAssigning && !assignError) {
+      onClose()
+    }
+  }, [submitted, isAssigning, assignError, onClose])
 
   // Obtener la sección seleccionada para derivar sus media roles
   const selectedSection = sections.find((s) => s.id === sectionId)
@@ -115,7 +124,7 @@ function AssignDialog({
     e.preventDefault()
     if (!sectionId || !role) return
     onAssign(sectionId, media.id, role, order)
-    onClose()
+    setSubmitted(true)
   }
 
   return (
@@ -227,6 +236,9 @@ function AssignDialog({
               {isAssigning ? 'Asignando…' : 'Asignar'}
             </button>
           </div>
+          {assignError && submitted && (
+            <p className="pt-2 text-sm text-red-600">{assignError}</p>
+          )}
         </form>
       </div>
     </div>
@@ -246,6 +258,7 @@ export default function AdminGalleryPage() {
     clearDeleteError,
     assignMedia,
     isAssigning,
+    assignError,
     removeAssociation,
     isRemovingAssociation,
   } = useGalleryViewModel()
@@ -339,6 +352,7 @@ export default function AdminGalleryPage() {
           sections={sectionsList}
           onAssign={assignMedia}
           isAssigning={isAssigning}
+          assignError={assignError}
           onClose={() => setAssignTarget(null)}
         />
       )}

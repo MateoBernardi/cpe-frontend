@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react'
-import { matchAllTextsForRole, matchMediaToSlot } from '../../../config/sectionCanvasConfig'
+import { matchAllTextsForRole, matchMediaToSlot, matchTextToSlot } from '../../../config/sectionCanvasConfig'
 import type { LayoutProps } from './canvasTypes'
 import InlineTextSlot from './InlineTextSlot'
 import { ConnectedTextSlot, ConnectedMediaSlot } from './ConnectedSlots'
@@ -151,11 +151,11 @@ export function HeroLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
             {/* Content */}
             <div className="relative z-10 flex h-full min-h-[320px] flex-col items-center justify-center p-6 text-center">
               {ctx.section && (() => {
-                const h  = ctx.section.texts.find((t) => t.role === 'headline')
-                const sh = ctx.section.texts.find((t) => t.role === 'subheading')
-                const c1 = ctx.section.texts.find((t) => t.role === 'cta')
-                const c2 = ctx.section.texts.find((t) => t.role === 'cta_secondary')
-                const tr = ctx.section.texts.find((t) => t.role === 'trust')
+                const h = matchTextToSlot(ctx.section.texts, headline)
+                const sh = matchTextToSlot(ctx.section.texts, subheadline)
+                const c1 = matchTextToSlot(ctx.section.texts, ctaPrimary)
+                const c2 = matchTextToSlot(ctx.section.texts, ctaSecondary)
+                const tr = matchTextToSlot(ctx.section.texts, trustBar)
                 return (
                   <>
                     {h  && <h2 className="text-2xl font-extrabold text-white drop-shadow-lg">{h.body}</h2>}
@@ -262,6 +262,7 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
 
   const paragraphs = ctx.section ? matchAllTextsForRole(ctx.section.texts, 'paragraph') : []
   const thumbnails = ctx.section ? matchMediaToSlot(ctx.section.media, thumbConfig) : []
+  const thumbnailsByOrder = new Map(thumbnails.map((t) => [t.order, t] as const))
 
   /** Intercambia el orden de dos tarjetas (texto + imagen asociada) */
   const swapCards = (indexA: number, indexB: number) => {
@@ -270,9 +271,9 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
     if (!pA || !pB) return
     // Intercambiar textos
     ctx.swapTextOrder(pA, pB)
-    // Intercambiar thumbnails si ambos existen
-    const tA = thumbnails[indexA]
-    const tB = thumbnails[indexB]
+    // Intercambiar thumbnails por posición (order) si ambos existen
+    const tA = thumbnailsByOrder.get(pA.order)
+    const tB = thumbnailsByOrder.get(pB.order)
     if (tA && tB) {
       ctx.swapMediaOrder(tA, tB)
     }
@@ -283,7 +284,7 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
       <ConnectedTextSlot config={heading} ctx={ctx} />
       <div className="flex gap-4 overflow-x-auto pb-2">
         {paragraphs.map((p, i) => {
-          const thumb = thumbnails[i]
+          const thumb = thumbnailsByOrder.get(p.order)
           const slotId = `${paraConfig.id}-${i}`
           const uploadThumb = (file: File, orderOverride?: number) =>
             ctx.uploadToSlot({ ...thumbConfig, slotIndex: i }, file, orderOverride)
@@ -367,7 +368,7 @@ export function NewsLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
                     input.accept = 'image/*'
                     input.onchange = (e) => {
                       const file = (e.target as HTMLInputElement).files?.[0]
-                      if (file) uploadThumb(file)
+                      if (file) uploadThumb(file, p.order)
                     }
                     input.click()
                   }}

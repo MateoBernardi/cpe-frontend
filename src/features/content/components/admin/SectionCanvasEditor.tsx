@@ -145,7 +145,10 @@ export default function SectionCanvasEditor({
   const [showFiles, setShowFiles] = useState(false)
 
   // ── Estado del gallery picker ──
-  const [galleryTarget, setGalleryTarget] = useState<MediaSlotConfig | null>(null)
+  const [galleryTarget, setGalleryTarget] = useState<{
+    slot: MediaSlotConfig
+    preserveOrder?: number
+  } | null>(null)
 
   const getNextOrderForRole = useCallback((role: string, kind: 'text' | 'media') => {
     if (!section) return 1
@@ -203,21 +206,26 @@ export default function SectionCanvasEditor({
     cancelEdit()
   }, [editValue, editingTextId, onCreateText, section, cancelEdit, getNextOrderForRole, onPatchText])
 
-  const uploadToSlot = useCallback((slotConfig: MediaSlotConfig, file: File, orderOverride?: number) => {
-    const order = orderOverride ?? getNextOrderForRole(slotConfig.role, 'media')
-    onUploadMedia(file, sectionId, slotConfig.role, order)
-  }, [sectionId, onUploadMedia, getNextOrderForRole])
+  const getDefaultMediaOrderForSlot = useCallback((slotConfig: MediaSlotConfig) => {
+    if (!slotConfig.multiple) return slotConfig.slotIndex + 1
+    return getNextOrderForRole(slotConfig.role, 'media')
+  }, [getNextOrderForRole])
 
-  const pickFromGallery = useCallback((slotConfig: MediaSlotConfig) => {
-    setGalleryTarget(slotConfig)
+  const uploadToSlot = useCallback((slotConfig: MediaSlotConfig, file: File, orderOverride?: number) => {
+    const order = orderOverride ?? getDefaultMediaOrderForSlot(slotConfig)
+    onUploadMedia(file, sectionId, slotConfig.role, order)
+  }, [sectionId, onUploadMedia, getDefaultMediaOrderForSlot])
+
+  const pickFromGallery = useCallback((slotConfig: MediaSlotConfig, options?: { preserveOrder?: number }) => {
+    setGalleryTarget({ slot: slotConfig, preserveOrder: options?.preserveOrder })
   }, [])
 
   const handleGallerySelect = useCallback((media: GalleryMedia) => {
     if (!galleryTarget || !onAssignFromGallery) return
-    const order = getNextOrderForRole(galleryTarget.role, 'media')
-    onAssignFromGallery(media.id, sectionId, galleryTarget.role, order)
+    const order = galleryTarget.preserveOrder ?? getDefaultMediaOrderForSlot(galleryTarget.slot)
+    onAssignFromGallery(media.id, sectionId, galleryTarget.slot.role, order)
     setGalleryTarget(null)
-  }, [galleryTarget, sectionId, onAssignFromGallery, getNextOrderForRole])
+  }, [galleryTarget, sectionId, onAssignFromGallery, getDefaultMediaOrderForSlot])
 
   // Stats
   const stats = useMemo(() => computeSlideStats(section, config), [section, config])

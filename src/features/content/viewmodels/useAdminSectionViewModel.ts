@@ -427,6 +427,30 @@ export interface PreviewSectionEntry {
   hasDrafts: boolean
 }
 
+function pickEffectiveByRoleOrder<T extends { role: string | null; order: number; status: 'DRAFTED' | 'PUBLISHED' }>(items: T[]): T[] {
+  const byPosition = new Map<string, T>()
+
+  for (const item of items) {
+    const key = `${item.role ?? ''}::${item.order}`
+    const existing = byPosition.get(key)
+
+    if (!existing || item.status === 'DRAFTED') {
+      byPosition.set(key, item)
+    }
+  }
+
+  return Array.from(byPosition.values()).sort((a, b) => a.order - b.order)
+}
+
+function toAdminPreviewEffectiveSection(section: AdminSection): AdminSection {
+  return {
+    ...section,
+    texts: pickEffectiveByRoleOrder(section.texts),
+    media: pickEffectiveByRoleOrder(section.media),
+    files: pickEffectiveByRoleOrder(section.files),
+  }
+}
+
 export function usePreviewSections(sectionItems: SectionListItem[]) {
   const results = useQueries({
     queries: sectionItems.map((item) => ({
@@ -445,7 +469,7 @@ export function usePreviewSections(sectionItems: SectionListItem[]) {
       .map((item, i) => {
         const dto = results[i]?.data
         if (!dto) return null
-        const mapped = mapAdminSectionDTO(dto.section)
+        const mapped = toAdminPreviewEffectiveSection(mapAdminSectionDTO(dto.section))
         const hasDrafts = dto.section.blocks?.some((b) => b.status === 'DRAFTED') ?? false
         return { id: item.id, name: item.name, section: mapped, hasDrafts }
       })
