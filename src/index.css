@@ -1,68 +1,148 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ── Global font ── */
+html, body {
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-a {
+/* ── Mobile typography scale ── */
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* ── Smooth scroll (Lenis) ── */
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* ── Nav link — underline from center ── */
+.nav-link {
+  position: relative;
+  font-size: 0.875rem;
   font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  color: rgba(255, 255, 255, 0.75);
+  transition: color 0.2s;
+  padding-bottom: 4px;
 }
-a:hover {
-  color: #535bf2;
+.nav-link:hover {
+  color: #fff;
 }
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: #fff;
+  transition: width 0.3s ease, left 0.3s ease;
 }
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.nav-link:hover::after {
+  width: 100%;
+  left: 0;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* ── Header scrolled — brand nav links ── */
+.header-scrolled .nav-link {
+  color: #036f73;
+}
+.header-scrolled .nav-link:hover {
+  color: #01888d;
+}
+.header-scrolled .nav-link::after {
+  background: #036f73;
+}
+.header-scrolled .nav-link:hover::after {
+  background: #01888d;
+}
+
+/* ── Logo pulse (loading spinner) ── */
+@keyframes logoPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+.logo-pulse {
+  animation: logoPulse 1.8s ease-in-out infinite;
+}
+
+/* ── Page fade-in overlay ── */
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.page-overlay-exit {
+  animation: fadeOut 0.8s ease-out forwards;
+}
+
+/* ── Generic fade-in ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out;
+}
+
+/* ── Hero carousel slide ── */
+.hero-slide {
+  transition: transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ── Donut chart draw ── */
+.donut-segment {
+  transition: stroke-dashoffset 0.4s ease-out;
+}
+
+/* ── Scroll snap carousel ── */
+.snap-carousel {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.snap-carousel > * {
+  scroll-snap-align: center;
+}
+
+/* ── Accordion collapse ── */
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.4s ease;
+}
+.accordion-body.open {
+  max-height: 500px;
+}
+
+/* ── CV upload zone pulse ring ── */
+@keyframes cvPulse {
+  0% { box-shadow: 0 0 0 0 rgba(1, 136, 141, 0.25); }
+  70% { box-shadow: 0 0 0 14px rgba(1, 136, 141, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(1, 136, 141, 0); }
+}
+.cv-upload-zone {
+  animation: cvPulse 2.5s ease-in-out infinite;
+}
+.cv-pulse-ring {
+  pointer-events: none;
+  border: 2px solid transparent;
+  animation: cvRingGlow 3s ease-in-out infinite;
+}
+@keyframes cvRingGlow {
+  0%, 100% { border-color: transparent; }
+  50% { border-color: rgba(1, 136, 141, 0.15); }
 }
