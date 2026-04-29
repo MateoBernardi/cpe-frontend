@@ -4,12 +4,6 @@ import type { Section } from '../../models'
 import { textByRole } from './sectionHelpers'
 import { colors, layout } from '../../../../theme'
 
-const SERVICE_ROUTES = [
-  '/servicios/intervencion-directa',
-  '/servicios/seleccion-de-personal',
-  '/servicios/acompanamiento',
-]
-
 interface Props { section: Section }
 
 export default function CircuitSection({ section }: Props) {
@@ -21,11 +15,7 @@ export default function CircuitSection({ section }: Props) {
   const t = Math.min(1, Math.max(0, (progress - 0.15) / 0.28))
   const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
 
-  const handleNavigate = (e: React.MouseEvent, route: string) => {
-    e.preventDefault()
-    navigate({ pathname: route, hash: '' })
-  }
-
+  const handleNavigate = (route: string) => () => navigate({ pathname: route, hash: '' })
   return (
     <section
       ref={ref}
@@ -46,7 +36,7 @@ export default function CircuitSection({ section }: Props) {
                 transition: 'opacity 0.1s, transform 0.1s',
               }}
             >
-              {heading?.body ?? 'Circuito integrado de acción.'}
+              {heading?.body ?? 'Circuito integrado de accion.'}
             </h2>
 
             {subtitle && (
@@ -64,71 +54,61 @@ export default function CircuitSection({ section }: Props) {
             )}
           </div>
 
-          {/* Diagram */}
-          <div
-            className="relative mx-auto w-full aspect-square max-w-[280px] sm:max-w-[330px] md:max-w-[380px] lg:max-w-[420px]"
-            style={{
-              opacity: 0.1 + ease * 0.9,
-              transform: `scale(${0.88 + ease * 0.12})`,
-              transition: 'opacity 0.1s, transform 0.1s',
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 800 800"
-              className="block h-full w-full"
+          {/* Diagram + Hint */}
+          <div className="flex flex-col items-center">
+            <div
+              className="relative mx-auto w-full aspect-[810/1012] max-w-[320px] overflow-hidden sm:max-w-[400px] md:max-w-[460px] lg:max-w-[520px] xl:max-w-[600px]"
+              style={{
+                opacity: 0.1 + ease * 0.9,
+                transform: `scale(${0.88 + ease * 0.12})`,
+                transition: 'opacity 0.1s, transform 0.1s',
+                backgroundColor: colors.circuitBg,
+              }}
             >
-              {/* ── Circles ── */}
-              <circle
-                cx="400" cy="290" r="185"
-                fill="#088385"
-                onClick={(e) => handleNavigate(e, SERVICE_ROUTES[0])}
-                style={{ cursor: 'pointer' }}
-                className="transition-[filter] duration-200 hover:brightness-110"
-              />
-              <circle
-                cx="280" cy="480" r="185"
-                fill="#104C5E"
-                onClick={(e) => handleNavigate(e, SERVICE_ROUTES[1])}
-                style={{ cursor: 'pointer' }}
-                className="transition-[filter] duration-200 hover:brightness-110"
-              />
-              <circle
-                cx="520" cy="480" r="185"
-                fill="#15B4AE"
-                onClick={(e) => handleNavigate(e, SERVICE_ROUTES[2])}
-                style={{ cursor: 'pointer' }}
-                className="transition-[filter] duration-200 hover:brightness-110"
+              <img
+                src="/CPE%20%20POST.svg"
+                alt="Circuito integrado de accion"
+                className="block h-full w-full select-none object-contain mix-blend-multiply"
+                loading="lazy"
+                draggable={false}
               />
 
-              {/* ── Center white circle ── */}
-              <circle cx="400" cy="413" r="105" fill="#FFFFFF" />
+              {/* Intervención Directa (Cuadrado superior) */}
+              <button
+                type="button"
+                aria-label="Intervencion directa"
+                onClick={handleNavigate('/servicios/intervencion-directa')}
+                className="absolute left-1/2 top-[20%] h-[25%] w-[55%] -translate-x-1/2 bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              />
 
-              {/* ── Center label ── */}
-              <text x="400" y="385" fontFamily="var(--font-primary, Arial, sans-serif)" fontWeight="bold" fontSize="26" fill="#088385" textAnchor="middle" style={{ pointerEvents: 'none' }}>EMPRESA</text>
-              <text x="400" y="420" fontFamily="var(--font-primary, Arial, sans-serif)" fontWeight="bold" fontSize="26" fill="#088385" textAnchor="middle" style={{ pointerEvents: 'none' }}>+</text>
-              <text x="400" y="455" fontFamily="var(--font-primary, Arial, sans-serif)" fontWeight="bold" fontSize="26" fill="#088385" textAnchor="middle" style={{ pointerEvents: 'none' }}>CPE</text>
+              {/* Selección de Personal (Cuadrado inferior izquierdo) */}
+              <button
+                type="button"
+                aria-label="Seleccion de personal"
+                onClick={handleNavigate('/servicios/seleccion-de-personal')}
+                className="absolute left-[15%] top-[40%] h-[40%] w-[30%] bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              />
 
-              {/* ── Section labels ── */}
-              <text x="400" y="195" fontFamily="var(--font-primary, Arial, sans-serif)" fontWeight="bold" fontSize="26" fill="#FFFFFF" textAnchor="middle" style={{ pointerEvents: 'none' }}>Intervención</text>
-              <text x="400" y="225" fontFamily="var(--font-primary, Arial, sans-serif)" fontWeight="bold" fontSize="26" fill="#FFFFFF" textAnchor="middle" style={{ pointerEvents: 'none' }}>Directa</text>
-
-              <text x="245" y="545" fontFamily="var(--font-primary, Arial, sans-serif)" fontWeight="bold" fontSize="26" fill="#FFFFFF" textAnchor="middle" style={{ pointerEvents: 'none' }}>Selección de</text>
-              <text x="245" y="575" fontFamily="var(--font-primary, Arial, sans-serif)" fontWeight="bold" fontSize="26" fill="#FFFFFF" textAnchor="middle" style={{ pointerEvents: 'none' }}>Personal</text>
-
-              <text x="555" y="545" fontFamily="var(--font-primary, Arial, sans-serif)" fontWeight="bold" fontSize="26" fill="#FFFFFF" textAnchor="middle" style={{ pointerEvents: 'none' }}>Acompañamiento</text>
-              <text x="555" y="575" fontFamily="var(--font-primary, Arial, sans-serif)" fontWeight="bold" fontSize="26" fill="#FFFFFF" textAnchor="middle" style={{ pointerEvents: 'none' }}>a las personas</text>
-            </svg>
+              {/* Acompañamiento a las personas (Cuadrado inferior derecho) */}
+              <button
+                type="button"
+                aria-label="Acompanamiento a las personas"
+                onClick={handleNavigate('/servicios/acompanamiento')}
+                className="absolute right-[5%] top-[50%] h-[30%] w-[50%] bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              />
+            </div>
 
             {/* Hint */}
-            <p
-              className="mt-1 text-center text-[11px] text-white/50"
-              style={{ opacity: ease > 0.85 ? 1 : 0, transition: 'opacity 0.4s' }}
+            <div
+              className="mt-2 text-center text-sm text-gray-500"
+              style={{
+                opacity: Math.max(0, (progress - 0.43) / 0.1),
+                transition: 'opacity 0.1s',
+              }}
             >
-              Clickeá para conocer cada servicio
-            </p>
+              Clickeá cada sección del circuito para conocer nuestros servicios.
+            </div>
           </div>
-
         </div>
       </div>
     </section>
