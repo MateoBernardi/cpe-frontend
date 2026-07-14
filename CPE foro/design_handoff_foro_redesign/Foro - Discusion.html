@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>¿Cómo manejan la convivencia de hermanos en la dirección? · Foro CPE</title>
+<link rel="stylesheet" href="foro.css">
+<style>
+.pod{ padding:42px 0 0; }
+.crumbs{ display:flex; align-items:center; gap:9px; font-family:var(--font-mono); font-size:12px; color:var(--muted); margin-bottom:26px; }
+.crumbs a:hover{ color:var(--teal); }
+.crumbs .tag{ font-size:11px; }
+
+.pod-grid{ display:grid; grid-template-columns:1fr 300px; gap:50px; align-items:start; }
+.pod-main{ order:1; }
+.rail{ order:2; }
+@media (max-width:920px){ .pod-grid{ grid-template-columns:1fr; gap:36px; } }
+.rail{ position:sticky; top:70px; display:flex; flex-direction:column; gap:20px; }
+@media (max-width:920px){ .rail{ position:static; } }
+
+.pod-main h1{ font-size:32px; font-weight:600; line-height:1.16; margin-bottom:6px; }
+.op{ border-top:1px solid var(--line); padding-top:20px; }
+.op .who{ display:flex; align-items:center; gap:11px; font-family:var(--font-mono); font-size:12px; color:var(--muted); margin-bottom:16px; }
+.op .who b{ font-family:var(--font-sans); color:var(--navy); font-size:14px; }
+.op .body{ font-size:16px; line-height:1.7; color:var(--ink); }
+.op .body p{ margin:14px 0; }
+
+.thread{ display:flex; flex-direction:column; gap:0; margin-top:8px; }
+.reply{ display:flex; gap:16px; padding:22px 0; border-bottom:1px solid var(--line-2); }
+.reply .who{ display:flex; flex-direction:column; align-items:center; gap:8px; flex:0 0 auto; width:44px; }
+.reply .who span{ font-family:var(--font-mono); font-size:10px; color:var(--muted-2); }
+.reply .content b{ display:block; color:var(--navy); font-size:14.5px; margin-bottom:6px; }
+.reply .content p{ font-size:15px; line-height:1.65; color:var(--ink); margin:0; }
+.reply .content .t{ font-family:var(--font-mono); font-size:11px; color:var(--muted-2); margin-top:8px; }
+.reply.best{ background:var(--teal-tint); border-radius:var(--radius-sm); padding:22px; border-bottom:none; margin-bottom:6px; }
+.reply.best .content b::after{ content:"✓ Respuesta destacada"; font-family:var(--font-mono); font-size:10.5px; font-weight:500; color:var(--teal-700); margin-left:10px; text-transform:uppercase; letter-spacing:.03em; }
+
+.compose{ margin-top:26px; background:var(--bg-2); border-radius:var(--radius); padding:22px; }
+.compose textarea{ width:100%; border:1px solid var(--line); border-radius:var(--radius-sm); padding:14px; font-family:var(--font-sans); font-size:14.5px; resize:vertical; min-height:80px; background:var(--paper); }
+.compose .row{ display:flex; justify-content:flex-end; margin-top:12px; }
+
+.block-title{ font-family:var(--font-mono); font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--teal-700); margin:40px 0 16px; padding-bottom:10px; border-bottom:1px solid var(--line); }
+.related{ margin-top:10px; }
+</style>
+</head>
+<body>
+
+<div class="nav-spacer"></div>
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a class="brand" href="Foro - Inicio.html">
+      <span class="brand-mark"></span>
+      <span class="brand-text"><b>Clínica para</b><b>Empresas</b></span>
+    </a>
+    <div class="nav-links">
+      <a href="Foro - Inicio.html">Foro</a>
+      <a href="Foro - Inicio.html#papers">Papers</a>
+      <a href="Foro - Inicio.html#podcasts">Podcasts</a>
+      <a href="Foro - Inicio.html#novedades">Novedades</a>
+      <a href="Foro - Inicio.html#foros" class="active">Discusión</a>
+    </div>
+    <div class="nav-actions">
+      <button class="icon-btn" aria-label="Buscar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      </button>
+      <a class="btn btn-teal" href="#">Suscribirme</a>
+    </div>
+  </div>
+</nav>
+
+<main class="pod">
+  <div class="wrap">
+    <div class="crumbs">
+      <a href="Foro - Inicio.html">Foro</a> <span>/</span>
+      <a href="Foro - Inicio.html#foros">Discusión</a> <span>/</span>
+      <span class="tag cat-foros"><span class="dot"></span>Hilo N.001</span>
+    </div>
+
+    <div class="pod-grid">
+      <article class="pod-main">
+        <span class="tag cat-foros"><span class="dot"></span>Foro de discusión</span>
+        <h1>¿Cómo manejan la convivencia de hermanos en la dirección?</h1>
+
+        <div class="op">
+          <div class="who"><span class="avatar">A</span> <b>Andrés M.</b><span>· dueño de 1/3</span><span class="dotsep"></span><span>hace 2 días</span></div>
+          <div class="body">
+            <p>Somos tres hermanos en la conducción de la empresa que fundó nuestro padre y cada uno tira para un lado distinto: yo prefiero reinvertir todo, mi hermana quiere profesionalizar la gestión con gente de afuera, y mi hermano menor todavía cree que alcanza con "hablarlo en el asado".</p>
+            <p>¿Cómo lo resolvieron ustedes? ¿Armaron algún tipo de acuerdo formal o fue más una cuestión de tiempo y confianza?</p>
+          </div>
+        </div>
+
+        <h3 class="block-title">34 respuestas</h3>
+        <div class="thread">
+          <div class="reply best">
+            <div class="content">
+              <b>Lic. Marcela Robles</b>
+              <p>Esto que describís es el patrón más común que vemos en la clínica: cada hermano defiende, sin saberlo, un rol distinto (el conservador, el profesionalizante, el conciliador). Lo que funciona no es "hablarlo más", sino separar la conversación de negocio de la conversación familiar en instancias distintas — un consejo de familia y un directorio, aunque al principio sean la misma mesa con dos agendas.</p>
+              <div class="t">hace 2 días</div>
+            </div>
+          </div>
+          <div class="reply">
+            <div class="who"><span class="avatar">L</span><span>Laura P.</span></div>
+            <div class="content">
+              <b>Laura P.</b>
+              <p>Nosotros pasamos por lo mismo hace cinco años. Lo que más ayudó fue traer un facilitador externo para las primeras reuniones — nadie quería ser "el que impone" frente a sus hermanos.</p>
+              <div class="t">hace 2 días</div>
+            </div>
+          </div>
+          <div class="reply">
+            <div class="who"><span class="avatar">M</span><span>Martín S.</span></div>
+            <div class="content">
+              <b>Martín S.</b>
+              <p>En mi caso terminamos dividiendo áreas de decisión por escrito. No resuelve todo, pero saca del medio el 80% de las discusiones del día a día.</p>
+              <div class="t">hace 1 día</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="compose">
+          <textarea placeholder="Sumá tu experiencia a esta conversación…"></textarea>
+          <div class="row"><a class="btn btn-teal" href="#">Publicar respuesta</a></div>
+        </div>
+      </article>
+
+      <aside class="rail">
+        <div class="info-card">
+          <div class="row"><span>Respuestas</span><b>34</b></div>
+          <div class="row"><span>Participando</span><b>18</b></div>
+          <div class="row"><span>Última actividad</span><b>hace 3 h</b></div>
+        </div>
+        <div class="cta-card">
+          <div class="lbl">RELACIONADO</div>
+          <p>Este hilo se conecta con el paper sobre traspaso generacional.</p>
+          <a class="btn btn-teal" href="Foro - Paper.html">Leer el paper →</a>
+        </div>
+      </aside>
+    </div>
+
+    <div class="related">
+      <h3 class="block-title">Otras conversaciones</h3>
+      <div class="list cols-3">
+        <article class="list-item is-foro">
+          <div class="text">
+            <div class="idx">HILO · N.002</div>
+            <span class="tag cat-foros"><span class="dot"></span>Foros de discusión</span>
+            <h3><a href="Foro - Inicio.html#foros">Sueldos en empresa familiar: ¿mercado o acuerdo?</a></h3>
+            <div class="stat"><span><b>51</b> respuestas</span><span class="dotsep"></span><span><b>27</b> participando</span></div>
+          </div>
+        </article>
+        <article class="list-item is-foro">
+          <div class="text">
+            <div class="idx">HILO · N.003</div>
+            <span class="tag cat-foros"><span class="dot"></span>Foros de discusión</span>
+            <h3><a href="Foro - Inicio.html#foros">Primer gerente externo: experiencias reales</a></h3>
+            <div class="stat"><span><b>22</b> respuestas</span><span class="dotsep"></span><span><b>14</b> participando</span></div>
+          </div>
+        </article>
+        <article class="list-item" style="--cat:var(--c-papers)">
+          <div class="ph thumb"><span>img</span></div>
+          <div class="text">
+            <div class="idx">N.001</div>
+            <span class="tag cat-papers"><span class="dot"></span>Paper</span>
+            <h3><a href="Foro - Paper.html">Traspaso generacional: cómo no romper lo que funciona</a></h3>
+            <div class="card-meta"><span class="avatar">MR</span><span>M. Robles</span><span class="dotsep"></span><span>Jun 2026</span></div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <a class="brand" href="Foro - Inicio.html">
+      <span class="brand-mark"></span>
+      <span class="brand-text"><b>Clínica para</b><b>Empresas</b></span>
+    </a>
+    <small>foro.clinicaparaempresas · © 2026 — Demo de diseño</small>
+    <div style="display:flex; gap:18px; font-size:13.5px;">
+      <a href="#">Sobre el foro</a><a href="#">Escribir</a><a href="#">Contacto</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

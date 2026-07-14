@@ -182,30 +182,6 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
     ],
   },
 
-  // ── NEWS ──
-  news: {
-    displayName: 'Novedades',
-    guide: {
-      description: 'Lista vertical de novedades. Cada novedad tiene una imagen opcional, un título y un párrafo descriptivo, separadas por líneas divisorias.',
-      tips: [
-        'Cada texto (párrafo) crea una nueva novedad en la lista.',
-        'Cada miniatura se asocia a su novedad por orden: la 1ra imagen va con el 1er texto, etc.',
-        'El encabezado se muestra centrado arriba de la lista.',
-        'Podés agregar tantas novedades como quieras — se apilan verticalmente.',
-        'Si un párrafo tiene título (campo Title), se muestra como encabezado de la novedad.',
-      ],
-      imageTip: 'Resolución recomendada: 1200×675 px (16:9). Las imágenes se muestran a ancho completo con bordes redondeados.',
-      colorTip: 'Fondo gris claro (#eeeeee). Texto sobre fondo directo, sin tarjetas.',
-    },
-    textSlots: [
-      { id: 'nw-heading', role: 'heading', slotIndex: 0, label: 'Título de sección', placeholder: 'Ej: Novedades', display: 'heading' },
-      { id: 'nw-paragraph', role: 'paragraph', slotIndex: 0, label: 'Texto de novedad', placeholder: 'Escribí el contenido de la novedad...', display: 'body', multiple: true },
-    ],
-    mediaSlots: [
-      { id: 'nw-thumbnail', role: 'thumbnail', slotIndex: 0, label: 'Imagen de novedad', placeholder: 'Imagen para la tarjeta', multiple: true, aspect: '16/10', recommendedSize: '800×500' },
-    ],
-  },
-
   // ── INFO PRIMARY ──
   info_primary: {
     displayName: 'Información Principal',
@@ -446,6 +422,30 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
       { id: 'tt-heading', role: 'heading', slotIndex: 0, label: 'Título', placeholder: 'Ej: Traspaso Generacional.', display: 'heading', maxLength: 60 },
       { id: 'tt-subtitle', role: 'subtitle', slotIndex: 0, label: 'Subtítulo', placeholder: 'Ej: Acompañamos la transición entre generaciones.', display: 'subheading', maxLength: 120 },
       { id: 'tt-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón', placeholder: 'Ej: Conocé más', display: 'cta', maxLength: 40 },
+    ],
+    mediaSlots: [],
+  },
+
+  // ── TEASER: FORO ──
+  foro_teaser: {
+    displayName: 'Teaser del Foro',
+    guide: {
+      description: 'Textos editoriales de la sección "Foro" en la página principal: el bloque de introducción (título + párrafo, arriba) y el cierre de la sección (título + párrafo + botón, banda navy al final). Las publicaciones (papers, podcasts, discusiones) siguen viniendo en vivo del Foro — solo estos 5 textos son editables acá.',
+      tips: [
+        '01 — Título (intro): encabezado grande que abre la sección, arriba de las publicaciones.',
+        '02 — Subtítulo (intro): párrafo breve debajo del título de introducción.',
+        '03 — Título de cierre: encabezado de la banda navy al final de la sección.',
+        '04 — Párrafo de cierre: texto centrado debajo del título de cierre.',
+        '05 — Texto del botón: etiqueta del botón "Explorar el foro completo" en la banda de cierre.',
+        'Si algún texto queda vacío, la página pública usa un texto de reserva fijo — la sección nunca se muestra en blanco.',
+      ],
+    },
+    textSlots: [
+      { id: 'ft-heading', role: 'heading', slotIndex: 0, label: 'Título (intro)', placeholder: 'Ej: Pensar la empresa, puertas adentro.', display: 'heading', maxLength: 80 },
+      { id: 'ft-subheading', role: 'subheading', slotIndex: 0, label: 'Subtítulo (intro)', placeholder: 'Ej: Papers, podcasts y conversaciones sobre sucesión, equipos y crecimiento.', display: 'subheading', maxLength: 220 },
+      { id: 'ft-cta-heading', role: 'cta_heading', slotIndex: 0, label: 'Título de cierre', placeholder: 'Ej: Todo el foro, en un solo lugar.', display: 'heading', maxLength: 80 },
+      { id: 'ft-cta-paragraph', role: 'cta_paragraph', slotIndex: 0, label: 'Párrafo de cierre', placeholder: 'Ej: Seguí leyendo, escuchá los episodios y sumate a las conversaciones de la comunidad.', display: 'subheading', maxLength: 180 },
+      { id: 'ft-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón', placeholder: 'Ej: Explorar el foro completo →', display: 'cta', maxLength: 40 },
     ],
     mediaSlots: [],
   },

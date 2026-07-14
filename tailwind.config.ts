@@ -4,6 +4,7 @@ export default {
   content: [
     './index.html',
     './admin.html',
+    './foro.html',
     './src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {

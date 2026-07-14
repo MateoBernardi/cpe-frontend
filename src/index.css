@@ -55,6 +55,15 @@ html.lenis, html.lenis body {
   left: 0;
 }
 
+/* ── Nav link — active (current filter/section) state mirrors :hover ── */
+.nav-link.active {
+  color: #fff;
+}
+.nav-link.active::after {
+  width: 100%;
+  left: 0;
+}
+
 /* ── Header scrolled — brand nav links ── */
 .header-scrolled .nav-link {
   color: #036f73;
@@ -67,6 +76,9 @@ html.lenis, html.lenis body {
 }
 .header-scrolled .nav-link:hover::after {
   background: #01888d;
+}
+.header-scrolled .nav-link.active {
+  color: #01888d;
 }
 
 /* ── Logo pulse (loading spinner) ── */

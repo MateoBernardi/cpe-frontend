@@ -11,6 +11,7 @@ node_modules
 dist
 dist-main
 dist-admin
+dist-foro
 dist-ssr
 *.local
 

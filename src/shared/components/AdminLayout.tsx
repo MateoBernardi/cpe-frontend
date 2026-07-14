@@ -12,6 +12,7 @@ const navItems = [
   { to: '/gallery', label: 'Galería', exact: false },
   { to: '/contacts', label: 'Contactos', exact: false },
   { to: '/candidates', label: 'Postulaciones', exact: false },
+  { to: '/foro', label: 'Foro / Publicaciones', exact: false },
 ]
 
 export default function AdminLayout({ children }: AdminLayoutProps) {

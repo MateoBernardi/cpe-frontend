@@ -17,11 +17,7 @@ import { LoadingSpinner, ErrorMessage } from '@shared/components'
 const PREVIEW_GROUPS = [
   {
     label: 'Página principal',
-    sections: ['hero', 'about', 'teaser_circuit', 'teaser_clinica', 'teaser_traspaso', 'info_primary', 'info_secondary', 'secondary_hero'],
-  },
-  {
-    label: 'Novedades',
-    sections: ['news'],
+    sections: ['hero', 'about', 'teaser_circuit', 'teaser_clinica', 'teaser_traspaso', 'info_primary', 'info_secondary', 'foro_teaser', 'secondary_hero'],
   },
   {
     label: 'Contacto',

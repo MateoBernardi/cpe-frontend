@@ -1,9 +1,10 @@
 import { useMultipleSectionsViewModel } from '@features/content/viewmodels'
 import { SectionRenderer } from '@features/content/components'
+import ForoPreviewSection from '../components/ForoPreviewSection'
 
 /**
  * Secciones de la landing page principal (en orden).
- * News y ContactForm se muestran en rutas separadas (/news, /contact).
+ * ContactForm se muestra en una ruta separada (/contact).
  */
 const PUBLIC_SECTIONS = [
   'hero',
@@ -53,6 +54,12 @@ export default function HomePage() {
         return (
           <section key={name} id={name}>
             <SectionRenderer section={section} />
+            {/* Preview del Foro — se muestra entre "info_secondary" y el cierre ("secondary_hero") */}
+            {name === 'info_secondary' && (
+              <div id="foro">
+                <ForoPreviewSection />
+              </div>
+            )}
           </section>
         )
       })}

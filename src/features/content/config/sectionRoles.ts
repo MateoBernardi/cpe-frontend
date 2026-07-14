@@ -21,10 +21,6 @@ export const SECTION_ROLES: Record<string, SectionRoleConfig> = {
     textRoles: ['heading', 'paragraph', 'bio'],
     mediaRoles: ['photo'],
   },
-  news: {
-    textRoles: ['heading', 'paragraph'],
-    mediaRoles: ['thumbnail'],
-  },
   info_primary: {
     textRoles: ['heading', 'bullet'],
     mediaRoles: ['diagram', 'icon'],
@@ -69,6 +65,10 @@ export const SECTION_ROLES: Record<string, SectionRoleConfig> = {
     textRoles: ['heading', 'subtitle', 'cta'],
     mediaRoles: [],
   },
+  foro_teaser: {
+    textRoles: ['heading', 'subheading', 'cta_heading', 'cta_paragraph', 'cta'],
+    mediaRoles: [],
+  },
 }
 
 export function getSectionRoles(sectionName: string): SectionRoleConfig {
@@ -84,7 +84,6 @@ export const SECTION_DISPLAY_NAMES: Record<string, string> = {
   hero: 'Portada Principal',
   secondary_hero: 'Portada Secundaria',
   about: 'Nosotros',
-  news: 'Novedades',
   info_primary: 'Información Principal',
   info_secondary: 'Información Secundaria',
   contact_form: 'Formulario de Contacto',
@@ -96,6 +95,7 @@ export const SECTION_DISPLAY_NAMES: Record<string, string> = {
   teaser_circuit: 'Teaser: Circuito Integrado',
   teaser_clinica: 'Teaser: Consultoría para Empresario',
   teaser_traspaso: 'Teaser: Traspaso Generacional',
+  foro_teaser: 'Teaser del Foro',
 }
 
 export const ROLE_DISPLAY_NAMES: Record<string, string> = {
