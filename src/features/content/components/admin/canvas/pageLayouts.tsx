@@ -5,8 +5,10 @@
 
 import { useState } from 'react'
 import { matchMediaToSlot, matchTextToSlot } from '../../../config/sectionCanvasConfig'
-import type { LayoutProps } from './canvasTypes'
-import { ConnectedTextSlot, ConnectedMediaSlot } from './ConnectedSlots'
+import type { TextSlotConfig, MediaSlotConfig } from '../../../config/sectionCanvasConfig'
+import type { LayoutProps, SlotContext } from './canvasTypes'
+import { ConnectedTextSlot, ConnectedMediaSlot, MultipleTextSlots } from './ConnectedSlots'
+import { colors } from '../../../../../theme'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Hero (Fórmula de 5 elementos)
@@ -229,6 +231,106 @@ export function AboutLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
           </div>
         </div>
         <ConnectedMediaSlot config={photo2} ctx={ctx} />
+      </div>
+    </div>
+  )
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━
+// About Hero (fusión de "about" + "info_primary")
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export interface AboutHeroLayoutProps {
+  /** ctx + slots de la sección "about" (eyebrow + equipo) */
+  aboutCtx: SlotContext
+  aboutTextSlots: TextSlotConfig[]
+  aboutMediaSlots: MediaSlotConfig[]
+  /** ctx + slots de la sección "info_primary" (diagrama + título + viñetas) */
+  infoCtx: SlotContext
+  infoTextSlots: TextSlotConfig[]
+  infoMediaSlots: MediaSlotConfig[]
+}
+
+/**
+ * Layout combinado que refleja el hero fusionado público (`AboutHeroSection`):
+ * diagrama + título + viñetas de "info_primary", más eyebrow + tarjetas de
+ * equipo de "about". Cada slot se conecta al `ctx` de SU sección dueña —
+ * no pasa por `LAYOUT_MAP` porque necesita dos contextos simultáneos.
+ */
+export function AboutHeroLayout({
+  aboutCtx,
+  aboutTextSlots,
+  aboutMediaSlots,
+  infoCtx,
+  infoTextSlots,
+  infoMediaSlots,
+}: AboutHeroLayoutProps) {
+  // ── "about": eyebrow + tarjetas de equipo ──
+  const eyebrow = aboutTextSlots.find((s) => s.role === 'heading')!
+  const bio1 = aboutTextSlots.find((s) => s.role === 'bio' && s.slotIndex === 0)!
+  const para1 = aboutTextSlots.find((s) => s.role === 'paragraph' && s.slotIndex === 0)!
+  const bio2 = aboutTextSlots.find((s) => s.role === 'bio' && s.slotIndex === 1)!
+  const para2 = aboutTextSlots.find((s) => s.role === 'paragraph' && s.slotIndex === 1)!
+  const photo1 = aboutMediaSlots.find((s) => s.slotIndex === 0)!
+  const photo2 = aboutMediaSlots.find((s) => s.slotIndex === 1)!
+
+  // ── "info_primary": diagrama + título + viñetas + íconos ──
+  const title = infoTextSlots.find((s) => s.role === 'heading')!
+  const bulletConfig = infoTextSlots.find((s) => s.role === 'bullet')!
+  const diagram = infoMediaSlots.find((s) => s.role === 'diagram')!
+  const iconConfig = infoMediaSlots.find((s) => s.role === 'icon')
+
+  return (
+    <div className="rounded-xl p-6 space-y-6" style={{ backgroundColor: colors.offWhite }}>
+      {/* Diagrama (izq) + título/viñetas (der) — igual al hero público */}
+      <div className="grid gap-6 lg:grid-cols-[38%_1fr]">
+        <ConnectedMediaSlot config={diagram} ctx={infoCtx} />
+        <div className="space-y-3">
+          <div>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: colors.tealMid }}>
+              Eyebrow (de "Nosotros")
+            </p>
+            <ConnectedTextSlot config={eyebrow} ctx={aboutCtx} className="font-mono text-xs uppercase tracking-wider" />
+          </div>
+          <div>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Título principal (de "Información Principal")
+            </p>
+            <ConnectedTextSlot config={title} ctx={infoCtx} className="font-secondary text-xl font-medium" />
+          </div>
+          <div>
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Viñetas numeradas</p>
+            <MultipleTextSlots config={bulletConfig} ctx={infoCtx} addLabel="Agregar viñeta" />
+          </div>
+        </div>
+      </div>
+
+      {iconConfig && (
+        <div className="border-t border-slate-200 pt-4">
+          <p className="mb-2 text-xs font-medium text-gray-500">Íconos (opcionales, uno por viñeta):</p>
+          <ConnectedMediaSlot config={iconConfig} ctx={infoCtx} />
+        </div>
+      )}
+
+      {/* Tarjetas de equipo (de "about") */}
+      <div className="border-t border-slate-200 pt-4">
+        <p className="mb-3 text-xs font-medium text-gray-500">Equipo (foto + nombre/rol + descripción):</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <ConnectedTextSlot config={bio1} ctx={aboutCtx} />
+            <div className="rounded-xl border border-slate-200 p-3" style={{ backgroundImage: 'radial-gradient(circle, rgb(13 148 136 / 0.15) 1px, transparent 1px)', backgroundSize: '10px 10px' }}>
+              <ConnectedTextSlot config={para1} ctx={aboutCtx} />
+            </div>
+          </div>
+          <ConnectedMediaSlot config={photo1} ctx={aboutCtx} />
+          <div className="space-y-2">
+            <ConnectedTextSlot config={bio2} ctx={aboutCtx} />
+            <div className="rounded-xl border border-slate-200 p-3" style={{ backgroundImage: 'radial-gradient(circle, rgb(13 148 136 / 0.15) 1px, transparent 1px)', backgroundSize: '10px 10px' }}>
+              <ConnectedTextSlot config={para2} ctx={aboutCtx} />
+            </div>
+          </div>
+          <ConnectedMediaSlot config={photo2} ctx={aboutCtx} />
+        </div>
       </div>
     </div>
   )

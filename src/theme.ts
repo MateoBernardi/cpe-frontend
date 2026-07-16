@@ -84,10 +84,11 @@ export const colors = {
 } as const
 
 // ─── Typography ─────────────────────────────────────────────────────────────
-// Using system-available equivalents: sans-serif for DM Sans, serif for Lora
+// Foro trio, adopted site-wide: serif headings, sans body, mono micro-labels.
 export const fonts = {
-  primary: "'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
-  secondary: "Georgia, 'Times New Roman', serif",
+  primary: "'IBM Plex Sans', system-ui, sans-serif",
+  secondary: "'Source Serif 4', Georgia, serif",
+  mono: "'IBM Plex Mono', monospace",
 } as const
 
 export const fontSizes = {

@@ -29,12 +29,12 @@ export default function SecondaryHeroSection({ section }: Props) {
           }`}
         >
           {heading && (
-            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl lg:text-5xl font-primary">
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl lg:text-5xl font-secondary">
               {heading.body}
             </h2>
           )}
           {subtitle && (
-            <p className="mt-[2vh] text-lg font-medium" style={{ color: colors.tealBright }}>{subtitle.body}</p>
+            <p className="mt-[2vh] font-mono text-sm uppercase tracking-[0.18em]" style={{ color: colors.tealBright }}>{subtitle.body}</p>
           )}
         </div>
 
@@ -74,7 +74,7 @@ export default function SecondaryHeroSection({ section }: Props) {
             >
               {/* Animated shine overlay */}
               <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-              <p className="relative text-lg font-bold text-white sm:text-xl md:text-2xl tracking-tight font-primary">
+              <p className="relative text-lg font-bold text-white sm:text-xl md:text-2xl tracking-tight font-secondary">
                 {ctaTitle.body}
               </p>
               <span className="relative mt-2 inline-flex items-center gap-2 text-sm font-medium text-white/80">

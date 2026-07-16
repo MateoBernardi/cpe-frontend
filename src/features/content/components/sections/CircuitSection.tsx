@@ -28,7 +28,7 @@ export default function CircuitSection({ section }: Props) {
           {/* Heading */}
           <div className="flex flex-col items-center gap-[2vh] text-center lg:items-start lg:text-left">
             <h2
-              className="w-full max-w-lg text-center text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl md:text-4xl lg:mx-0 lg:text-left lg:text-5xl xl:text-6xl font-primary"
+              className="w-full max-w-lg text-center text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl md:text-4xl lg:mx-0 lg:text-left lg:text-5xl xl:text-6xl font-secondary"
               style={{
                 color: colors.blueDark,
                 opacity: Math.min(1, ease * 2),

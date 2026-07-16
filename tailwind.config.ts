@@ -21,8 +21,9 @@ export default {
         },
       },
       fontFamily: {
-        primary: ["'Segoe UI'", 'Roboto', "'Helvetica Neue'", 'Arial', 'sans-serif'],
-        secondary: ['Georgia', "'Times New Roman'", 'serif'],
+        primary: ["'IBM Plex Sans'", 'system-ui', 'sans-serif'],
+        secondary: ["'Source Serif 4'", 'Georgia', 'serif'],
+        mono: ["'IBM Plex Mono'", 'monospace'],
       },
     },
   },

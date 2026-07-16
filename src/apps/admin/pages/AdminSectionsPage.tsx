@@ -18,16 +18,22 @@ export default function AdminSectionsPage() {
 
       {sections && (
         <div className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
-          {sections.map((s) => (
-            <Link
-              key={s.id}
-              to={`/sections/${s.id}`}
-              className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-gray-50"
-            >
-              <span className="font-medium text-gray-900">{getSectionDisplayName(s.name)}</span>
-              <span className="text-sm text-gray-400">Editar →</span>
-            </Link>
-          ))}
+          {sections
+            // "info_primary" ya no tiene fila propia: se edita junto con "about"
+            // en un único editor combinado (hero fusionado "Quiénes somos").
+            .filter((s) => s.name !== 'info_primary')
+            .map((s) => (
+              <Link
+                key={s.id}
+                to={`/sections/${s.id}`}
+                className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-gray-50"
+              >
+                <span className="font-medium text-gray-900">
+                  {s.name === 'about' ? 'Portada — Quiénes somos' : getSectionDisplayName(s.name)}
+                </span>
+                <span className="text-sm text-gray-400">Editar →</span>
+              </Link>
+            ))}
         </div>
       )}
     </div>

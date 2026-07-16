@@ -160,11 +160,12 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
   about: {
     displayName: 'Nosotros',
     guide: {
-      description: 'Sección con grilla de 4 columnas: bio+texto, foto, bio+texto, foto. Presentación del equipo o la empresa.',
+      description: 'Estos textos e imágenes se combinan con los de "Información Principal" para formar un único hero fusionado ("Quiénes somos") que se muestra en la página principal, justo debajo de la portada. Acá se editan el eyebrow (título) y las tarjetas de equipo.',
       tips: [
+        'El "Título de sección" se muestra como eyebrow (etiqueta pequeña en mayúsculas) arriba del título grande de Información Principal.',
         'Se muestran 2 perfiles: cada uno consta de un nombre/rol (bio), un párrafo descriptivo y una foto.',
-        'Las fotos se muestran en proporción 3:4 (vertical/retrato).',
-        'Los textos aparecen en tarjetas con fondo punteado decorativo.',
+        'Las fotos se muestran en proporción 3:4 (vertical/retrato), en miniatura junto al nombre/rol.',
+        'El diagrama, el título principal y las viñetas de este hero viven en la sección "Información Principal" — editalos ahí.',
       ],
       imageTip: 'Resolución recomendada: 600×800 px (3:4, retrato). Las fotos se muestran con bordes redondeados.',
       colorTip: 'Fondo gris claro. Los puntos decorativos son teal semitransparente.',
@@ -186,10 +187,12 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
   info_primary: {
     displayName: 'Información Principal',
     guide: {
-      description: 'Sección de 2 columnas: diagrama/imagen a la izquierda y lista de puntos clave a la derecha.',
+      description: 'Estos textos e imágenes se combinan con los de "Nosotros" (eyebrow + equipo) para formar un único hero fusionado ("Quiénes somos") en la página principal, justo debajo de la portada. Acá se editan el diagrama grande, el título principal y las viñetas numeradas.',
       tips: [
-        'La imagen o diagrama se muestra en la columna izquierda.',
-        'Cada viñeta se lista con un punto.',
+        'La imagen o diagrama se muestra como la foto grande a la izquierda del hero fusionado.',
+        'El "Título de sección" es el título grande (H1) del hero — no el eyebrow (ese vive en "Nosotros").',
+        'Cada viñeta se lista numerada (01, 02, ...) a la derecha del título.',
+        'Las tarjetas de equipo (foto + nombre/rol + descripción) viven en la sección "Nosotros" — editalas ahí.',
       ],
       imageTip: 'Diagrama: hasta 600×600 px. Íconos: 40×40 px (SVG o PNG transparente recomendado).',
       colorTip: 'Fondo slate-100. Puntos de viñeta teal-800.',

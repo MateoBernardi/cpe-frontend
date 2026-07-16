@@ -32,7 +32,7 @@ export default function GenerationalTransferTeaser({ section }: Props) {
           >
             {heading && (
               <h2
-                className="text-center text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl md:text-4xl lg:text-left lg:text-5xl xl:text-6xl font-primary"
+                className="text-center text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl md:text-4xl lg:text-left lg:text-5xl xl:text-6xl font-secondary"
                 style={{ color: colors.blueDark }}
               >
                 {heading.body}

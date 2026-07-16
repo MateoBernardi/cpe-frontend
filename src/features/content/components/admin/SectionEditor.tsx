@@ -2,7 +2,11 @@ import { Link } from 'react-router-dom'
 import { useAdminSectionViewModel, usePublishSection } from '../../viewmodels'
 import { getSectionDisplayName } from '../../config/sectionRoles'
 import SectionCanvasEditor from './SectionCanvasEditor'
+import AboutHeroEditor from './AboutHeroEditor'
 import { LoadingSpinner, ErrorMessage } from '@shared/components'
+
+/** Secciones que se editan juntas en un único editor combinado (ver AboutHeroEditor). */
+const MERGED_HERO_SECTIONS = new Set(['about', 'info_primary'])
 
 interface SectionEditorProps {
   sectionId: number
@@ -45,6 +49,13 @@ export default function SectionEditor({ sectionId }: SectionEditorProps) {
 
   const sectionName = section?.name ?? ''
   const displayName = getSectionDisplayName(sectionName)
+
+  // "about" e "info_primary" se editan juntas en un único hero fusionado —
+  // ver AboutHeroEditor. Ambos ids de /sections/:id siguen funcionando y
+  // llevan al mismo editor combinado (con su propio header/publish).
+  if (MERGED_HERO_SECTIONS.has(sectionName)) {
+    return <AboutHeroEditor />
+  }
 
   return (
     <div className="space-y-6">

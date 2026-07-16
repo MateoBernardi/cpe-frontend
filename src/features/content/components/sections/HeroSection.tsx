@@ -47,7 +47,7 @@ export default function HeroSection({ section }: Props) {
       <div className={`relative z-20 w-full text-center ${layout.containerNarrow}`}>
         {headline && (
           <h1
-            className="text-[length:var(--hero-title-mobile-size)] font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl drop-shadow-lg font-primary"
+            className="text-[length:var(--hero-title-mobile-size)] font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl drop-shadow-lg font-secondary"
             style={{ '--hero-title-mobile-size': fontSizes['3xl'] } as React.CSSProperties}
           >
             {headline.body}
@@ -85,7 +85,7 @@ export default function HeroSection({ section }: Props) {
         )}
         {trust && (
           <div className="mt-[5vh]">
-            <p className="text-sm font-medium tracking-wide text-white/60">{trust.body}</p>
+            <p className="font-mono text-xs uppercase tracking-[0.18em] text-white/60">{trust.body}</p>
           </div>
         )}
       </div>

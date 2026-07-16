@@ -7,6 +7,7 @@ import {
 } from '@features/content/viewmodels'
 import type { PreviewSectionEntry } from '@features/content/viewmodels'
 import { SectionRenderer } from '@features/content/components'
+import { AboutHeroSection } from '@features/content/components/sections'
 import { getSectionDisplayName } from '@features/content/config/sectionRoles'
 import { LoadingSpinner, ErrorMessage } from '@shared/components'
 
@@ -183,22 +184,35 @@ export default function AdminPreviewPage() {
               )}
 
               <div className="space-y-0">
-                {group.items.map((entry, si) => (
-                  <section key={entry.id} id={entry.name}>
-                    {/* Separador entre secciones dentro del mismo grupo */}
-                    {si > 0 && group.items.length > 1 && (
-                      <div className="my-4 border-t border-dashed border-gray-200" />
-                    )}
-                    {/* Etiqueta de sección */}
-                    <div className="mb-2 flex items-center gap-2 px-2">
-                      <span className="h-2 w-2 rounded-full bg-teal-500" />
-                      <span className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
-                        {getSectionDisplayName(entry.name)}
-                      </span>
-                    </div>
-                    <AdminPreviewSection entry={entry} />
-                  </section>
-                ))}
+                {group.items
+                  // "info_primary" ya no tiene layout propio en el preview: sus
+                  // datos se consumen desde el hero fusionado en "about".
+                  .filter((entry) => entry.name !== 'info_primary')
+                  .map((entry, si, visibleItems) => (
+                    <section key={entry.id} id={entry.name}>
+                      {/* Separador entre secciones dentro del mismo grupo */}
+                      {si > 0 && visibleItems.length > 1 && (
+                        <div className="my-4 border-t border-dashed border-gray-200" />
+                      )}
+                      {/* Etiqueta de sección */}
+                      <div className="mb-2 flex items-center gap-2 px-2">
+                        <span className="h-2 w-2 rounded-full bg-teal-500" />
+                        <span className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
+                          {getSectionDisplayName(entry.name)}
+                        </span>
+                      </div>
+                      {entry.name === 'about' ? (
+                        (() => {
+                          const infoEntry = entries.find((e) => e.name === 'info_primary')
+                          return infoEntry
+                            ? <AboutHeroSection about={entry.section} infoPrimary={infoEntry.section} />
+                            : <AdminPreviewSection entry={entry} />
+                        })()
+                      ) : (
+                        <AdminPreviewSection entry={entry} />
+                      )}
+                    </section>
+                  ))}
               </div>
             </div>
           ))}

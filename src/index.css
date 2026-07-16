@@ -1,10 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ── Global font ── */
 html, body {
-  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
 }
 
 /* ── Mobile typography scale ── */
@@ -157,4 +158,9 @@ html.lenis, html.lenis body {
 @keyframes cvRingGlow {
   0%, 100% { border-color: transparent; }
   50% { border-color: rgba(1, 136, 141, 0.15); }
+}
+
+/* ── About-hero decorative dial rotation ── */
+@keyframes aboutHeroDialSpin {
+  to { transform: translateY(-50%) rotate(360deg); }
 }

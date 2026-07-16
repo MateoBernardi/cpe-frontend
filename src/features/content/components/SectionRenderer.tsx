@@ -4,8 +4,6 @@ import MediaBlock from './MediaBlock'
 import {
   HeroSection,
   SecondaryHeroSection,
-  AboutSection,
-  InfoPrimarySection,
   InfoSecondarySection,
   ContactFormSection,
   ServiceDetailSection,
@@ -23,8 +21,6 @@ interface SectionRendererProps {
 const SECTION_LAYOUTS: Record<string, React.ComponentType<{ section: Section }>> = {
   hero: HeroSection,
   secondary_hero: SecondaryHeroSection,
-  about: AboutSection,
-  info_primary: InfoPrimarySection,
   info_secondary: InfoSecondarySection,
   contact_form: ContactFormSection,
   service_intervencion: ServiceDetailSection,

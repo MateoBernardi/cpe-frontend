@@ -9,13 +9,11 @@
  * - Panel de archivos R2 (si la sección tiene archivos)
  */
 
-import { useState, useCallback, useMemo } from 'react'
-import type { AdminTextContent } from '../../models'
-import { getCanvasConfig, type TextSlotConfig, type MediaSlotConfig } from '../../config/sectionCanvasConfig'
-import { matchTextToSlot } from '../../config/sectionCanvasConfig'
+import { useState, useMemo } from 'react'
+import { getCanvasConfig } from '../../config/sectionCanvasConfig'
 import SectionGuide from './SectionGuide'
 import GalleryPicker from './GalleryPicker'
-import type { GalleryMedia } from '../../viewmodels'
+import { useSlotEditing } from './useSlotEditing'
 import {
   ConnectedTextSlot,
   ConnectedMediaSlot,
@@ -30,7 +28,7 @@ import {
   RecruitmentLayout,
   TeaserLayout,
 } from './canvas'
-import type { SectionCanvasEditorProps, SlotContext, LayoutProps } from './canvas'
+import type { SectionCanvasEditorProps, LayoutProps } from './canvas'
 
 const LAYOUT_MAP: Record<string, React.ComponentType<LayoutProps>> = {
   hero: HeroLayout,
@@ -53,8 +51,8 @@ const LAYOUT_MAP: Record<string, React.ComponentType<LayoutProps>> = {
 const LAYOUT_DESCRIPTIONS: Record<string, string> = {
   hero: '5 elementos de texto + carrusel de fondo. El título y botones se superponen sobre las imágenes con degradado oscuro.',
   secondary_hero: '3 textos centrados + 1 imagen destacada. Diseño simétrico con tarjeta CTA.',
-  about: 'Grilla de 4 columnas: bio + párrafo + foto × 2 perfiles. Fondo con puntos decorativos.',
-  info_primary: '2 columnas: diagrama/imagen (izq) + título con lista de viñetas (der). Íconos opcionales.',
+  about: 'Se combina con "Información Principal" en un único hero fusionado ("Quiénes somos"). Grilla de 4 columnas: bio + párrafo + foto × 2 perfiles. Fondo con puntos decorativos.',
+  info_primary: 'Se combina con "Nosotros" en un único hero fusionado ("Quiénes somos"). 2 columnas: diagrama/imagen (izq) + título con lista de viñetas (der). Íconos opcionales.',
   info_secondary: '2 columnas: acordeones con secciones (izq) + gráfico dona interactivo (der). Sin imágenes.',
   contact_form: '1 columna: formulario de contacto centrado + texto informativo abajo. Los campos del formulario no son editables.',
   service_intervencion: '2 columnas: tarjeta de texto con objetivo/párrafos/ejes (izq) + imagen (der).',
@@ -134,95 +132,31 @@ export default function SectionCanvasEditor({
 }: SectionCanvasEditorProps) {
   const config = getCanvasConfig(sectionName)
 
-  // ── Estado de edición inline ──
-  const [editingSlotId, setEditingSlotId] = useState<string | null>(null)
-  const [editValue, setEditValue] = useState('')
-  const [editingTextId, setEditingTextId] = useState<number | null>(null)
   const [showGuide, setShowGuide] = useState(false)
   const [showFiles, setShowFiles] = useState(false)
 
-  // ── Estado del gallery picker ──
-  const [galleryTarget, setGalleryTarget] = useState<{
-    slot: MediaSlotConfig
-    preserveOrder?: number
-  } | null>(null)
-
-  const getNextOrderForRole = useCallback((role: string, kind: 'text' | 'media') => {
-    if (!section) return 1
-    const source = kind === 'text' ? section.texts : section.media
-    const maxOrder = source
-      .filter((item) => item.role === role)
-      .reduce((max, item) => (Number.isFinite(item.order) && item.order > max ? item.order : max), 0)
-    return maxOrder + 1
-  }, [section])
-
-  const startEdit = useCallback((slotId: string, existingText?: AdminTextContent) => {
-    setEditingSlotId(slotId)
-    setEditValue(existingText?.body ?? '')
-    setEditingTextId(existingText?.id ?? null)
-  }, [])
-
-  const cancelEdit = useCallback(() => {
-    setEditingSlotId(null)
-    setEditValue('')
-    setEditingTextId(null)
-  }, [])
-
-  const saveEdit = useCallback((slotConfig: TextSlotConfig) => {
-    if (!editValue.trim()) {
-      cancelEdit()
-      return
-    }
-
-    const existingById = editingTextId !== null
-      ? section?.texts.find((t) => t.id === editingTextId)
-      : undefined
-    const existingBySlot = section
-      ? matchTextToSlot(section.texts, slotConfig)
-      : undefined
-    const existingText = existingById ?? existingBySlot
-
-    if (existingText) {
-      if (existingText.status === 'DRAFTED' && onPatchText) {
-        // Texto DRAFTED → actualizar body in-place
-        onPatchText(existingText.id, editValue.trim())
-      } else {
-        // Texto PUBLISHED → crear nuevo DRAFTED de reemplazo
-        const order = Number.isFinite(existingText.order)
-          ? existingText.order
-          : (slotConfig.slotIndex + 1)
-        onCreateText(editValue.trim(), slotConfig.role, order)
-      }
-    } else {
-      const order = slotConfig.multiple
-        ? getNextOrderForRole(slotConfig.role, 'text')
-        : (slotConfig.slotIndex + 1)
-      onCreateText(editValue.trim(), slotConfig.role, order)
-    }
-
-    cancelEdit()
-  }, [editValue, editingTextId, onCreateText, section, cancelEdit, getNextOrderForRole, onPatchText])
-
-  const getDefaultMediaOrderForSlot = useCallback((slotConfig: MediaSlotConfig) => {
-    if (!slotConfig.multiple) return slotConfig.slotIndex + 1
-    return getNextOrderForRole(slotConfig.role, 'media')
-  }, [getNextOrderForRole])
-
-  const uploadToSlot = useCallback((slotConfig: MediaSlotConfig, file: File, orderOverride?: number) => {
-    const order = orderOverride ?? getDefaultMediaOrderForSlot(slotConfig)
-    onUploadMedia(file, sectionId, slotConfig.role, order)
-  }, [sectionId, onUploadMedia, getDefaultMediaOrderForSlot])
-
-  const pickFromGallery = useCallback((slotConfig: MediaSlotConfig, options?: { preserveOrder?: number }) => {
-    setGalleryTarget({ slot: slotConfig, preserveOrder: options?.preserveOrder })
-  }, [])
-
-  const handleGallerySelect = useCallback((media: GalleryMedia) => {
-    if (!galleryTarget || !onAssignFromGallery) return
-    const order = galleryTarget.preserveOrder ?? getDefaultMediaOrderForSlot(galleryTarget.slot)
-    onAssignFromGallery(media.id, sectionId, galleryTarget.slot.role, order)
-    setGalleryTarget(null)
-  }, [galleryTarget, sectionId, onAssignFromGallery, getDefaultMediaOrderForSlot])
+  // ── Estado de edición inline + SlotContext (extraído a useSlotEditing) ──
+  const { ctx, galleryTarget, setGalleryTarget, handleGallerySelect } = useSlotEditing({
+    section,
+    sectionId,
+    onCreateText,
+    onPatchText,
+    onUploadMedia,
+    onDeleteText,
+    onDeleteMedia,
+    onSwapTextOrder,
+    onSwapMediaOrder,
+    isUploading,
+    onPublishMedia,
+    isPublishingMedia,
+    onPublishText,
+    isPublishingText,
+    onUploadR2File,
+    isUploadingR2,
+    onDownloadFile,
+    onRemoveFile,
+    onAssignFromGallery,
+  })
 
   // Stats
   const stats = useMemo(() => computeSlideStats(section, config), [section, config])
@@ -233,32 +167,6 @@ export default function SectionCanvasEditor({
         No hay configuración de canvas para la sección "{sectionName}".
       </div>
     )
-  }
-
-  const ctx: SlotContext = {
-    section,
-    editingSlotId,
-    editValue,
-    startEdit,
-    saveEdit,
-    cancelEdit,
-    setEditValue,
-    editingTextId,
-    uploadToSlot,
-    deleteText: onDeleteText,
-    deleteMedia: onDeleteMedia,
-    swapTextOrder: onSwapTextOrder,
-    swapMediaOrder: onSwapMediaOrder,
-    publishMedia: onPublishMedia,
-    isPublishingMedia,
-    publishText: onPublishText,
-    isPublishingText,
-    uploadR2File: onUploadR2File,
-    isUploadingR2,
-    downloadFile: onDownloadFile,
-    removeFile: onRemoveFile,
-    sectionId,
-    pickFromGallery: onAssignFromGallery ? pickFromGallery : undefined,
   }
 
   const LayoutComponent = LAYOUT_MAP[sectionName]

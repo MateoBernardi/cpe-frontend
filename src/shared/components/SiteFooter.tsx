@@ -21,14 +21,14 @@ export default function SiteFooter({ privacyTo, privacyExternal }: SiteFooterPro
             <img src="/cpeLogo.png" alt="CPE Logo" className="h-64 w-auto brightness-0 invert" />
           </div>
           <div>
-            <h4 className="mb-3 text-sm font-semibold text-white">Contacto</h4>
+            <h4 className="mb-3 font-mono text-xs font-semibold uppercase tracking-widest text-white">Contacto</h4>
             <ul className="space-y-2 text-sm opacity-70">
               <li><a href="mailto:contacto@clinicaparaempresas.com" className="transition-colors hover:text-white">contacto@clinicaparaempresas.com</a></li>
               <li><a href="tel:+5493512180273" className="transition-colors hover:text-white">+54 9 351 218-0273</a></li>
             </ul>
           </div>
           <div>
-            <h4 className="mb-3 text-sm font-semibold text-white">Legal</h4>
+            <h4 className="mb-3 font-mono text-xs font-semibold uppercase tracking-widest text-white">Legal</h4>
             <ul className="space-y-2 text-sm opacity-70">
               <li>
                 {privacyExternal ? (

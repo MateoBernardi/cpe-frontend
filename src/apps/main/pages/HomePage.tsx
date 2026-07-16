@@ -1,5 +1,6 @@
 import { useMultipleSectionsViewModel } from '@features/content/viewmodels'
 import { SectionRenderer } from '@features/content/components'
+import { AboutHeroSection } from '@features/content/components/sections'
 import ForoPreviewSection from '../components/ForoPreviewSection'
 
 /**
@@ -51,9 +52,16 @@ export default function HomePage() {
         const section = sections.get(name)
         // Si la sección aún no está cargada, no renderizar nada (el MainLayout muestra el loading inicial)
         if (!section) return null
+        // "info_primary" ya no tiene layout propio: sus datos se consumen desde
+        // AboutHeroSection (fusionado con "about") — no renderiza nada por sí sola.
+        if (name === 'info_primary') return null
         return (
           <section key={name} id={name}>
-            <SectionRenderer section={section} />
+            {name === 'about'
+              ? (sections.get('info_primary') && (
+                  <AboutHeroSection about={section} infoPrimary={sections.get('info_primary')!} />
+                ))
+              : <SectionRenderer section={section} />}
             {/* Preview del Foro — se muestra entre "info_secondary" y el cierre ("secondary_hero") */}
             {name === 'info_secondary' && (
               <div id="foro">
