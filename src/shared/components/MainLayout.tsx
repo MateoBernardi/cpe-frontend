@@ -7,6 +7,7 @@ import LoadingSpinner from './LoadingSpinner'
 import SiteHeader, { type SiteHeaderNavItem, type SiteHeaderSearchItem } from './SiteHeader'
 import SiteFooter from './SiteFooter'
 import { useSmoothScroll } from '@shared/hooks'
+import { SERVICE_LINKS } from '@shared/config/serviceLinks'
 import { colors } from '../../theme'
 
 interface MainLayoutProps {
@@ -21,11 +22,6 @@ interface NavLinkItem {
   external?: boolean
 }
 
-interface ServiceLinkItem {
-  label: string
-  href: string
-}
-
 /** Foro sub-app base URL — production points at its own subdomain; dev/preview falls back to the co-hosted multi-page entry. */
 const FORO_URL = (import.meta.env.VITE_FORO_URL as string | undefined) ?? '/foro.html'
 
@@ -37,14 +33,6 @@ const NAV_LINKS: NavLinkItem[] = [
   { label: 'Solicitar presupuesto', href: '/contact', variant: 'cta' },
 ]
 
-const SERVICE_LINKS: ServiceLinkItem[] = [
-  { label: 'Intervención Directa', href: '/servicios/intervencion-directa' },
-  { label: 'Acompañamiento a las personas', href: '/servicios/acompanamiento' },
-  { label: 'Selección de Personal', href: '/servicios/seleccion-de-personal' },
-  { label: 'Consultoría para el Empresario', href: '/servicios/clinica-para-empresarios' },
-  { label: 'Traspaso Generacional', href: '/servicios/traspaso-generacional' },
-]
-
 const SEARCH_ITEMS = [
   ...NAV_LINKS.map((l) => ({ label: l.label, href: l.href, external: l.external })),
   ...SERVICE_LINKS.map((l) => ({ label: l.label, href: l.href, external: false })),
@@ -53,9 +41,6 @@ const SEARCH_ITEMS = [
 const HOME_SECTION_NAMES = [
   'hero',
   'about',
-  'teaser_circuit',
-  'teaser_clinica',
-  'teaser_traspaso',
   'info_primary',
   'info_secondary',
   'secondary_hero',

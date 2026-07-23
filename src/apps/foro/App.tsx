@@ -30,12 +30,25 @@ const queryClient = new QueryClient({
   },
 })
 
+/**
+ * In dev the foro SPA is co-hosted at `/foro.html` (see vite.config.ts's
+ * `foroDeepLinkFallback` plugin, which rewrites `/foro.html/*` sub-paths back
+ * to it so refreshes survive). In prod it's served at a subdomain ROOT
+ * (`VITE_FORO_URL`), so the router must have no basename there. Deriving the
+ * basename from the actual pathname (rather than an env flag) keeps both
+ * `npm run dev` and `npm run preview`/prod correct without extra config.
+ */
+const FORO_BASENAME =
+  window.location.pathname === '/foro.html' || window.location.pathname.startsWith('/foro.html/')
+    ? '/foro.html'
+    : '/'
+
 export default function ForoApp() {
   return (
     <QueryClientProvider client={queryClient}>
       <ForoAuthProvider>
         <ErrorBoundary>
-          <BrowserRouter>
+          <BrowserRouter basename={FORO_BASENAME}>
             <ForoRouter />
           </BrowserRouter>
           <ForoAuthDialog />

@@ -204,8 +204,9 @@ export default function AdminPreviewPage() {
                       {entry.name === 'about' ? (
                         (() => {
                           const infoEntry = entries.find((e) => e.name === 'info_primary')
-                          return infoEntry
-                            ? <AboutHeroSection about={entry.section} infoPrimary={infoEntry.section} />
+                          const heroEntry = entries.find((e) => e.name === 'hero')
+                          return infoEntry && heroEntry
+                            ? <AboutHeroSection hero={heroEntry.section} about={entry.section} infoPrimary={infoEntry.section} />
                             : <AdminPreviewSection entry={entry} />
                         })()
                       ) : (

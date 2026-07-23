@@ -1,11 +1,10 @@
 import type { Publication, PublicationPreview } from '@features/foro'
 import { useComments, useCommentMutations } from '@features/foro'
-import { CategoryTag } from './CategoryTag'
+import { ArticleHeader } from './ArticleHeader'
 import { InfoCard } from './InfoCard'
 import { CommentList } from './CommentList'
 import { CommentComposer } from './CommentComposer'
 import { PublicationListItem } from './PublicationListItem'
-import { formatForoDate, initialsOf } from '../lib/typeStyle'
 
 interface DiscussionDetailProps {
   publication: Publication
@@ -18,6 +17,10 @@ interface DiscussionDetailProps {
  * `/interactions` (type_id=2). The publication itself is the original post;
  * comments are the replies. No nested replies / no "best answer" (not
  * modeled by the backend) — rendered flat.
+ *
+ * Header uses the shared editorial treatment (`<ArticleHeader>`); the OP
+ * body sits directly below it with no duplicate byline — the header's own
+ * hairline rule already separates it from the thread.
  */
 export function DiscussionDetail({ publication, typeName, related }: DiscussionDetailProps) {
   const { data: comments, isLoading } = useComments(publication.id)
@@ -28,19 +31,17 @@ export function DiscussionDetail({ publication, typeName, related }: DiscussionD
   return (
     <div className="foro-pod-grid">
       <article className="foro-pod-main">
-        <CategoryTag slug="discusion" label={typeName} />
-        <h1>{publication.title}</h1>
+        <ArticleHeader
+          slug="discusion"
+          typeName={typeName}
+          title={publication.title}
+          subtitle={publication.subtitle}
+          createdBy={publication.createdBy}
+          createdAt={publication.createdAt}
+        />
 
-        <div className="foro-op">
-          <div className="foro-who">
-            <span className="foro-avatar">{initialsOf(publication.createdBy)}</span>
-            <b>{publication.createdBy}</b>
-            <span className="foro-dotsep" />
-            <span>{formatForoDate(publication.createdAt)}</span>
-          </div>
-          <div className="foro-body">
-            {publication.content.split(/\n{2,}/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
-          </div>
+        <div className="foro-prose foro-op-body">
+          {publication.content.split(/\n{2,}/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
         </div>
 
         <h3 className="foro-block-title">{replyCount} respuestas</h3>

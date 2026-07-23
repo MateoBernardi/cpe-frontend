@@ -1,153 +1,246 @@
+import { useNavigate } from 'react-router-dom'
 import type { Section } from '../../models'
 import { textByRole, textsByRole, mediaByRole, mediasByRole } from './sectionHelpers'
+import { useSectionViewModel } from '@features/content/viewmodels'
 import { useInView } from '@shared/hooks'
+import AboutHeroServicesMatrix from './AboutHeroServicesMatrix'
 import { colors, layout } from '../../../../theme'
 
-interface Props { about: Section; infoPrimary: Section }
+interface Props { hero: Section; about: Section; infoPrimary: Section }
 
 /**
- * Hero fusionado "Quiénes somos": combina, solo a nivel de render, las
- * secciones backend `about` (equipo/bio) e `info_primary` (título + lista de
- * viñetas + diagrama). Ambas siguen siendo secciones separadas en el backend;
- * acá únicamente se mapean sus roles a un único layout visual.
+ * Fallback idéntico al de `FORO_TEASER_FALLBACKS.cta` en
+ * `src/apps/main/components/ForoPreviewSection.tsx` — se inlinea acá (en vez
+ * de importarlo desde un componente de página) para no invertir la dirección
+ * de dependencia entre un componente de página y uno de sección compartido.
+ * Si ese texto cambia ahí, actualizar también acá.
  */
-export default function AboutHeroSection({ about, infoPrimary }: Props) {
+const FORO_CTA_FALLBACK = 'Explorar el foro completo →'
+
+/**
+ * Divide la línea de bio ("Nombre — Rol") en nombre y rol para darles
+ * jerarquía tipográfica distinta. Si el body no tiene separador reconocible,
+ * todo se renderiza como nombre — el layout nunca depende del formato exacto.
+ */
+function splitBio(body: string): { name: string; role: string | null } {
+  const [name, ...rest] = body.split(/\r?\n|\s+[—–|·]\s+/)
+  const role = rest.join(' ').trim()
+  return { name: name.trim(), role: role.length > 0 ? role : null }
+}
+
+/**
+ * Hero fusionado de la home: combina, solo a nivel de render, tres secciones
+ * backend — `hero` (headline/descripción/CTAs del hero original, ahora oculto
+ * como sección propia), `about` (eyebrow + bios del equipo) e `info_primary`
+ * (foto de los fundadores, rol "diagram"). Las tres siguen siendo secciones
+ * separadas en el backend; acá únicamente se mapean sus roles a un único
+ * layout visual de 3 columnas: copy | foto centerpiece | perfiles + CTA foro.
+ * Cierra con la matriz de servicios (AboutHeroServicesMatrix).
+ */
+export default function AboutHeroSection({ hero, about, infoPrimary }: Props) {
+  const navigate = useNavigate()
+  const { section: foroTeaser } = useSectionViewModel('foro_teaser')
+
+  // Columna izquierda (copy de "hero" + eyebrow de "about")
   const eyebrow = textByRole(about.texts, 'heading')
-  const title = textByRole(infoPrimary.texts, 'heading')
-  const bullets = textsByRole(infoPrimary.texts, 'bullet')
-  const diagram = mediaByRole(infoPrimary.media, 'diagram')
-  const photos = mediasByRole(about.media, 'photo')
+  const headline = textByRole(hero.texts, 'headline')
+  const subheading = textByRole(hero.texts, 'subheading')
+  const ctaPrimary = textByRole(hero.texts, 'cta')
+  const ctaSecondary = textByRole(hero.texts, 'cta_secondary')
+  const trust = textByRole(hero.texts, 'trust')
+
+  // Centro: foto de fundadores ("info_primary", rol diagram)
+  const photo = mediaByRole(infoPrimary.media, 'diagram')
+  // Logos de servicios ("info_primary", rol icon — uno por servicio, en orden)
+  const serviceIcons = mediasByRole(infoPrimary.media, 'icon')
+
+  // Columna derecha: perfiles de fundadores ("about"). Se itera SOLO sobre las
+  // bios: un `paragraph` sin bio correspondiente (resto de datos del layout
+  // anterior) nunca renderiza un bloque suelto/duplicado.
   const bios = textsByRole(about.texts, 'bio')
   const paragraphs = textsByRole(about.texts, 'paragraph')
-  // Un integrante del equipo = una foto (ancla visual del chip). Nos basamos en
-  // `photos` y no en el máximo con `bios`, porque los bios/paragraphs del CMS
-  // pueden traer entradas duplicadas de más (p. ej. un bio/paragraph repetido)
-  // que si no, generarían una tarjeta fantasma sin foto debajo de las reales.
-  const memberCount = photos.length
-  const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.15 })
+
+  const foroCtaBody = foroTeaser?.texts.find((t) => t.role === 'cta')?.body?.trim()
+  const foroCtaText = foroCtaBody ? foroCtaBody : FORO_CTA_FALLBACK
+
+  const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
 
   return (
-    <section ref={ref} className="relative overflow-hidden" style={{ backgroundColor: colors.offWhite }}>
-      {/* Grilla decorativa tipo "papel cuadriculado" — solo desktop */}
-      <div
-        className="pointer-events-none absolute inset-0 hidden md:block"
-        style={{
-          backgroundImage: `linear-gradient(${colors.tealMid}0d 1px, transparent 1px), linear-gradient(90deg, ${colors.tealMid}0d 1px, transparent 1px)`,
-          backgroundSize: '56px 56px',
-        }}
-      />
-      {/* Dial decorativo rotante — solo desktop grande */}
-      <div
-        className="pointer-events-none absolute right-[-190px] top-1/2 hidden h-[520px] w-[520px] -translate-y-1/2 rounded-full border border-dashed lg:block"
-        style={{ borderColor: `${colors.tealMid}4d`, animation: 'aboutHeroDialSpin 90s linear infinite' }}
-      >
-        <div className="absolute inset-16 rounded-full border" style={{ borderColor: `${colors.tealMid}24` }} />
-        <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full" style={{ backgroundColor: colors.tealMid }} />
-      </div>
+    // En desktop (lg+) todo el hero — header fijo + grilla + matriz de servicios
+    // + banda de scroll — ocupa un viewport: min-h-screen con columna flex donde
+    // la grilla absorbe el espacio sobrante. Si el contenido dinámico crece, la
+    // sección simplemente se extiende (nunca recorta). Mobile/tablet: flujo normal.
+    <section
+      ref={ref}
+      className="relative overflow-hidden lg:flex lg:min-h-screen lg:flex-col"
+      style={{ backgroundColor: colors.offWhite }}
+    >
+      {/* pt despeja el header fijo del sitio (~110px, ver headerOffset en MainLayout)
+          para que nunca tape el contenido del hero */}
+      <div className={`${layout.container} relative z-10 w-full pt-[110px] sm:pt-[120px] lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:justify-center`}>
+        {/* Grilla hero: copy | foto | perfiles. Las tres columnas se estiran a la
+            altura del contenido más alto — nada depende de alturas fijas. */}
+        <div className="grid gap-[5vh] pb-[6vh] sm:pb-[8vh] lg:grid-cols-[minmax(0,29%)_minmax(0,1fr)_minmax(0,24%)] lg:gap-[3vw] lg:pb-[3vh]">
+          {/* Izquierda: masthead editorial. id="about" mantiene el anchor /#about
+              funcionando dentro del hero fusionado (el <section> exterior lleva
+              id="hero", ver HomePage). */}
+          <div id="about" className="flex min-w-0 flex-col justify-center py-[2vh]">
+            {eyebrow && (
+              <div
+                className={`font-mono text-xs uppercase tracking-[0.24em] transition-opacity duration-700 ${
+                  isInView ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{ color: colors.tealMid }}
+              >
+                {eyebrow.body}
+              </div>
+            )}
 
-      <div className={`${layout.container} ${layout.sectionPadY} relative z-10 grid gap-[5vh] lg:grid-cols-[42%_1fr] lg:items-center lg:gap-[5vw]`}>
-        {/* Izquierda: foto grande */}
-        {diagram && (
-          <div
-            className={`relative mx-auto w-full max-w-md transition-all duration-1000 ${
-              isInView ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'
-            }`}
-          >
-            <div className="relative aspect-[4/5]">
-              <div className="absolute left-[-14px] top-[14px] h-full w-full border" style={{ borderColor: colors.tealDeep }} />
-              <img
-                src={diagram.url}
-                alt=""
-                className="relative z-10 h-full w-full object-cover"
-                loading="lazy"
-              />
-            </div>
+            {headline && (
+              <h1
+                className={`mt-[2.5vh] font-secondary text-4xl font-medium leading-[1.08] tracking-tight sm:text-5xl lg:text-[min(3.4rem,6vh)] transition-all duration-1000 delay-150 ${
+                  isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
+                }`}
+                style={{ color: colors.blueDark }}
+              >
+                {headline.body}
+              </h1>
+            )}
+
+            {subheading && (
+              <p
+                className={`mt-[3vh] max-w-prose text-base leading-relaxed transition-all duration-1000 delay-300 ${
+                  isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
+                }`}
+                style={{ color: colors.blueMid }}
+              >
+                {subheading.body}
+              </p>
+            )}
+
+            {(ctaPrimary || ctaSecondary) && (
+              <div
+                className={`mt-[4vh] flex flex-wrap items-center gap-x-6 gap-y-3 transition-all duration-1000 delay-500 ${
+                  isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
+                }`}
+              >
+                {ctaPrimary && (
+                  <a
+                    href="/contact"
+                    className="group inline-flex items-center gap-2 rounded-md px-6 py-3.5 text-sm font-semibold text-white transition-colors duration-300"
+                    style={{ backgroundColor: colors.blueDark }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.blueMid }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.blueDark }}
+                  >
+                    {/* Se recorta la flecha final del texto (si la trae) para animarla siempre aparte */}
+                    {ctaPrimary.body.replace(/\s*→\s*$/, '')}
+                    <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                  </a>
+                )}
+                {ctaSecondary && (
+                  <a
+                    href="/servicios/seleccion-de-personal#postulaciones"
+                    className="border-b pb-1 text-sm font-semibold transition-opacity duration-300 hover:opacity-70"
+                    style={{ borderColor: colors.tealMid, color: colors.blueDark }}
+                  >
+                    {ctaSecondary.body}
+                  </a>
+                )}
+              </div>
+            )}
+
+            {trust && (
+              <p
+                className={`mt-[4vh] font-mono text-xs uppercase tracking-[0.18em] transition-opacity duration-1000 delay-700 ${
+                  isInView ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{ color: colors.blueMid }}
+              >
+                {trust.body}
+              </p>
+            )}
           </div>
-        )}
 
-        {/* Derecha: copy */}
-        <div>
-          {eyebrow && (
+          {/* Centro: foto de los fundadores — pieza central, sin recorte agresivo.
+              Bordes laterales fundidos al fondo vía mask para conectar visualmente
+              el copy (izquierda) con los perfiles (derecha). */}
+          {photo && (
             <div
-              className={`font-mono text-xs uppercase tracking-[0.24em] transition-opacity duration-700 ${
+              className={`relative min-h-[320px] transition-opacity duration-1000 delay-200 lg:min-h-0 ${
                 isInView ? 'opacity-100' : 'opacity-0'
               }`}
-              style={{ color: colors.tealMid }}
             >
-              {eyebrow.body}
+              <img
+                src={photo.url}
+                alt=""
+                loading="eager"
+                className="h-full w-full object-cover object-center"
+                style={{
+                  maskImage: 'linear-gradient(to right, transparent, #000 14%, #000 86%, transparent)',
+                  WebkitMaskImage: 'linear-gradient(to right, transparent, #000 14%, #000 86%, transparent)',
+                }}
+              />
             </div>
           )}
 
-          {title && (
-            <h1
-              className={`mt-[2vh] font-secondary text-3xl font-medium leading-[1.05] tracking-tight sm:text-4xl md:text-5xl transition-all duration-1000 delay-150 ${
+          {/* Derecha: perfiles de fundadores + CTA foro. min-w-0 en cada bloque —
+              soporta N fundadores y credenciales de largo variable. La columna se
+              renderiza siempre: el CTA al foro vive acá aunque no haya bios. */}
+          <div className="flex min-w-0 flex-col justify-center py-[2vh]">
+            {bios.map((bio, i) => {
+              const paragraph = paragraphs[i]
+              const parts = splitBio(bio.body)
+              return (
+                <div
+                  key={i}
+                  className={`min-w-0 transition-all duration-1000 ${
+                    isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
+                  } ${i > 0 ? 'mt-[3vh] border-t pt-[3vh]' : ''}`}
+                  style={{
+                    transitionDelay: `${300 + i * 150}ms`,
+                    ...(i > 0 ? { borderColor: `${colors.blueDark}1f` } : {}),
+                  }}
+                >
+                  {parts && (
+                    <h2 className="font-secondary text-xl font-medium tracking-tight sm:text-2xl lg:text-[min(1.5rem,3.1vh)]" style={{ color: colors.blueDark }}>
+                      {parts.name}
+                    </h2>
+                  )}
+                  {parts?.role && (
+                    <div className="mt-1 text-sm font-semibold" style={{ color: colors.tealMid }}>
+                      {parts.role}
+                    </div>
+                  )}
+                  {paragraph && (
+                    <p className="mt-2 text-sm leading-relaxed" style={{ color: colors.blueMid }}>
+                      {paragraph.body}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* CTA foro — debajo de los perfiles, navega a la preview embebida (#foro) */}
+            <button
+              type="button"
+              onClick={() => navigate({ pathname: '/', hash: '#foro' })}
+              className={`group mt-[4vh] inline-flex items-baseline gap-3 self-start text-left text-base font-semibold leading-snug transition-all duration-1000 delay-700 ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
               }`}
               style={{ color: colors.blueDark }}
             >
-              {title.body}
-            </h1>
-          )}
-
-          {bullets.length > 0 && (
-            <ul
-              className={`mt-[4vh] flex max-w-xl flex-col transition-all duration-1000 delay-300 ${
-                isInView ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-              }`}
-            >
-              {bullets.map((b, i) => (
-                <li
-                  key={i}
-                  className="grid grid-cols-[34px_1fr] items-baseline gap-3 border-t py-3 text-sm leading-relaxed last:border-b sm:text-base"
-                  style={{ borderColor: `${colors.blueDark}24`, color: colors.blueMid }}
-                >
-                  <span className="font-mono text-xs" style={{ color: colors.tealMid }}>
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  {b.body}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {memberCount > 0 && (
-            <div
-              className={`mt-[4vh] flex flex-wrap gap-8 transition-all duration-1000 delay-500 ${
-                isInView ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-              }`}
-            >
-              {Array.from({ length: memberCount }).map((_, i) => {
-                const photo = photos[i]
-                const bio = bios[i]
-                const paragraph = paragraphs[i]
-                if (!photo && !bio) return null
-                return (
-                  <div key={i} className="flex items-start gap-4">
-                    {photo && (
-                      <div className="relative h-14 w-14 flex-shrink-0">
-                        <div className="absolute -left-1 top-1 h-full w-full border" style={{ borderColor: colors.tealDeep }} />
-                        <img src={photo.url} alt="" className="relative z-10 h-full w-full object-cover" loading="lazy" />
-                      </div>
-                    )}
-                    <div className="min-w-0 max-w-[220px]">
-                      {bio && (
-                        <div className="font-secondary text-sm font-semibold leading-snug" style={{ color: colors.blueDark }}>
-                          {bio.body}
-                        </div>
-                      )}
-                      {paragraph && (
-                        <p className="mt-1 text-xs leading-relaxed" style={{ color: colors.blueMid }}>
-                          {paragraph.body}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+              <span className="underline-offset-4 group-hover:underline">{foroCtaText.replace(/\s*→\s*$/, '')}</span>
+              <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1" style={{ color: colors.tealMid }}>
+                →
+              </span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Matriz de servicios — cierra la experiencia del hero. Los logos vienen
+          de "info_primary" (rol icon), apareados por orden con SERVICE_LINKS. */}
+      <AboutHeroServicesMatrix iconUrls={serviceIcons.map((m) => m.url)} />
     </section>
   )
 }

@@ -1,10 +1,10 @@
 import type { Publication, PublicationPreview, PublicationType, KnownPublicationTypeSlug } from '@features/foro'
-import { CategoryTag } from './CategoryTag'
+import { ArticleHeader } from './ArticleHeader'
 import { TagList } from './TagList'
 import { InfoCard } from './InfoCard'
 import { ExternalLinksCTA } from './ExternalLinksCTA'
 import { PublicationListItem } from './PublicationListItem'
-import { formatForoDate, initialsOf } from '../lib/typeStyle'
+import { formatForoDate } from '../lib/typeStyle'
 import { interactionRows } from '../lib/interactionRows'
 
 interface PublicationDetailProps {
@@ -36,63 +36,96 @@ function Gallery({ images }: { images: Publication['images'] }) {
   )
 }
 
-/**
- * Shared structural template for Paper / Podcast / Novedad, per the design
- * handoff. Paper & Podcast get the two-column layout with a sticky `.rail`
- * (CTA card of external_links + info card of interaction stats); Novedad is
- * a single centered column with an inline stat row instead.
- */
-export function PublicationDetail({ publication, type, slug, related }: PublicationDetailProps) {
-  const rows = interactionRows(publication.interactions, slug)
-  const ctaLabel = `${type?.name?.toUpperCase() ?? ''} · ${formatForoDate(publication.createdAt).toUpperCase()}`
-
-  const header = (
-    <>
-      <CategoryTag slug={slug} label={type?.name ?? ''} />
-      <h1>{publication.title}</h1>
-      <div className="foro-meta">
-        <span className="foro-avatar">{initialsOf(publication.createdBy)}</span>
-        <span>{publication.createdBy}</span>
-        <span className="foro-dotsep" />
-        <span>{formatForoDate(publication.createdAt)}</span>
-      </div>
-    </>
+/** `.foro-interactions` — inline mono stat row. Hides entirely when there are no counts. */
+function InteractionsRow({ rows }: { rows: { label: string; value: number }[] }) {
+  if (rows.length === 0) return null
+  return (
+    <div className="foro-interactions">
+      {rows.map((r) => <span key={r.label}><b>{r.value.toLocaleString('es-AR')}</b> {r.label.toLowerCase()}</span>)}
+    </div>
   )
+}
 
-  const body = (
-    <>
-      {publication.subtitle && <p className="foro-lede">{publication.subtitle}</p>}
-      {publication.imageUrl && (
-        <div className="foro-hero-img"><img src={publication.imageUrl} alt="" /></div>
-      )}
-      <TagList tags={publication.tags} />
-      <Prose content={publication.content} />
-      <Gallery images={publication.images} />
-    </>
-  )
-
-  const relatedBlock = related.length > 0 && (
+function RelatedBlock({ related, slug, typeName }: { related: PublicationPreview[]; slug: KnownPublicationTypeSlug | null; typeName: string }) {
+  if (related.length === 0) return null
+  return (
     <div className="foro-related">
-      <h3 className="foro-block-title">Relacionados</h3>
+      <h3 className="foro-block-title">Seguir leyendo</h3>
       <div className="foro-list foro-cols-3">
         {related.map((item, i) => (
-          <PublicationListItem key={item.id} publication={item} typeSlug={slug} typeName={type?.name ?? ''} index={i + 1} />
+          <PublicationListItem key={item.id} publication={item} typeSlug={slug} typeName={typeName} index={i + 1} />
         ))}
       </div>
     </div>
   )
+}
+
+/**
+ * Structural template for Paper / Podcast / Novedad detail screens — all
+ * three share the `<ArticleHeader>` editorial treatment (tag, serif H1 with
+ * accent period, italic standfirst, byline + hairline rule):
+ * - Paper (`.foro-paper`): single centered editorial column with a wide
+ *   hero break-out, a drop-cap first paragraph, and a flat article footer
+ *   (tags left, interactions right). External links (if any) render as an
+ *   inline CTA card below the footer — papers no longer use a side rail.
+ * - Podcast (`.foro-pod-grid`): keeps the two-column layout with a sticky
+ *   rail (external-link CTA + stats) since platform links need to stay
+ *   prominent.
+ * - Novedad (`.foro-news`): single centered column, interactions inline.
+ */
+export function PublicationDetail({ publication, type, slug, related }: PublicationDetailProps) {
+  const rows = interactionRows(publication.interactions, slug)
+  const typeName = type?.name ?? ''
+  const ctaLabel = `${typeName.toUpperCase()} · ${formatForoDate(publication.createdAt).toUpperCase()}`
+
+  const header = (
+    <ArticleHeader
+      slug={slug}
+      typeName={typeName}
+      title={publication.title}
+      subtitle={publication.subtitle}
+      createdBy={publication.createdBy}
+      createdAt={publication.createdAt}
+    />
+  )
+
+  if (slug === 'paper') {
+    return (
+      <article className="foro-paper">
+        {header}
+        {publication.imageUrl && (
+          <div className="foro-paper-hero"><img src={publication.imageUrl} alt="" /></div>
+        )}
+        <div className="foro-paper-body">
+          <Prose content={publication.content} />
+          <Gallery images={publication.images} />
+        </div>
+        <footer className="foro-paper-footer">
+          <TagList tags={publication.tags} />
+          <InteractionsRow rows={rows} />
+        </footer>
+        {publication.externalLinks.length > 0 && (
+          <div className="foro-paper-cta">
+            <ExternalLinksCTA label={ctaLabel} title={publication.title} links={publication.externalLinks} />
+          </div>
+        )}
+        <RelatedBlock related={related} slug={slug} typeName={typeName} />
+      </article>
+    )
+  }
 
   if (slug === 'novedad') {
     return (
       <article className="foro-news">
         {header}
-        {body}
-        {rows.length > 0 && (
-          <div className="foro-interactions">
-            {rows.map((r) => <span key={r.label}><b>{r.value.toLocaleString('es-AR')}</b> {r.label.toLowerCase()}</span>)}
-          </div>
+        {publication.imageUrl && (
+          <div className="foro-hero-img"><img src={publication.imageUrl} alt="" /></div>
         )}
-        {relatedBlock}
+        <TagList tags={publication.tags} />
+        <Prose content={publication.content} />
+        <Gallery images={publication.images} />
+        <InteractionsRow rows={rows} />
+        <RelatedBlock related={related} slug={slug} typeName={typeName} />
       </article>
     )
   }
@@ -109,8 +142,13 @@ export function PublicationDetail({ publication, type, slug, related }: Publicat
       </aside>
       <article className="foro-pod-main">
         {header}
-        {body}
-        {relatedBlock}
+        {publication.imageUrl && (
+          <div className="foro-hero-img"><img src={publication.imageUrl} alt="" /></div>
+        )}
+        <TagList tags={publication.tags} />
+        <Prose content={publication.content} />
+        <Gallery images={publication.images} />
+        <RelatedBlock related={related} slug={slug} typeName={typeName} />
       </article>
     </div>
   )

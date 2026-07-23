@@ -7,7 +7,6 @@ import {
 } from '@features/foro'
 import { PublicationDetail } from '../components/PublicationDetail'
 import { DiscussionDetail } from '../components/DiscussionDetail'
-import { CategoryTag } from '../components/CategoryTag'
 
 export default function PublicationPage() {
   const params = useParams<{ id: string }>()
@@ -45,10 +44,9 @@ export default function PublicationPage() {
     <main className="foro-pod">
       <div className="foro-wrap">
         <nav className="foro-crumbs">
-          <Link to="/">Foro</Link> <span>/</span>
-          {type && <Link to={`/?tipo=${slug}`}>{type.name}</Link>}
+          <Link to="/">Foro</Link>
           {type && <span>/</span>}
-          <CategoryTag slug={slug} label={`N.${publication.id}`} />
+          {type && <Link to={`/?tipo=${slug}`}>{type.name}</Link>}
         </nav>
 
         {slug === 'discusion'

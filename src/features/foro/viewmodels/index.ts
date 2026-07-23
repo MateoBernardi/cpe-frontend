@@ -10,10 +10,11 @@ export {
   usePublications,
   useInfinitePublications,
   useFeedsByType,
+  usePublicationsByCategories,
   usePublication,
   usePublicationMutations,
 } from './usePublicationsViewModel'
-export type { FeedByType } from './usePublicationsViewModel'
+export type { FeedByType, FeedByCategory } from './usePublicationsViewModel'
 export {
   useComments,
   useCommentMutations,

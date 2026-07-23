@@ -42,8 +42,15 @@
   --foro-font-sans: 'IBM Plex Sans', system-ui, sans-serif;
   --foro-font-mono: 'IBM Plex Mono', monospace;
 
-  --foro-radius: 18px;
-  --foro-radius-sm: 12px;
+  --foro-radius: 0;
+  --foro-radius-sm: 0;
+  /* Deliberate exception to the square-corners sweep above: emphasized CTA
+     buttons (Suscribirme, auth-dialog submit/social buttons, Spotify/YouTube
+     "visit" buttons) keep a rounded pill shape. Everything else stays square —
+     see the `.foro-btn-subscribe`, `.foro-dialog …`, `.foro-cta-card .foro-btn`,
+     `.foro-typehero-links .foro-btn` and `.foro-spotify-link` rules below,
+     which are the ONLY selectors that reference this token. */
+  --foro-btn-radius: 14px;
   --foro-shadow: 0 18px 50px -28px rgba(12, 58, 72, .40);
   --foro-shadow-sm: 0 8px 24px -16px rgba(12, 58, 72, .35);
 
@@ -81,7 +88,7 @@
 }
 .foro-ph span {
   background: rgba(255, 255, 255, .8);
-  padding: 5px 9px; border-radius: 4px;
+  padding: 5px 9px; border-radius: 0;
   border: 1px solid rgba(12, 58, 72, .08);
 }
 
@@ -89,7 +96,7 @@
 .foro-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 9px;
   font-family: var(--foro-font-sans); font-weight: 600; font-size: 14px;
-  border: none; cursor: pointer; border-radius: 14px;
+  border: none; cursor: pointer; border-radius: 0;
   padding: 12px 22px; transition: transform .15s ease, background .15s ease;
 }
 .foro-btn:hover { transform: translateY(-1px); }
@@ -100,10 +107,20 @@
 .foro-btn-ghost:hover { background: var(--foro-teal-tint-2); }
 .foro-btn-navy { background: var(--foro-navy); color: #fff; }
 .foro-btn-navy:hover { background: var(--foro-navy-2); }
-.foro-btn-spotify { background: var(--foro-spotify); color: #fff; }
+/* Spotify green (#1db954) against white text is ~2.6:1 (fails AA) — near-black
+   text/icon on the brand green clears AA comfortably (~7.2:1). */
+.foro-btn-spotify { background: var(--foro-spotify); color: #121212; }
+.foro-btn-spotify svg { color: #121212; }
 .foro-btn-spotify:hover { opacity: .9; }
+/* YouTube "visit" button: near-black surface + white text (~19:1) — red is
+   reserved for the logo mark only (see YouTubeMark), never used as text/bg. */
+.foro-btn-youtube { background: #0f0f0f; color: #fff; }
+.foro-btn-youtube:hover { background: #282828; }
 .foro-btn-light { background: #fff; color: var(--foro-teal-700); border: 1px solid var(--foro-line); }
 .foro-btn-light:hover { background: var(--foro-teal-tint); }
+/* Exception to the square-corners sweep: the "Suscribirme"/"Cerrar sesión"
+   button is the one plain `.foro-btn` instance called out as a remarked CTA. */
+.foro-btn-subscribe { border-radius: var(--foro-btn-radius); }
 
 /* ---------- Category tag ---------- */
 .foro-tag {
@@ -134,7 +151,7 @@
 .foro-list.foro-cols-3 { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 880px) { .foro-list, .foro-list.foro-cols-3 { grid-template-columns: 1fr; } }
 .foro-list-item { display: flex; gap: 14px; padding: 20px 0; border-bottom: 1px solid var(--foro-line-2); }
-.foro-list-item .foro-thumb { width: 76px; height: 76px; flex: 0 0 auto; border-radius: 6px; color: var(--foro-cat, var(--foro-teal)); font-size: 9px; }
+.foro-list-item .foro-thumb { width: 76px; height: 76px; flex: 0 0 auto; border-radius: 0; color: var(--foro-cat, var(--foro-teal)); font-size: 9px; }
 .foro-list-item .foro-thumb span { padding: 3px 5px; }
 .foro-list-item .foro-text { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .foro-list-item .foro-idx { font-family: var(--foro-font-mono); font-size: 11px; color: var(--foro-muted-2); }
@@ -162,11 +179,14 @@
 .foro-cta-card .foro-lbl { font-family: var(--foro-font-mono); font-size: 11.5px; color: #73c7c7; letter-spacing: .04em; }
 .foro-cta-card h4 { color: #fff; font-size: 16px; font-weight: 600; margin: 6px 0 16px; line-height: 1.3; }
 .foro-cta-card p { color: #cfe6e6; font-size: 13.5px; line-height: 1.5; margin: 8px 0 16px; }
-.foro-cta-card .foro-btn { width: 100%; }
+/* The card's only `.foro-btn` is the external-link "visit" CTA (spotify/
+   youtube/other) rendered by <ExternalLinksCTA> — a remarked exception to
+   the square-corners sweep, so it keeps the button pill radius. */
+.foro-cta-card .foro-btn { width: 100%; border-radius: var(--foro-btn-radius); }
 .foro-cta-card .foro-fmt { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .foro-cta-card .foro-fmt a, .foro-cta-card .foro-fmt button {
   font-family: var(--foro-font-mono); font-size: 11px; color: #bfe0e0; border: 1px solid rgba(255, 255, 255, .16);
-  padding: 6px 12px; border-radius: 14px; background: none; cursor: pointer;
+  padding: 6px 12px; border-radius: 0; background: none; cursor: pointer;
 }
 .foro-cta-card .foro-fmt a:hover, .foro-cta-card .foro-fmt button:hover { border-color: #5fd0d0; color: #fff; }
 
@@ -201,6 +221,11 @@
   border: none; background: none; color: var(--foro-muted); font-size: 20px; line-height: 1; cursor: pointer;
 }
 .foro-dialog-close:hover { color: var(--foro-navy); background: var(--foro-teal-tint); }
+/* Exceptions to the square-corners sweep: this is the "subscription/auth
+   form" the user called out — tab container, tab buttons, text inputs and
+   the error box each keep their own (smaller) pre-sweep radius. Submit/social
+   buttons inside the dialog are plain `.foro-btn`s, so they share the
+   `--foro-btn-radius` exception via `.foro-dialog .foro-btn` below. */
 .foro-dialog-tabs { display: flex; gap: 4px; background: var(--foro-bg-2); border-radius: 12px; padding: 4px; margin-bottom: 22px; }
 .foro-dialog-tabs button {
   flex: 1; border: none; background: none; padding: 9px 12px; border-radius: 9px; cursor: pointer;
@@ -215,6 +240,7 @@
 }
 .foro-dialog-form input:focus { outline: none; border-color: var(--foro-teal); }
 .foro-dialog-error { font-size: 13px; color: #b3261e; background: #fce8e6; border-radius: 8px; padding: 8px 12px; }
+.foro-dialog .foro-btn { border-radius: var(--foro-btn-radius); }
 .foro-dialog-divider { display: flex; align-items: center; gap: 10px; margin: 20px 0 14px; font-family: var(--foro-font-mono); font-size: 11px; color: var(--foro-muted-2); text-transform: uppercase; letter-spacing: .04em; }
 .foro-dialog-divider::before, .foro-dialog-divider::after { content: ""; flex: 1; height: 1px; background: var(--foro-line); }
 .foro-dialog-socials { display: flex; flex-direction: column; gap: 10px; }

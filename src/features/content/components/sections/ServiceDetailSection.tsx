@@ -17,54 +17,91 @@ export default function ServiceDetailSection({ section }: Props) {
   const { ref, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
 
   const hasTextContent = heading || subtitle || paragraphs.length > 0 || bullets.length > 0
+  const hairline = `${colors.blueDark}20`
 
   return (
     <section ref={ref} className={layout.sectionPadYCompact} style={{ backgroundColor: colors.lightGray }}>
       <div className={layout.container}>
-        <div className={`grid gap-[4vh] ${hasTextContent && photo ? 'lg:grid-cols-2' : ''} lg:items-start`}>
-          {/* Left: text content (floating card) */}
+        {/* Eyebrow */}
+        <span
+          className={`block font-mono text-xs uppercase tracking-[0.2em] transition-all duration-700 ${
+            isInView ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+          }`}
+          style={{ color: colors.tealMid }}
+        >
+          Nuestros servicios
+        </span>
+
+        <div
+          className={`mt-[3vh] grid gap-y-10 lg:items-start lg:gap-x-[72px] lg:gap-y-0 ${
+            hasTextContent && photo ? 'lg:grid-cols-[1.15fr_1fr]' : ''
+          }`}
+        >
+          {/* Left: text content */}
           {hasTextContent && (
             <div
-              className={`rounded-2xl bg-white/90 backdrop-blur-sm p-5 sm:p-6 md:p-8 shadow-lg ring-1 ring-slate-200/60 transition-all duration-1000 ${
+              className={`transition-all duration-1000 ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
               }`}
             >
-              <div className="space-y-[3vh]">
+              <div className="space-y-[3.5vh]">
                 {heading && (
-                  <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl font-primary" style={{ color: colors.blueDark }}>
+                  <h2
+                    className="font-secondary text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.5rem]"
+                    style={{ color: colors.blueDark }}
+                  >
                     {heading.body}
+                    <span style={{ color: colors.tealBright }}>.</span>
                   </h2>
                 )}
 
-                {subtitle && (
-                  <div className="rounded-xl border p-5" style={{ borderColor: colors.tealBright, backgroundColor: `${colors.tealBright}10` }}>
-                    <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: colors.tealMid }}>
-                      Objetivo
-                    </p>
-                    <p className="mt-2 leading-relaxed" style={{ color: colors.blueMid }}>{subtitle.body}</p>
+                {paragraphs.length > 0 && (
+                  <div className="max-w-[460px] space-y-4">
+                    {paragraphs.map((p, i) => (
+                      <p key={i} className="text-[17px] leading-relaxed" style={{ color: colors.blueMid }}>
+                        {p.body}
+                      </p>
+                    ))}
                   </div>
                 )}
 
-                {paragraphs.map((p, i) => (
-                  <p key={i} className="leading-relaxed" style={{ color: colors.blueMid }}>{p.body}</p>
-                ))}
+                {subtitle && (
+                  <div className="max-w-[480px] border-t pt-6" style={{ borderColor: hairline }}>
+                    <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: colors.tealMid }}>
+                      Objetivo
+                    </p>
+                    <p
+                      className="font-secondary mt-3 text-xl italic leading-[1.45] sm:text-[1.4375rem]"
+                      style={{ color: colors.blueDark }}
+                    >
+                      {subtitle.body}
+                    </p>
+                  </div>
+                )}
 
                 {bullets.length > 0 && (
-                  <div>
-                    <p className="mb-3 text-sm font-semibold uppercase tracking-wider" style={{ color: colors.blueDark }}>
+                  <div className="border-t pt-6" style={{ borderColor: hairline }}>
+                    <p className="mb-1 font-mono text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: colors.tealMid }}>
                       Ejes de trabajo
                     </p>
-                    <ul className="space-y-2">
+                    <ul>
                       {bullets.map((b, i) => (
                         <li
                           key={i}
-                          className={`flex items-start gap-3 transition-all duration-500 ${
+                          className={`flex items-baseline gap-[22px] border-b py-4 transition-all duration-500 ${
                             isInView ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'
                           }`}
-                          style={{ transitionDelay: `${400 + i * 80}ms` }}
+                          style={{ borderColor: hairline, transitionDelay: `${300 + i * 80}ms` }}
                         >
-                          <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: colors.secondary.attention }} />
-                          <span style={{ color: colors.blueMid }}>{b.body}</span>
+                          <span
+                            className="font-secondary min-w-[34px] flex-shrink-0 text-xl"
+                            style={{ color: colors.tealMid }}
+                          >
+                            {String(i + 1).padStart(2, '0')}
+                          </span>
+                          <span className="text-base leading-snug" style={{ color: colors.blueDark }}>
+                            {b.body}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -74,43 +111,55 @@ export default function ServiceDetailSection({ section }: Props) {
             </div>
           )}
 
-          {/* Right: floating image */}
+          {/* Right: sticky image */}
           {photo && (
             <div
-              className={`transition-all duration-1000 delay-300 ${
+              className={`transition-all duration-1000 delay-300 lg:sticky lg:top-24 ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'
               }`}
             >
-              <div className="group overflow-hidden rounded-2xl shadow-xl ring-1 ring-slate-200">
-                <img src={photo.url} alt="" className="aspect-[4/3] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+              <div className="overflow-hidden ring-1 ring-slate-200">
+                <img src={photo.url} alt="" className="aspect-[4/5] w-full object-cover" loading="lazy" />
               </div>
             </div>
           )}
         </div>
 
-        {/* CTA */}
+        {/* Dark CTA band */}
         {(ctaHeading || cta) && (
           <div
-            className={`mt-[4vh] rounded-2xl p-8 sm:p-10 text-center transition-all duration-1000 delay-500 ${
+            className={`mt-16 flex flex-wrap items-center justify-between gap-10 p-8 transition-all duration-1000 delay-500 sm:p-10 lg:p-14 ${
               isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
             }`}
-            style={{ backgroundColor: colors.secondaryHeroBg }}
+            style={{ backgroundColor: colors.blueDark }}
           >
             {ctaHeading && (
-              <h3 className="text-xl font-bold sm:text-2xl md:text-3xl font-primary" style={{ color: colors.white }}>
-                {ctaHeading.body}
-              </h3>
+              <div className="max-w-[640px]">
+                <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: colors.tealBright }}>
+                  También ofrecemos
+                </p>
+                <h3 className="font-secondary mt-3 text-2xl font-medium leading-[1.1] sm:text-3xl" style={{ color: colors.white }}>
+                  {ctaHeading.body}
+                  <span style={{ color: colors.tealBright }}>.</span>
+                </h3>
+              </div>
             )}
             {cta && (
-              <a
-                href="/contact"
-                className="mt-4 inline-block rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 sm:px-8 sm:py-4 sm:text-base"
-                style={{ backgroundColor: colors.ctaPrimary, boxShadow: `0 8px 24px ${colors.ctaShadow}` }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.ctaPrimaryHover }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.ctaPrimary }}
-              >
-                {cta.body}
-              </a>
+              <div className="text-center">
+                <a
+                  href="/contact"
+                  className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold shadow-md transition-all hover:-translate-y-0.5 sm:px-8 sm:py-4 sm:text-base"
+                  style={{ backgroundColor: colors.white, color: colors.blueDark }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.lightGray }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.white }}
+                >
+                  {cta.body}
+                  <span aria-hidden="true">&rarr;</span>
+                </a>
+                <p className="mt-3 text-xs" style={{ color: `${colors.white}99` }}>
+                  Sin costo · Reunión virtual
+                </p>
+              </div>
             )}
           </div>
         )}

@@ -35,12 +35,20 @@ function ChannelLinks({ links }: { links: PublicationPreview['externalLinks'] })
   )
 }
 
-function MetaLine({ publication }: { publication: PublicationPreview }) {
+/**
+ * `showAuthor` is `false` for novedades: institutional announcements have no
+ * author identity, so the row keeps only the date (never the avatar/name).
+ */
+function MetaLine({ publication, showAuthor = true }: { publication: PublicationPreview; showAuthor?: boolean }) {
   return (
     <div className="foro-card-meta">
-      <span className="foro-avatar">{initialsOf(publication.createdBy)}</span>
-      <span>{publication.createdBy}</span>
-      <span className="foro-dotsep" />
+      {showAuthor && (
+        <>
+          <span className="foro-avatar">{initialsOf(publication.createdBy)}</span>
+          <span>{publication.createdBy}</span>
+          <span className="foro-dotsep" />
+        </>
+      )}
       <span>{formatForoDate(publication.createdAt)}</span>
     </div>
   )
@@ -89,7 +97,7 @@ export function PublicationListItem({ publication, typeSlug, typeName, index }: 
           <CategoryTag slug={typeSlug} label={typeName} />
           <h3><Link to={to}>{publication.title}</Link></h3>
           {publication.subtitle && <p className="foro-excerpt">{publication.subtitle}</p>}
-          <MetaLine publication={publication} />
+          <MetaLine publication={publication} showAuthor={false} />
         </div>
       </article>
     )
@@ -99,7 +107,7 @@ export function PublicationListItem({ publication, typeSlug, typeName, index }: 
     <article className="foro-list-item" style={catStyle}>
       <div className="foro-thumb foro-ph">
         {publication.imageUrl
-          ? <img src={publication.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
+          ? <img src={publication.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 0 }} />
           : <span>img</span>}
       </div>
       <div className="foro-text">

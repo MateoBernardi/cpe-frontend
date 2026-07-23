@@ -1,6 +1,7 @@
 export { default as HeroSection } from './HeroSection'
 export { default as SecondaryHeroSection } from './SecondaryHeroSection'
 export { default as AboutHeroSection } from './AboutHeroSection'
+export { default as AboutHeroServicesMatrix } from './AboutHeroServicesMatrix'
 export { default as InfoSecondarySection } from './InfoSecondarySection'
 export { default as ContactFormSection } from './ContactFormSection'
 export { default as CircuitSection } from './CircuitSection'

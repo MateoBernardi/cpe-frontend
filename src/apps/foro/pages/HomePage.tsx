@@ -1,264 +1,127 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import {
-  usePublicationTypes,
-  useFeedsByType,
-  useInfinitePublications,
-  foroService,
-  resolveKnownSlug,
-  mapPublicationPreviewDTO,
-} from '@features/foro'
-import type { PublicationPreview, PublicationType, KnownPublicationTypeSlug } from '@features/foro'
-import { FeedStrip } from '../components/FeedStrip'
-import { CategoryTag } from '../components/CategoryTag'
-import { formatForoDate, initialsOf } from '../lib/typeStyle'
+import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useCategories, usePublications, usePublicationTypes, resolveKnownSlug } from '@features/foro'
+import { ConceptMap } from '../components/ConceptMap'
+import { PublicationsSlide } from '../components/PublicationsSlide'
+import { TypeHero } from '../components/TypeHero'
+import { MagazineGrid } from '../components/MagazineGrid'
 
-const TYPE_ORDER: KnownPublicationTypeSlug[] = ['novedad', 'paper', 'discusion', 'podcast']
-const INITIAL_BATCH = 4
-const EXTRA_CHUNK = 3
-const MAX_ROUNDS = 8
-
-// Human label used as the CategoryView title/tag while `usePublicationTypes()`
-// hasn't resolved yet (avoids falling back to the literal "Categoría").
-const CATEGORY_FALLBACK_LABEL: Record<KnownPublicationTypeSlug, string> = {
-  paper: 'Papers',
-  podcast: 'Podcasts',
-  novedad: 'Novedades',
-  discusion: 'Discusión',
+/** Simple centered loading placeholder, matching the foro's existing style. */
+function ForoLoading({ label }: { label: string }) {
+  return (
+    <div className="foro-wrap" style={{ padding: '60px 0', textAlign: 'center' }}>
+      <p style={{ color: 'var(--foro-muted)' }}>{label}</p>
+    </div>
+  )
 }
 
-interface ExtraStrip {
-  typeId: number
-  items: PublicationPreview[]
-}
+/** Conceptual-map experience: no `?tipo` (or an unrecognized one). */
+function MapExperience() {
+  const { data: categories, isLoading, isError } = useCategories()
 
-function orderTypes(types: PublicationType[]): PublicationType[] {
-  return [...types].sort((a, b) => {
-    const ai = TYPE_ORDER.indexOf(resolveKnownSlug(a) as KnownPublicationTypeSlug)
-    const bi = TYPE_ORDER.indexOf(resolveKnownSlug(b) as KnownPublicationTypeSlug)
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
-  })
-}
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [slideOpen, setSlideOpen] = useState(false)
 
-export default function HomePage() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const activeSlug = searchParams.get('tipo') as KnownPublicationTypeSlug | null
+  const handleSelectCategory = (id: number) => {
+    setSelectedIds([id])
+    setSlideOpen(true)
+  }
 
-  const { data: types } = usePublicationTypes()
-  const orderedTypes = useMemo(() => (types ? orderTypes(types) : []), [types])
-  const typeIds = useMemo(() => orderedTypes.map((t) => t.id), [orderedTypes])
-  const feeds = useFeedsByType(typeIds, INITIAL_BATCH)
+  const handleToggleCategory = (id: number) => {
+    setSelectedIds((prev) => {
+      const updated = prev.includes(id) ? prev.filter((existing) => existing !== id) : [...prev, id]
+      if (updated.length === 0) setSlideOpen(false)
+      return updated
+    })
+  }
 
-  const typeById = useMemo(() => new Map(orderedTypes.map((t) => [t.id, t])), [orderedTypes])
+  const handleClose = () => setSlideOpen(false)
 
-  if (activeSlug) {
-    const activeType = orderedTypes.find((t) => resolveKnownSlug(t) === activeSlug)
+  if (isLoading) {
+    return <ForoLoading label="Cargando conceptos…" />
+  }
+
+  if (isError || !categories || categories.length === 0) {
     return (
-      <CategoryView
-        type={activeType ?? null}
-        slug={activeSlug}
-        onBack={() => setSearchParams({})}
-      />
+      <div className="foro-wrap" style={{ padding: '60px 0', textAlign: 'center' }}>
+        <p style={{ color: 'var(--foro-muted)' }}>
+          No pudimos cargar el mapa conceptual en este momento. Probá recargar la página.
+        </p>
+      </div>
     )
   }
 
-  // ── Hero: first Paper found, else first item across any feed ──
-  const heroTypeId = orderedTypes.find((t) => resolveKnownSlug(t) === 'paper')?.id
-  const heroFeed = feeds.find((f) => f.typeId === heroTypeId) ?? feeds.find((f) => f.items.length > 0)
-  const hero = heroFeed?.items[0]
-  const heroType = hero ? typeById.get(hero.typeId ?? -1) : undefined
-  const heroSlug = resolveKnownSlug(heroType)
-
-  const totalRecent = feeds.reduce((sum, f) => sum + f.items.length, 0)
-  const discussionFeed = feeds.find((f) => resolveKnownSlug(typeById.get(f.typeId)) === 'discusion')
-  const activeDiscussions = discussionFeed?.items.length ?? 0
-
   return (
     <>
-      {hero && (
-        <header className="foro-hero">
-          <div className="foro-wrap">
-            <article className="foro-feature">
-              <div className="foro-feature-body">
-                <CategoryTag slug={heroSlug} label={heroType?.name ?? ''} />
-                <h2>{hero.title}</h2>
-                {hero.subtitle && <p className="foro-lede">{hero.subtitle}</p>}
-                <div className="foro-feature-meta">
-                  <span className="foro-avatar">{initialsOf(hero.createdBy)}</span>
-                  <span>{hero.createdBy}</span>
-                  <span className="foro-dotsep" />
-                  <span>{formatForoDate(hero.createdAt)}</span>
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <Link className="foro-btn foro-btn-navy" to={`/publicaciones/${hero.id}`}>Leer más →</Link>
-                </div>
-              </div>
-              <div className="foro-side">
-                <span className="foro-stat">PUBLICACIONES RECIENTES<strong>{totalRecent}</strong></span>
-                <b>en el foro</b>
-                <span className="foro-stat">DISCUSIONES ACTIVAS<strong>{activeDiscussions}</strong></span>
-              </div>
-            </article>
-          </div>
-        </header>
-      )}
-
-      <main id="foro-feed">
-        <div className="foro-wrap">
-          {feeds.map((feed) => {
-            const type = typeById.get(feed.typeId)
-            if (!type) return null
-            const slug = resolveKnownSlug(type)
-            return (
-              <FeedStrip
-                key={feed.typeId}
-                heading={type.name}
-                items={feed.items}
-                typeSlug={slug}
-                typeName={type.name}
-                onSeeAll={() => setSearchParams({ tipo: slug ?? '' })}
-              />
-            )
-          })}
-        </div>
-        <InfiniteFeedLoader typeById={typeById} orderedTypeIds={typeIds} />
-      </main>
+      <ConceptMap categories={categories} onSelectCategory={handleSelectCategory} />
+      <PublicationsSlide
+        open={slideOpen}
+        categories={categories}
+        selectedIds={selectedIds}
+        onToggleCategory={handleToggleCategory}
+        onClose={handleClose}
+      />
     </>
   )
 }
 
-function InfiniteFeedLoader({ typeById, orderedTypeIds }: { typeById: Map<number, PublicationType>; orderedTypeIds: number[] }) {
-  const [extraStrips, setExtraStrips] = useState<ExtraStrip[]>([])
-  const [done, setDone] = useState(false)
-  const loaderRef = useRef<HTMLDivElement>(null)
-  const roundRef = useRef(0)
-  const offsetsRef = useRef<Record<number, number>>({})
-  const exhaustedRef = useRef<Set<number>>(new Set())
-  const loadingRef = useRef(false)
+/** Type-filtered magazine view: a known `?tipo=` slug. */
+function TypeExperience({ typeId, typeSlug, typeName }: { typeId: number; typeSlug: ReturnType<typeof resolveKnownSlug>; typeName: string }) {
+  const { data: publications, isLoading } = usePublications({ typeId, limit: 24 })
 
-  useEffect(() => {
-    if (orderedTypeIds.length === 0) return
-    const el = loaderRef.current
-    if (!el) return
+  if (isLoading) {
+    return <ForoLoading label="Cargando publicaciones…" />
+  }
 
-    const io = new IntersectionObserver((entries) => {
-      if (!entries[0].isIntersecting || loadingRef.current || done) return
-      loadingRef.current = true
+  if (!publications || publications.length === 0) {
+    return (
+      <div className="foro-wrap" style={{ padding: '60px 0', textAlign: 'center' }}>
+        <p style={{ color: 'var(--foro-muted)' }}>Todavía no hay publicaciones en este canal.</p>
+      </div>
+    )
+  }
 
-      const loadNext = async () => {
-        if (roundRef.current >= MAX_ROUNDS || exhaustedRef.current.size >= orderedTypeIds.length) {
-          setDone(true)
-          loadingRef.current = false
-          return
-        }
-        const typeId = orderedTypeIds[roundRef.current % orderedTypeIds.length]
-        roundRef.current += 1
-        if (exhaustedRef.current.has(typeId)) {
-          loadingRef.current = false
-          return
-        }
-        const offset = offsetsRef.current[typeId] ?? INITIAL_BATCH
-        try {
-          const dtos = await foroService.listPublications({ type_id: typeId, limit: EXTRA_CHUNK, offset })
-          if (dtos.length < EXTRA_CHUNK) exhaustedRef.current.add(typeId)
-          if (dtos.length > 0) {
-            offsetsRef.current[typeId] = offset + dtos.length
-            setExtraStrips((prev) => [...prev, { typeId, items: dtos.map(mapPublicationPreviewDTO) }])
-          }
-        } finally {
-          loadingRef.current = false
-        }
-      }
-
-      void loadNext()
-    }, { rootMargin: '400px' })
-
-    io.observe(el)
-    return () => io.disconnect()
-  }, [orderedTypeIds, done])
+  const [featured, ...rest] = publications
 
   return (
     <div className="foro-wrap">
-      {extraStrips.map((strip, i) => {
-        const type = typeById.get(strip.typeId)
-        if (!type) return null
-        return (
-          <FeedStrip
-            key={`${strip.typeId}-${i}`}
-            heading={type.name}
-            items={strip.items}
-            typeSlug={resolveKnownSlug(type)}
-            typeName={type.name}
-            startIndex={INITIAL_BATCH + 1 + i * EXTRA_CHUNK}
-          />
-        )
-      })}
-      <div className="foro-loader" ref={loaderRef}>
-        {done
-          ? <span>Llegaste al final del feed por ahora ✦</span>
-          : <><span className="foro-spinner" /> Cargando más publicaciones…</>}
-      </div>
+      <TypeHero publication={featured} typeSlug={typeSlug} typeName={typeName} />
+      <MagazineGrid publications={rest} typeSlug={typeSlug} typeName={typeName} />
     </div>
   )
 }
 
-function CategoryView({ type, slug, onBack }: { type: PublicationType | null; slug: KnownPublicationTypeSlug; onBack: () => void }) {
-  // `type` is null until `usePublicationTypes()` resolves (or, in principle,
-  // for an unknown slug) — never show the resolved-name UI ("•" tag with no
-  // label, "Categoría" heading) while that's the case. Fall back to a human
-  // label derived from the slug instead.
-  const title = type?.name ?? CATEGORY_FALLBACK_LABEL[slug]
-  const hasType = type !== null
-  const query = useInfinitePublications(type ? { typeId: type.id } : undefined, 12, hasType)
+export default function HomePage() {
+  const [searchParams] = useSearchParams()
+  const tipo = searchParams.get('tipo')
 
-  const items = query.data?.pages.flat() ?? []
-  const isInitialLoading = !hasType || (query.isLoading && items.length === 0)
-  const isEmpty = hasType && query.isSuccess && items.length === 0
+  const { data: types, isLoading: typesLoading } = usePublicationTypes()
+
+  // <MapExperience> is keyed by the raw `tipo` value so that its local
+  // selection/slide state always resets when the param changes — including
+  // between two different unrecognized `tipo` values, which would otherwise
+  // both render the same component instance and keep stale state.
+  if (!tipo) {
+    return <MapExperience key="__root__" />
+  }
+
+  if (typesLoading) {
+    return <ForoLoading label="Cargando…" />
+  }
+
+  const matchedType = types?.find((type) => resolveKnownSlug(type) === tipo)
+
+  if (!matchedType) {
+    // Unknown/unsupported `tipo` value: fall back to the map experience.
+    return <MapExperience key={tipo} />
+  }
 
   return (
-    <div className="foro-wrap" style={{ paddingTop: 40, paddingBottom: 40 }}>
-      <div className="foro-catview-head">
-        <CategoryTag slug={slug} label={title} />
-        <h2>{title}</h2>
-        <button type="button" className="foro-sec-link" onClick={onBack} style={{ marginTop: 12 }}>← Volver al inicio</button>
-      </div>
-
-      {isInitialLoading && (
-        <div className="foro-loader">
-          <span className="foro-spinner" /> Cargando publicaciones…
-        </div>
-      )}
-
-      {!isInitialLoading && isEmpty && (
-        <div className="foro-empty">
-          <span className="foro-empty-eyebrow">Próximamente</span>
-          <p>Todavía no hay publicaciones en esta categoría. Volvé pronto.</p>
-        </div>
-      )}
-
-      {!isInitialLoading && !isEmpty && query.data?.pages.map((page, i) => (
-        <FeedStrip
-          key={i}
-          heading=""
-          items={page}
-          typeSlug={slug}
-          typeName={title}
-          startIndex={i * 12 + 1}
-        />
-      ))}
-
-      {query.hasNextPage && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0 40px' }}>
-          <button
-            type="button"
-            className="foro-btn foro-btn-ghost"
-            onClick={() => query.fetchNextPage()}
-            disabled={query.isFetchingNextPage}
-          >
-            {query.isFetchingNextPage ? 'Cargando…' : 'Cargar más'}
-          </button>
-        </div>
-      )}
-    </div>
+    <TypeExperience
+      key={tipo}
+      typeId={matchedType.id}
+      typeSlug={resolveKnownSlug(matchedType)}
+      typeName={matchedType.name}
+    />
   )
 }

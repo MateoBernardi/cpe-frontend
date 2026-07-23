@@ -86,6 +86,36 @@ export function useFeedsByType(typeIds: number[], limit: number = 4): FeedByType
   }))
 }
 
+export interface FeedByCategory {
+  categoryId: number
+  items: PublicationPreview[]
+  isLoading: boolean
+}
+
+/**
+ * Fetches one page of publications per category id in parallel (via
+ * `useQueries`, so the number of hooks stays stable across renders even
+ * though `categoryIds` itself may change as the caller toggles selections).
+ * Mirrors `useFeedsByType` — consumers that need a strict AND-intersection
+ * across the selected categories compute it client-side from the returned
+ * per-category lists.
+ */
+export function usePublicationsByCategories(categoryIds: number[], limit?: number): FeedByCategory[] {
+  const results = useQueries({
+    queries: categoryIds.map((categoryId) => ({
+      queryKey: foroKeys.publications({ categoryId, limit }),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        foroService.listPublications({ category_id: categoryId, limit }, signal),
+    })),
+  })
+
+  return categoryIds.map((categoryId, i) => ({
+    categoryId,
+    items: (results[i]?.data ?? []).map(mapPublicationPreviewDTO),
+    isLoading: results[i]?.isLoading ?? false,
+  }))
+}
+
 /** GET /publications/:id — public. */
 export function usePublication(id: number | undefined) {
   return useQuery({

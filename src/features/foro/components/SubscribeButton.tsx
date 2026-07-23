@@ -50,7 +50,7 @@ export function SubscribeButton({
     <span className="foro-scope" style={{ display: 'inline-flex' }}>
       <button
         type="button"
-        className={['foro-btn', variantClass, className].filter(Boolean).join(' ')}
+        className={['foro-btn', variantClass, 'foro-btn-subscribe', className].filter(Boolean).join(' ')}
         onClick={handleClick}
         disabled={isLoading || isSigningOut}
       >

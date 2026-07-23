@@ -244,13 +244,19 @@ export default function SiteHeader({ navItems, onLogoClick, searchItems, trailin
     }
 
     return (
-      <div key={item.key} className="relative"
+      // flex: colapsa el wrapper a la altura exacta del botón — como inline content
+      // el line box del div agregaba espacio arriba y desfasaba "Servicios" hacia
+      // abajo respecto de los demás nav links.
+      <div key={item.key} className="relative flex"
         onMouseEnter={() => { clearTimeout(dropdownTimeoutRef.current); setOpenDropdownKey(item.key) }}
         onMouseLeave={() => { dropdownTimeoutRef.current = setTimeout(() => setOpenDropdownKey(null), 300) }}
       >
-        <button type="button" className="nav-link inline-flex items-center gap-1 md:text-xs lg:text-sm" onClick={() => setOpenDropdownKey(isOpen ? null : item.key)}>
+        {/* Sin inline-flex/items-center: el trigger debe compartir la misma caja de
+            línea que el resto de los .nav-link para que el texto no quede desfasado;
+            el chevrón va inline con align-middle sobre esa misma línea. */}
+        <button type="button" className="nav-link md:text-xs lg:text-sm" onClick={() => setOpenDropdownKey(isOpen ? null : item.key)}>
           {item.label}
-          <svg className={`h-3.5 w-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className={`ml-1 inline-block h-3.5 w-3.5 align-[-0.2em] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
@@ -296,14 +302,16 @@ export default function SiteHeader({ navItems, onLogoClick, searchItems, trailin
             />
           </button>
 
-          <nav className="hidden min-w-0 flex-1 items-center justify-end gap-2 lg:gap-4 xl:gap-8 md:flex">
+          <nav className="desktop-nav hidden min-w-0 flex-1 items-center justify-end gap-2 lg:gap-4 xl:gap-8 md:flex">
             {navItems.map((item) => renderNavItem(item))}
             {trailing}
             <div className="relative hidden xl:block">
               <div className="flex items-center gap-1">
+                {/* Teal también con el header arriba de todo — el hero claro no da
+                    contraste para el blanco (mismo criterio que .desktop-nav) */}
                 <a href="https://www.instagram.com/clinicaparaempresas" target="_blank" rel="noopener noreferrer"
                   className={`transition-colors ${desktopSocialsOpen ? 'hidden' : 'inline-flex'}`}
-                  style={{ color: headerActive ? colors.tealDeep : 'rgba(255,255,255,0.7)' }}
+                  style={{ color: colors.tealDeep }}
                   aria-label="Instagram"
                 >
                   <InstagramIcon className="h-4 w-4 lg:h-5 lg:w-5" />
@@ -312,7 +320,7 @@ export default function SiteHeader({ navItems, onLogoClick, searchItems, trailin
                   type="button"
                   onClick={() => setDesktopSocialsOpen((o) => !o)}
                   className="transition-colors"
-                  style={{ color: headerActive ? colors.tealDeep : 'rgba(255,255,255,0.7)' }}
+                  style={{ color: colors.tealDeep }}
                   aria-label="Mostrar redes"
                 >
                   <svg className={`h-4 w-4 transition-transform duration-200 ${desktopSocialsOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -362,7 +370,7 @@ export default function SiteHeader({ navItems, onLogoClick, searchItems, trailin
               type="button"
               onClick={openSearch}
               className="flex-shrink-0 transition-colors"
-              style={{ color: headerActive ? colors.tealDeep : 'rgba(255,255,255,0.7)' }}
+              style={{ color: colors.tealDeep }}
               aria-label="Buscar"
             >
               <svg className="h-4 w-4 lg:h-5 lg:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -371,9 +379,11 @@ export default function SiteHeader({ navItems, onLogoClick, searchItems, trailin
             </button>
           </nav>
 
+          {/* Teal también con el header arriba de todo — el hero claro no da
+              contraste para el blanco (misma razón que .desktop-nav en index.css) */}
           <button type="button" onClick={() => setMobileOpen(!mobileOpen)}
             className="rounded-md p-2 md:hidden transition-colors"
-            style={{ color: headerActive ? colors.tealDeep : 'rgba(255,255,255,0.7)' }}
+            style={{ color: colors.tealDeep }}
             aria-label="Menú"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

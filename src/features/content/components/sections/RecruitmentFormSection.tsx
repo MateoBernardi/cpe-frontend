@@ -30,7 +30,10 @@ export default function RecruitmentFormSection({ section }: Props) {
     if (file) vm.selectFile(file)
   }
 
-  const inputClasses = 'w-full rounded-lg border bg-white px-4 py-2.5 text-sm placeholder-slate-400 focus:outline-none focus:ring-1 transition-colors'
+  const hasTextContent = heading || subtitle || paragraphs.length > 0 || bullets.length > 0
+  const hairline = `${colors.blueDark}20`
+
+  const inputClasses = 'w-full border bg-white px-4 py-2.5 text-sm placeholder-slate-400 focus:outline-none focus:ring-1 transition-colors'
   const inputStyle = { borderColor: colors.tealBright, color: colors.blueDark }
   const inputFocusColor = colors.tealMid
 
@@ -39,53 +42,104 @@ export default function RecruitmentFormSection({ section }: Props) {
       {/* Top: service detail */}
       <div className={layout.sectionPadYCompact} style={{ backgroundColor: colors.lightGray }}>
         <div className={layout.container}>
-          <div className="grid gap-[4vh] lg:grid-cols-2 lg:items-start">
-            {/* Left text (floating card) */}
-            <div
-              className={`rounded-2xl bg-white/90 backdrop-blur-sm p-5 sm:p-6 md:p-8 shadow-lg ring-1 ring-slate-200/60 space-y-[3vh] transition-all duration-1000 ${
-                isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-              }`}
-            >
-              {heading && (
-                <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl font-primary" style={{ color: colors.blueDark }}>
-                  {heading.body}
-                </h2>
-              )}
+          {/* Eyebrow */}
+          <span
+            className={`block font-mono text-xs uppercase tracking-[0.2em] transition-all duration-700 ${
+              isInView ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}
+            style={{ color: colors.tealMid }}
+          >
+            Nuestros servicios
+          </span>
 
-              {subtitle && (
-                <div className="rounded-xl border p-5" style={{ borderColor: colors.tealBright, backgroundColor: `${colors.tealBright}10` }}>
-                  <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: colors.tealMid }}>Objetivo</p>
-                  <p className="mt-2 leading-relaxed" style={{ color: colors.blueMid }}>{subtitle.body}</p>
-                </div>
-              )}
+          <div
+            className={`mt-[3vh] grid gap-y-10 lg:items-start lg:gap-x-[72px] lg:gap-y-0 ${
+              hasTextContent && photo ? 'lg:grid-cols-[1.15fr_1fr]' : ''
+            }`}
+          >
+            {/* Left: text content */}
+            {hasTextContent && (
+              <div
+                className={`transition-all duration-1000 ${
+                  isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
+                }`}
+              >
+                <div className="space-y-[3.5vh]">
+                  {heading && (
+                    <h2
+                      className="font-secondary text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.5rem]"
+                      style={{ color: colors.blueDark }}
+                    >
+                      {heading.body}
+                      <span style={{ color: colors.tealBright }}>.</span>
+                    </h2>
+                  )}
 
-              {paragraphs.map((p, i) => (
-                <p key={i} className="leading-relaxed" style={{ color: colors.blueMid }}>{p.body}</p>
-              ))}
+                  {paragraphs.length > 0 && (
+                    <div className="max-w-[460px] space-y-4">
+                      {paragraphs.map((p, i) => (
+                        <p key={i} className="text-[17px] leading-relaxed" style={{ color: colors.blueMid }}>
+                          {p.body}
+                        </p>
+                      ))}
+                    </div>
+                  )}
 
-              {bullets.length > 0 && (
-                <div>
-                  <p className="mb-3 text-sm font-semibold uppercase tracking-wider" style={{ color: colors.blueDark }}>Ejes de trabajo</p>
-                  <ul className="space-y-2">
-                    {bullets.map((b, i) => (
-                      <li key={i}
-                        className={`flex items-start gap-3 transition-all duration-500 ${isInView ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'}`}
-                        style={{ transitionDelay: `${400 + i * 80}ms` }}
+                  {subtitle && (
+                    <div className="max-w-[480px] border-t pt-6" style={{ borderColor: hairline }}>
+                      <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: colors.tealMid }}>
+                        Objetivo
+                      </p>
+                      <p
+                        className="font-secondary mt-3 text-xl italic leading-[1.45] sm:text-[1.4375rem]"
+                        style={{ color: colors.blueDark }}
                       >
-                        <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: colors.secondary.attention }} />
-                        <span style={{ color: colors.blueMid }}>{b.body}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+                        {subtitle.body}
+                      </p>
+                    </div>
+                  )}
 
-            {/* Right floating image */}
+                  {bullets.length > 0 && (
+                    <div className="border-t pt-6" style={{ borderColor: hairline }}>
+                      <p className="mb-1 font-mono text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: colors.tealMid }}>
+                        Ejes de trabajo
+                      </p>
+                      <ul>
+                        {bullets.map((b, i) => (
+                          <li
+                            key={i}
+                            className={`flex items-baseline gap-[22px] border-b py-4 transition-all duration-500 ${
+                              isInView ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'
+                            }`}
+                            style={{ borderColor: hairline, transitionDelay: `${300 + i * 80}ms` }}
+                          >
+                            <span
+                              className="font-secondary min-w-[34px] flex-shrink-0 text-xl"
+                              style={{ color: colors.tealMid }}
+                            >
+                              {String(i + 1).padStart(2, '0')}
+                            </span>
+                            <span className="text-base leading-snug" style={{ color: colors.blueDark }}>
+                              {b.body}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Right: sticky image */}
             {photo && (
-              <div className={`transition-all duration-1000 delay-300 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'}`}>
-                <div className="group overflow-hidden rounded-2xl shadow-xl ring-1 ring-slate-200">
-                  <img src={photo.url} alt="" className="aspect-[4/3] w-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+              <div
+                className={`transition-all duration-1000 delay-300 lg:sticky lg:top-24 ${
+                  isInView ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'
+                }`}
+              >
+                <div className="overflow-hidden ring-1 ring-slate-200">
+                  <img src={photo.url} alt="" className="aspect-[4/5] w-full object-cover" loading="lazy" />
                 </div>
               </div>
             )}
@@ -98,25 +152,32 @@ export default function RecruitmentFormSection({ section }: Props) {
         <div className={layout.sectionPadYCompact} style={{ backgroundColor: colors.lightGray }}>
           <div className={layout.container}>
             <div
-              className={`rounded-2xl p-8 sm:p-10 text-center transition-all duration-1000 delay-500 ${
+              className={`flex flex-wrap items-center justify-between gap-10 p-8 transition-all duration-1000 delay-500 sm:p-10 lg:p-14 ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
               }`}
-              style={{ backgroundColor: colors.secondaryHeroBg }}
+              style={{ backgroundColor: colors.blueDark }}
             >
               {ctaHeading && (
-                <h3 className="text-xl font-bold sm:text-2xl md:text-3xl font-primary" style={{ color: colors.white }}>
-                  {ctaHeading.body}
-                </h3>
+                <div className="max-w-[640px]">
+                  <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: colors.tealBright }}>
+                    Postulaciones
+                  </p>
+                  <h3 className="font-secondary mt-3 text-2xl font-medium leading-[1.1] sm:text-3xl" style={{ color: colors.white }}>
+                    {ctaHeading.body}
+                    <span style={{ color: colors.tealBright }}>.</span>
+                  </h3>
+                </div>
               )}
               {cta && (
                 <a
                   href="#postulaciones"
-                  className="mt-4 inline-block rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 sm:px-8 sm:py-4 sm:text-base"
-                  style={{ backgroundColor: colors.ctaPrimary, boxShadow: `0 8px 24px ${colors.ctaShadow}` }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.ctaPrimaryHover }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.ctaPrimary }}
+                  className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold shadow-md transition-all hover:-translate-y-0.5 sm:px-8 sm:py-4 sm:text-base"
+                  style={{ backgroundColor: colors.white, color: colors.blueDark }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.lightGray }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.white }}
                 >
                   {cta.body}
+                  <span aria-hidden="true">&rarr;</span>
                 </a>
               )}
             </div>
@@ -135,7 +196,7 @@ export default function RecruitmentFormSection({ section }: Props) {
               }`}
             >
               {formHeading && (
-                <h3 className="text-xl font-bold sm:text-2xl font-primary" style={{ color: colors.blueDark }}>
+                <h3 className="font-secondary text-xl font-semibold sm:text-2xl" style={{ color: colors.blueDark }}>
                   {formHeading.body}
                 </h3>
               )}
@@ -148,10 +209,10 @@ export default function RecruitmentFormSection({ section }: Props) {
           <div className="grid gap-[6vh] lg:grid-cols-2 lg:items-start">
             {/* Left: form */}
             <div
-              className={`rounded-2xl border bg-white p-5 sm:p-6 md:p-8 shadow-sm transition-all duration-1000 delay-200 ${
+              className={`border bg-white p-5 sm:p-6 md:p-8 transition-all duration-1000 delay-200 ${
                 isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
               }`}
-              style={{ borderColor: colors.tealBright }}
+              style={{ borderColor: 'rgb(203 213 225)' }}
             >
               {vm.success ? (
                 <div className="py-[6vh] text-center">
@@ -169,7 +230,7 @@ export default function RecruitmentFormSection({ section }: Props) {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Nombre <span className="text-red-500">*</span></label>
+                      <label className="mb-1 block text-sm font-semibold" style={{ color: colors.blueDark }}>Nombre <span className="text-red-500">*</span></label>
                       <input type="text" required value={vm.form.name} onChange={(e) => vm.setField('name', e.target.value)}
                         className={inputClasses} style={inputStyle} placeholder="Juan"
                         onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
@@ -177,7 +238,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Apellido <span className="text-red-500">*</span></label>
+                      <label className="mb-1 block text-sm font-semibold" style={{ color: colors.blueDark }}>Apellido <span className="text-red-500">*</span></label>
                       <input type="text" required value={vm.form.surname} onChange={(e) => vm.setField('surname', e.target.value)}
                         className={inputClasses} style={inputStyle} placeholder="Pérez"
                         onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
@@ -188,7 +249,7 @@ export default function RecruitmentFormSection({ section }: Props) {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Email <span className="text-red-500">*</span></label>
+                      <label className="mb-1 block text-sm font-semibold" style={{ color: colors.blueDark }}>Email <span className="text-red-500">*</span></label>
                       <input type="email" required value={vm.form.email} onChange={(e) => vm.setField('email', e.target.value)}
                         className={inputClasses} style={inputStyle} placeholder="juan@email.com"
                         onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
@@ -196,7 +257,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Teléfono</label>
+                      <label className="mb-1 block text-sm font-semibold" style={{ color: colors.blueDark }}>Teléfono</label>
                       <input type="tel" value={vm.form.phone_number} onChange={(e) => vm.setField('phone_number', e.target.value)}
                         className={inputClasses} style={inputStyle} placeholder="+54 11 1234-5678"
                         onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
@@ -206,7 +267,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Puesto de interés <span className="text-red-500">*</span></label>
+                    <label className="mb-1 block text-sm font-semibold" style={{ color: colors.blueDark }}>Puesto de interés <span className="text-red-500">*</span></label>
                     {vm.isRetryingInterests && (
                       <p className="mb-2 text-xs font-medium text-amber-700">
                         Reintentando carga de puestos por demasiadas solicitudes...
@@ -227,7 +288,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                       <button
                         type="button"
                         onClick={vm.retryInterests}
-                        className="mt-2 rounded-md bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-200"
+                        className="mt-2 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-200"
                       >
                         Reintentar carga de puestos
                       </button>
@@ -235,7 +296,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Años de experiencia <span className="text-red-500">*</span></label>
+                    <label className="mb-1 block text-sm font-semibold" style={{ color: colors.blueDark }}>Años de experiencia <span className="text-red-500">*</span></label>
                     <select required value={vm.form.experience} onChange={(e) => vm.setField('experience', e.target.value)}
                       className={inputClasses} style={inputStyle}
                       onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
@@ -249,7 +310,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>¿Qué modalidad de trabajo preferís? <span className="text-red-500">*</span></label>
+                    <label className="mb-1 block text-sm font-semibold" style={{ color: colors.blueDark }}>¿Qué modalidad de trabajo preferís? <span className="text-red-500">*</span></label>
                     <select value={vm.form.modality} onChange={(e) => vm.setField('modality', e.target.value)}
                       required
                       className={inputClasses} style={inputStyle}
@@ -264,7 +325,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>¿Cuándo podrías incorporarte? <span className="text-red-500">*</span></label>
+                    <label className="mb-1 block text-sm font-semibold" style={{ color: colors.blueDark }}>¿Cuándo podrías incorporarte? <span className="text-red-500">*</span></label>
                     <input type="text" required value={vm.form.incorporation_time} onChange={(e) => vm.setField('incorporation_time', e.target.value)}
                       className={inputClasses} style={inputStyle} placeholder="Ej: Inmediata, en 15 días..."
                       onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
@@ -273,7 +334,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium" style={{ color: colors.blueMid }}>Mensaje adicional</label>
+                    <label className="mb-1 block text-sm font-semibold" style={{ color: colors.blueDark }}>Mensaje adicional</label>
                     <textarea rows={3} value={vm.form.message} onChange={(e) => vm.setField('message', e.target.value)}
                       className={inputClasses} style={inputStyle} placeholder="Contanos algo más sobre vos..."
                       onFocus={(e) => { e.currentTarget.style.borderColor = inputFocusColor }}
@@ -282,7 +343,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                   </div>
 
                   {vm.error && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                    <div className="border border-red-200 bg-red-50 p-3">
                       <p className="text-sm text-red-700">{vm.error}</p>
                     </div>
                   )}
@@ -297,7 +358,7 @@ export default function RecruitmentFormSection({ section }: Props) {
                       type="checkbox"
                       checked={vm.privacyAccepted}
                       onChange={(e) => vm.setPrivacyAccepted(e.target.checked)}
-                      className="mt-1 h-4 w-4 rounded border-gray-300 accent-teal-600"
+                      className="mt-1 h-4 w-4 border-gray-300 accent-teal-600"
                       required
                     />
                     <span className="text-xs leading-relaxed" style={{ color: colors.blueMid }}>
@@ -311,10 +372,10 @@ export default function RecruitmentFormSection({ section }: Props) {
 
                   <button type="submit"
                     disabled={vm.isSubmitting}
-                    className="w-full rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0"
-                    style={{ backgroundColor: colors.tealMid, boxShadow: `0 4px 14px ${colors.ctaShadow}` }}
-                    onMouseEnter={(e) => { if (!vm.isSubmitting) e.currentTarget.style.backgroundColor = colors.tealBright }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.tealMid }}
+                    className="w-full px-6 py-3 text-sm font-semibold shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0"
+                    style={{ backgroundColor: colors.blueDark, color: colors.white }}
+                    onMouseEnter={(e) => { if (!vm.isSubmitting) e.currentTarget.style.backgroundColor = colors.blueMid }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.blueDark }}
                   >
                     {vm.isSubmitting ? 'Enviando…' : 'Enviar postulación'}
                   </button>
@@ -326,7 +387,7 @@ export default function RecruitmentFormSection({ section }: Props) {
             <div className={`transition-all duration-1000 delay-400 ${isInView ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               <div className="space-y-[3vh]">
                 <div>
-                  <h3 className="text-xl font-bold" style={{ color: colors.blueDark }}>Adjuntá tu CV</h3>
+                  <h3 className="font-secondary text-xl font-semibold" style={{ color: colors.blueDark }}>Adjuntá tu CV</h3>
                   <p className="mt-2 text-sm" style={{ color: colors.blueMid }}>
                     {vm.isFormComplete
                       ? 'Arrastrá el archivo o hacé clic para seleccionarlo.'
@@ -338,16 +399,16 @@ export default function RecruitmentFormSection({ section }: Props) {
                   onDragOver={(e) => { if (vm.isFormComplete) e.preventDefault() }}
                   onDrop={(e) => { if (vm.isFormComplete) handleFileDrop(e); else e.preventDefault() }}
                   onClick={() => { if (vm.isFormComplete) fileInputRef.current?.click() }}
-                  className={`cv-upload-zone group relative flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed bg-white p-6 sm:p-8 md:p-12 transition-all ${
+                  className={`cv-upload-zone group relative flex flex-col items-center justify-center gap-4 border-2 border-dashed bg-white p-6 sm:p-8 md:p-12 transition-all ${
                     vm.isFormComplete ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
                   }`}
                   style={{ borderColor: colors.tealBright }}
                   onMouseEnter={(e) => { if (vm.isFormComplete) { e.currentTarget.style.borderColor = colors.tealMid; e.currentTarget.style.backgroundColor = `${colors.tealBright}08` } }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = colors.tealBright; e.currentTarget.style.backgroundColor = colors.white }}
                 >
-                  {vm.isFormComplete && <div className="cv-pulse-ring absolute inset-0 rounded-2xl" />}
+                  {vm.isFormComplete && <div className="cv-pulse-ring absolute inset-0" />}
 
-                  <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl transition-transform group-hover:scale-110"
+                  <div className="relative flex h-20 w-20 items-center justify-center transition-transform group-hover:scale-110"
                     style={{ backgroundColor: `${colors.tealBright}20`, color: colors.tealMid }}
                   >
                     <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

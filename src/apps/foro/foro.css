@@ -57,7 +57,7 @@
   color: var(--foro-cat, var(--foro-teal-700));
 }
 .foro-strip-eyebrow::before {
-  content: ""; width: 8px; height: 8px; border-radius: 2px;
+  content: ""; width: 8px; height: 8px; border-radius: 0;
   background: var(--foro-cat, var(--foro-teal-700));
 }
 .foro-strip-head h2 { font-size: 25px; }
@@ -73,7 +73,7 @@
 }
 .foro-is-novedad .foro-novedad-media { display: block; width: 100%; }
 .foro-is-novedad .foro-novedad-img {
-  width: 100%; aspect-ratio: 16 / 9; border-radius: 8px;
+  width: 100%; aspect-ratio: 16 / 9; border-radius: 0;
   border: 1px solid var(--foro-line-2);
 }
 .foro-is-novedad .foro-novedad-img img { width: 100%; height: 100%; }
@@ -96,7 +96,7 @@
   display: inline-flex; align-items: center; gap: 6px;
   font-family: var(--foro-font-mono); font-size: 11px; letter-spacing: .01em;
   color: var(--foro-cat, var(--foro-teal-700));
-  border: 1px solid var(--foro-line); border-radius: 20px; padding: 4px 11px;
+  border: 1px solid var(--foro-line); border-radius: 0; padding: 4px 11px;
 }
 .foro-channel::before {
   content: ""; width: 6px; height: 6px; border-radius: 50%;
@@ -107,6 +107,42 @@
   color: var(--foro-cat, var(--foro-teal-700));
   opacity: .82;
 }
+
+/* ---------- Spotify "listen card" (channel avatar + logo) ----------
+   Self-contained flat/paper card (own background + hairline border) so it
+   reads the same whether it sits on the light hero body (<TypeHero>) or
+   inside the dark `.foro-cta-card` rail (<ExternalLinksCTA>). Exception to
+   the square-corners sweep — this is one of the remarked "visit" CTAs, so it
+   keeps the `--foro-btn-radius` pill radius; only the channel picture stays
+   circular. */
+.foro-spotify-link {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; max-width: 420px;
+  background: var(--foro-paper); border: 1px solid var(--foro-line); border-radius: var(--foro-btn-radius);
+  padding: 11px 16px; text-decoration: none;
+  transition: border-color .15s ease, transform .15s ease;
+}
+.foro-spotify-link:hover { border-color: var(--foro-spotify); transform: translateY(-1px); color: inherit; }
+.foro-spotify-link .foro-spotify-avatar {
+  width: 42px; height: 42px; border-radius: 50%; overflow: hidden; flex: 0 0 auto;
+  border: 1px solid var(--foro-line-2);
+}
+.foro-spotify-link .foro-spotify-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.foro-spotify-link .foro-spotify-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.foro-spotify-link .foro-spotify-brand {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--foro-font-sans); font-weight: 600; font-size: 13.5px; color: var(--foro-ink);
+}
+.foro-spotify-link .foro-spotify-brand svg { color: var(--foro-spotify); flex: 0 0 auto; }
+.foro-spotify-link .foro-spotify-episode {
+  font-family: var(--foro-font-mono); font-size: 11.5px; color: var(--foro-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.foro-spotify-link .foro-spotify-arrow {
+  margin-left: auto; flex: 0 0 auto; color: var(--foro-muted-2);
+  font-family: var(--foro-font-mono); font-size: 14px;
+}
+.foro-cta-card .foro-spotify-link { margin-bottom: 12px; }
 
 .foro-loader { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 30px 0 10px; color: var(--foro-muted); font-size: 13.5px; }
 .foro-spinner { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid var(--foro-teal-tint-2); border-top-color: var(--foro-teal); animation: foro-spin .8s linear infinite; }
@@ -132,7 +168,28 @@
 .foro-crumbs { display: flex; align-items: center; gap: 9px; font-family: var(--foro-font-mono); font-size: 12px; color: var(--foro-muted); margin-bottom: 26px; flex-wrap: wrap; }
 .foro-crumbs a, .foro-crumbs button { color: var(--foro-muted); background: none; border: none; padding: 0; cursor: pointer; font-family: var(--foro-font-mono); font-size: 12px; }
 .foro-crumbs a:hover, .foro-crumbs button:hover { color: var(--foro-teal); }
-.foro-crumbs .foro-tag { font-size: 11px; }
+
+/* ---------- Editorial article header ----------
+   Shared by all four detail layouts (paper/podcast/novedad/discusión) via
+   <ArticleHeader>. `--foro-cat` is set inline per-instance so the accent
+   period + tag pick up the right category color regardless of wrapper. */
+.foro-article-head { margin-bottom: 30px; }
+.foro-article-head .foro-tag { margin-bottom: 18px; }
+.foro-article-head h1 { font-size: 40px; font-weight: 600; line-height: 1.1; }
+.foro-accent-period { color: var(--foro-cat, var(--foro-teal)); }
+.foro-standfirst {
+  font-family: var(--foro-font-serif); font-style: italic; font-weight: 400;
+  font-size: 20px; line-height: 1.55; color: var(--foro-navy); margin: 16px 0 0;
+}
+.foro-byline {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  font-family: var(--foro-font-mono); font-size: 12.5px; color: var(--foro-muted);
+  margin-top: 22px; padding-bottom: 20px; border-bottom: 1px solid var(--foro-line);
+}
+@media (max-width: 620px) {
+  .foro-article-head h1 { font-size: 30px; }
+  .foro-standfirst { font-size: 17px; }
+}
 
 .foro-pod-grid { display: grid; grid-template-columns: 1fr 320px; gap: 50px; align-items: start; }
 .foro-pod-main { order: 1; min-width: 0; }
@@ -142,17 +199,13 @@
   .foro-rail { position: static; }
 }
 
-.foro-pod-main .foro-tag { margin-bottom: 16px; }
-.foro-pod-main h1 { font-size: 36px; font-weight: 600; line-height: 1.12; }
-.foro-pod-main .foro-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-family: var(--foro-font-mono); font-size: 12.5px; color: var(--foro-muted); margin: 16px 0 18px; }
-.foro-pod-main .foro-lede { font-size: 17.5px; line-height: 1.6; color: var(--foro-navy); font-family: var(--foro-font-serif); font-weight: 400; }
 .foro-pod-main .foro-prose { font-size: 15.5px; line-height: 1.75; color: var(--foro-ink); }
 .foro-pod-main .foro-prose p { margin: 18px 0; }
 
 .foro-tags-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
-.foro-tags-row span { font-family: var(--foro-font-mono); font-size: 11.5px; color: var(--foro-muted); border: 1px solid var(--foro-line); padding: 5px 12px; border-radius: 20px; }
+.foro-tags-row span { font-family: var(--foro-font-mono); font-size: 11.5px; color: var(--foro-muted); border: 1px solid var(--foro-line); padding: 5px 12px; border-radius: 0; }
 
-.foro-hero-img { aspect-ratio: 16/9; margin: 24px 0; border-radius: var(--foro-radius-sm); overflow: hidden; }
+.foro-hero-img { aspect-ratio: 16/9; margin: 24px 0; border-radius: var(--foro-radius-sm); overflow: hidden; border: 1px solid var(--foro-line-2); }
 .foro-hero-img img { width: 100%; height: 100%; object-fit: cover; }
 .foro-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 26px 0; }
 .foro-gallery .foro-ph, .foro-gallery img { aspect-ratio: 4/3; border-radius: var(--foro-radius-sm); width: 100%; height: 100%; object-fit: cover; }
@@ -161,23 +214,49 @@
 .foro-block-title { font-family: var(--foro-font-mono); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--foro-teal-700); margin: 40px 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--foro-line); }
 .foro-related { margin-top: 30px; }
 
-/* Novedad (single centered column) */
-.foro-news { max-width: 760px; margin: 0 auto; }
-.foro-news h1 { font-size: 38px; }
-.foro-news .foro-related { max-width: 960px; margin-left: auto; margin-right: auto; }
-.foro-interactions { display: flex; gap: 20px; margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--foro-line); font-family: var(--foro-font-mono); font-size: 12.5px; color: var(--foro-muted); }
+.foro-interactions { display: flex; flex-wrap: wrap; gap: 20px; font-family: var(--foro-font-mono); font-size: 12.5px; color: var(--foro-muted); }
 .foro-interactions b { color: var(--foro-navy); font-family: var(--foro-font-sans); }
+
+/* ---------- Paper (single centered editorial column) ----------
+   Article measure ~720px; the hero is allowed to break out to the wider
+   ~1000px column. Footer + related band stay flat: hairline rules, no
+   shadows. External links (when present) render as an inline CTA card
+   below the footer — papers no longer use a side rail. */
+.foro-paper { max-width: 1000px; margin: 0 auto; }
+.foro-paper > .foro-article-head { max-width: 720px; margin-left: auto; margin-right: auto; }
+.foro-paper > .foro-article-head h1 { font-size: 44px; }
+.foro-paper-hero { aspect-ratio: 16/7; margin: 32px 0; border-radius: var(--foro-radius-sm); overflow: hidden; border: 1px solid var(--foro-line-2); }
+.foro-paper-hero img { width: 100%; height: 100%; object-fit: cover; }
+.foro-paper-body { max-width: 720px; margin: 0 auto; }
+.foro-paper-body .foro-prose { font-size: 16px; line-height: 1.75; color: var(--foro-ink); }
+.foro-paper-body .foro-prose p { margin: 18px 0; }
+/* Drop cap on the article's opening paragraph only. */
+.foro-paper-body .foro-prose p:first-child::first-letter {
+  font-family: var(--foro-font-serif); font-weight: 600; color: var(--foro-navy);
+  float: left; font-size: 3.2em; line-height: .78; padding: 6px 6px 0 0;
+}
+.foro-paper-footer {
+  max-width: 720px; margin: 32px auto 0; padding-top: 20px; border-top: 1px solid var(--foro-line);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;
+}
+.foro-paper-footer .foro-tags-row { margin: 0; }
+.foro-paper-cta { max-width: 720px; margin: 28px auto 0; }
+.foro-paper > .foro-related { max-width: 1000px; }
+@media (max-width: 620px) {
+  .foro-paper > .foro-article-head h1 { font-size: 30px; }
+}
+
+/* ---------- Novedad (single centered column) ---------- */
+.foro-news { max-width: 760px; margin: 0 auto; }
+.foro-news .foro-related { max-width: 960px; margin-left: auto; margin-right: auto; }
+.foro-news .foro-interactions { margin-top: 30px; padding-top: 18px; border-top: 1px solid var(--foro-line); }
 
 /* Podcast cover */
 .foro-cover { width: 140px; border-radius: var(--foro-radius-sm); overflow: hidden; box-shadow: var(--foro-shadow-sm); }
 .foro-cover .foro-ph, .foro-cover img { aspect-ratio: 1/1; width: 100%; }
 
 /* ---------- Discusión ---------- */
-.foro-op { border-top: 1px solid var(--foro-line); padding-top: 20px; }
-.foro-op .foro-who { display: flex; align-items: center; gap: 11px; font-family: var(--foro-font-mono); font-size: 12px; color: var(--foro-muted); margin-bottom: 16px; }
-.foro-op .foro-who b { font-family: var(--foro-font-sans); color: var(--foro-navy); font-size: 14px; }
-.foro-op .foro-body { font-size: 16px; line-height: 1.7; color: var(--foro-ink); }
-.foro-op .foro-body p { margin: 14px 0; }
+.foro-op-body { margin-top: 2px; }
 
 .foro-thread { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
 .foro-reply { display: flex; gap: 16px; padding: 22px 0; border-bottom: 1px solid var(--foro-line-2); }
