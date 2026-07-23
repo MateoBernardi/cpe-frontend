@@ -15,7 +15,7 @@ interface Props { hero: Section; about: Section; infoPrimary: Section }
  * de dependencia entre un componente de página y uno de sección compartido.
  * Si ese texto cambia ahí, actualizar también acá.
  */
-const FORO_CTA_FALLBACK = 'Explorar el foro completo →'
+const FORO_CTA_FALLBACK = 'Descubrí cómo pensamos →'
 
 /**
  * Divide la línea de bio ("Nombre — Rol") en nombre y rol para darles

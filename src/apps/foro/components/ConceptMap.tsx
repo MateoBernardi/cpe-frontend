@@ -312,11 +312,8 @@ export function ConceptMap({ categories, onSelectCategory }: ConceptMapProps) {
 
       <header className="px-5 md:px-14 pt-6 md:pt-8 pb-4 border-b border-[#E2DFD8]/70 bg-[var(--foro-bg)] z-20">
         <div className="max-w-5xl mx-auto">
-          <span className="text-[9px] md:text-[10px] font-mono tracking-[0.2em] uppercase text-gray-400 block mb-1">
-            EL FORO · CLÍNICA PARA EMPRESAS
-          </span>
           <h1 className="text-xl md:text-3xl font-serif text-[#1A1A1A] font-normal">
-            Explorá nuestras publicaciones
+            Explorá nuestras ideas
           </h1>
           <p className="text-xs font-sans text-gray-500 mt-0.5">
             {categories.length > 0 ? 'Elegí un concepto para comenzar.' : 'Cargando conceptos…'}
@@ -378,11 +375,6 @@ export function ConceptMap({ categories, onSelectCategory }: ConceptMapProps) {
           })}
         </div>
       </main>
-
-      <footer className="px-5 py-3 border-t border-[#E2DFD8]/70 bg-[var(--foro-bg)] text-[10px] font-mono text-gray-400 flex justify-between shrink-0 z-10">
-        <span>Índice Conceptual</span>
-        <span>El Foro</span>
-      </footer>
     </div>
   )
 }

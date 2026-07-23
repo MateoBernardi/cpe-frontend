@@ -43,12 +43,6 @@ export default function PublicationPage() {
   return (
     <main className="foro-pod">
       <div className="foro-wrap">
-        <nav className="foro-crumbs">
-          <Link to="/">Foro</Link>
-          {type && <span>/</span>}
-          {type && <Link to={`/?tipo=${slug}`}>{type.name}</Link>}
-        </nav>
-
         {slug === 'discusion'
           ? <DiscussionDetail publication={publication} typeName={type?.name ?? 'Discusión'} related={related} />
           : (

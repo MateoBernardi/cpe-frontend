@@ -33,7 +33,6 @@ export function DiscussionDetail({ publication, typeName, related }: DiscussionD
       <article className="foro-pod-main">
         <ArticleHeader
           slug="discusion"
-          typeName={typeName}
           title={publication.title}
           subtitle={publication.subtitle}
           createdBy={publication.createdBy}

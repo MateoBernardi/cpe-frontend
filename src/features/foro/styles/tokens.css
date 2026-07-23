@@ -44,13 +44,16 @@
 
   --foro-radius: 0;
   --foro-radius-sm: 0;
-  /* Deliberate exception to the square-corners sweep above: emphasized CTA
-     buttons (Suscribirme, auth-dialog submit/social buttons, Spotify/YouTube
-     "visit" buttons) keep a rounded pill shape. Everything else stays square —
-     see the `.foro-btn-subscribe`, `.foro-dialog …`, `.foro-cta-card .foro-btn`,
-     `.foro-typehero-links .foro-btn` and `.foro-spotify-link` rules below,
-     which are the ONLY selectors that reference this token. */
-  --foro-btn-radius: 14px;
+  /* Solid coloured-fill CTA buttons (`.foro-btn-teal`, `.foro-btn-navy`,
+     `.foro-btn-spotify`, `.foro-btn-youtube` — Suscribirme, auth-dialog
+     submit/social buttons, Spotify/YouTube "visit" buttons, Publicar, etc.)
+     get rounded corners, matching the main app's `rounded-xl` CTAs. Quiet
+     variants (`.foro-btn-ghost`, `.foro-btn-light`) and every other
+     component (tabs, chips, inputs, cards) stay square — see the
+     `.foro-btn-subscribe`, `.foro-dialog …` and `.foro-cta-card .foro-btn`
+     rules below, which reference the same token for contexts that wrap one
+     of the four rounded variant classes. */
+  --foro-btn-radius: 12px;
   --foro-shadow: 0 18px 50px -28px rgba(12, 58, 72, .40);
   --foro-shadow-sm: 0 8px 24px -16px rgba(12, 58, 72, .35);
 
@@ -101,35 +104,40 @@
 }
 .foro-btn:hover { transform: translateY(-1px); }
 .foro-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
-.foro-btn-teal { background: var(--foro-teal-700); color: #fff; }
+.foro-btn-teal { background: var(--foro-teal-700); color: #fff; border-radius: var(--foro-btn-radius); }
 .foro-btn-teal:hover { background: var(--foro-navy); }
 .foro-btn-ghost { background: var(--foro-teal-tint); color: var(--foro-teal-700); }
 .foro-btn-ghost:hover { background: var(--foro-teal-tint-2); }
-.foro-btn-navy { background: var(--foro-navy); color: #fff; }
+.foro-btn-navy { background: var(--foro-navy); color: #fff; border-radius: var(--foro-btn-radius); }
 .foro-btn-navy:hover { background: var(--foro-navy-2); }
 /* Spotify green (#1db954) against white text is ~2.6:1 (fails AA) — near-black
    text/icon on the brand green clears AA comfortably (~7.2:1). */
-.foro-btn-spotify { background: var(--foro-spotify); color: #121212; }
+.foro-btn-spotify { background: var(--foro-spotify); color: #121212; border-radius: var(--foro-btn-radius); }
 .foro-btn-spotify svg { color: #121212; }
 .foro-btn-spotify:hover { opacity: .9; }
 /* YouTube "visit" button: near-black surface + white text (~19:1) — red is
    reserved for the logo mark only (see YouTubeMark), never used as text/bg. */
-.foro-btn-youtube { background: #0f0f0f; color: #fff; }
+.foro-btn-youtube { background: #0f0f0f; color: #fff; border-radius: var(--foro-btn-radius); }
 .foro-btn-youtube:hover { background: #282828; }
 .foro-btn-light { background: #fff; color: var(--foro-teal-700); border: 1px solid var(--foro-line); }
 .foro-btn-light:hover { background: var(--foro-teal-tint); }
-/* Exception to the square-corners sweep: the "Suscribirme"/"Cerrar sesión"
-   button is the one plain `.foro-btn` instance called out as a remarked CTA. */
+/* Redundant with `.foro-btn-teal`'s own radius above (kept for the rare case
+   this class is ever paired with a variant that doesn't set it). */
 .foro-btn-subscribe { border-radius: var(--foro-btn-radius); }
 
-/* ---------- Category tag ---------- */
+/* ---------- Category tag ----------
+   Solid coloured-fill chip (background = the type's accent, white text) —
+   NOT the same class as content tags (`.foro-tags-row` in TagList), so this
+   can be restyled freely without touching those. */
 .foro-tag {
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center;
   font-family: var(--foro-font-mono);
-  font-size: 11px; font-weight: 500; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--foro-cat, var(--foro-teal-700));
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: #fff;
+  background: var(--foro-cat, var(--foro-teal-700));
+  padding: 2px 8px;
+  border-radius: 0;
 }
-.foro-tag .foro-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--foro-cat, var(--foro-teal-700)); }
 .foro-cat-papers { --foro-cat: var(--foro-c-papers); }
 .foro-cat-podcasts { --foro-cat: var(--foro-c-podcasts); }
 .foro-cat-novedades { --foro-cat: var(--foro-c-novedades); }

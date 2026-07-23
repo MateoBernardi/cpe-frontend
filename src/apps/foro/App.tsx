@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { ForoAuthProvider, ForoAuthDialog, ForoApiError } from '@features/foro'
 import ErrorBoundary from '@shared/components/ErrorBoundary'
 import ForoRouter from './router'
+import { DemoAuthProvider } from './demo/demoAuth'
 import './foro.css'
 
 const queryClient = new QueryClient({
@@ -49,7 +50,10 @@ export default function ForoApp() {
       <ForoAuthProvider>
         <ErrorBoundary>
           <BrowserRouter basename={FORO_BASENAME}>
-            <ForoRouter />
+            {/* DEMO ONLY — single wrapping element, easy to remove when real auth ships. */}
+            <DemoAuthProvider>
+              <ForoRouter />
+            </DemoAuthProvider>
           </BrowserRouter>
           <ForoAuthDialog />
         </ErrorBoundary>

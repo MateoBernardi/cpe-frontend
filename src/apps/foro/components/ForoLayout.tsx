@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { SubscribeButton } from '@features/foro'
 import type { KnownPublicationTypeSlug } from '@features/foro'
 import SiteHeader, { type SiteHeaderNavItem, type SiteHeaderSearchItem } from '@shared/components/SiteHeader'
 import SiteFooter from '@shared/components/SiteFooter'
+import { HeaderProfileButton } from './HeaderProfileButton'
 
 /** Institutional site (main app) base URL — the Foro links back to its privacy policy, which lives there. */
 const MAIN_SITE_URL = (import.meta.env.VITE_MAIN_URL as string | undefined) ?? 'https://clinicaparaempresas.com'
@@ -52,7 +52,7 @@ export function ForoLayout({ children }: ForoLayoutProps) {
         navItems={navItems}
         onLogoClick={() => navigate('/')}
         searchItems={searchItems}
-        trailing={<SubscribeButton />}
+        trailing={<HeaderProfileButton />}
         // The foro home's hero sits on the light `--foro-bg` surface (not a
         // dark hero like the main site's), so a transparent header would be
         // low-contrast. Keep the white "scrolled" pill active everywhere.

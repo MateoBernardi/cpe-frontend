@@ -9,7 +9,6 @@ interface CategoryTagProps {
 export function CategoryTag({ slug, label }: CategoryTagProps) {
   return (
     <span className={['foro-tag', typeSlugToCatClass(slug)].filter(Boolean).join(' ')}>
-      <span className="foro-dot" />
       {label}
     </span>
   )

@@ -52,45 +52,57 @@
   .foro-typehero-img { aspect-ratio: 16 / 9; }
 }
 
-/* ---------- Novedad hero: full-bleed announcement band ----------
-   Deliberately unlike the paper/podcast/discusión "destacada" above: a flat
-   navy color band (no image, no author) that breaks out of `.foro-wrap`'s
-   max-width edge to edge, with a big date standing in for the byline. */
-.foro-novedad-hero {
-  position: relative;
+/* ---------- Novedad hero: full-bleed promotional image ----------
+   Deliberately unlike the paper/podcast/discusión "destacada" above: a
+   media-first billboard. A big image breaks out of `.foro-wrap`'s max-width
+   edge to edge (the flat navy band this replaced is now only the video
+   badge's chip color), with a compact caption below — date + title only, no
+   author avatar (a novedad is an institutional announcement). Mirrors the
+   <PublicationDetail> novedad branch's video-vs-collage promotional idiom:
+   a small badge flags when the featured item has a YouTube-recognizable
+   external link. */
+.foro-novedad-hero { margin-bottom: 44px; }
+.foro-novedad-hero-media {
+  display: block; position: relative;
   left: 50%; right: 50%;
   width: 100vw;
   margin-left: -50vw; margin-right: -50vw;
-  margin-bottom: 44px;
-  background: var(--foro-navy);
-  color: #cfe0e3;
-  padding: 52px 28px 56px;
 }
-.foro-novedad-hero-inner {
-  max-width: 780px; margin: 0 auto;
-  display: flex; flex-direction: column; align-items: flex-start; gap: 16px;
-}
-.foro-novedad-hero-eyebrow { color: #7fd0c2; }
-.foro-novedad-hero-eyebrow::before { background: #7fd0c2; }
-.foro-novedad-hero h2 { font-size: 40px; font-weight: 600; line-height: 1.1; text-wrap: pretty; }
-.foro-novedad-hero h2 a { color: #fff; }
-.foro-novedad-hero h2 a:hover {
-  text-decoration: underline; text-decoration-color: rgba(255, 255, 255, .4); text-underline-offset: 6px;
-}
-.foro-novedad-hero .foro-standfirst { color: #dff0ee; }
-.foro-novedad-hero-date {
-  display: flex; align-items: center; gap: 10px;
+.foro-novedad-hero-img {
   width: 100%;
-  font-family: var(--foro-font-mono); font-size: 15px; font-weight: 600;
-  letter-spacing: .1em; text-transform: uppercase; color: #fff;
-  padding-top: 14px; margin-top: 2px; border-top: 1px solid rgba(255, 255, 255, .22);
+  aspect-ratio: 32 / 11;
+  border-top: 1px solid var(--foro-line); border-bottom: 1px solid var(--foro-line);
 }
-.foro-novedad-hero-date::before { content: ""; width: 8px; height: 8px; background: #7fd0c2; flex: 0 0 auto; }
-.foro-novedad-hero .foro-sec-link { color: #fff; }
-.foro-novedad-hero .foro-sec-link:hover { color: #7fd0c2; }
+.foro-novedad-hero-img img { width: 100%; height: 100%; object-fit: cover; }
+.foro-novedad-hero-video-badge {
+  position: absolute; right: 24px; bottom: 20px;
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--foro-font-mono); font-size: 12px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; color: #fff;
+  background: rgba(12, 58, 72, .82); border: 1px solid rgba(255, 255, 255, .3);
+  padding: 8px 13px;
+}
+.foro-novedad-hero-caption {
+  max-width: 780px; margin: 28px auto 0;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+}
+.foro-novedad-hero-eyebrow { color: var(--foro-c-novedades); }
+.foro-novedad-hero-eyebrow::before { background: var(--foro-c-novedades); }
+.foro-novedad-hero-caption h2 { font-size: 38px; font-weight: 600; line-height: 1.1; text-wrap: pretty; }
+.foro-novedad-hero-caption h2 a { color: var(--foro-navy); }
+.foro-novedad-hero-caption h2 a:hover {
+  color: var(--foro-teal-700);
+  text-decoration: underline; text-decoration-color: var(--foro-teal-tint-2); text-underline-offset: 6px;
+}
+.foro-novedad-hero-date {
+  font-family: var(--foro-font-mono); font-size: 12.5px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--foro-muted);
+  padding-top: 14px; width: 100%; border-top: 1px solid var(--foro-line);
+}
 @media (max-width: 880px) {
-  .foro-novedad-hero { padding: 40px 20px 44px; }
-  .foro-novedad-hero h2 { font-size: 28px; }
+  .foro-novedad-hero-img { aspect-ratio: 16 / 9; }
+  .foro-novedad-hero-caption h2 { font-size: 27px; }
+  .foro-novedad-hero-video-badge { right: 14px; bottom: 14px; }
 }
 
 /* ---------- MagazineGrid ----------
@@ -114,30 +126,39 @@
   .foro-magazine-grid > .foro-list-item:first-child { grid-column: auto; }
 }
 
-/* ---------- Novedad brief list ----------
-   Dense, rule-separated news-brief rows: strong date column, no image, no
-   author. Pairs with <TypeHero>'s full-bleed novedad band above it. */
-.foro-brief-list { border-top: 1px solid var(--foro-line); }
-.foro-brief-row {
-  display: flex; gap: 24px; padding: 22px 0;
-  border-bottom: 1px solid var(--foro-line-2);
-  align-items: baseline;
+/* ---------- Novedad promo grid ----------
+   Image-forward "poster wall": big square images, date + title only under
+   each one — no author, no excerpt. Pairs with <TypeHero>'s full-bleed
+   novedad billboard above it; both read as promotional, not editorial. */
+.foro-novedad-promo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px 28px;
+  border-top: 1px solid var(--foro-line);
+  padding-top: 32px;
 }
-.foro-brief-date {
-  flex: 0 0 auto; width: 100px;
-  display: flex; flex-direction: column; gap: 4px;
+@media (max-width: 920px) { .foro-novedad-promo-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) { .foro-novedad-promo-grid { grid-template-columns: 1fr; } }
+
+.foro-novedad-promo-card { display: flex; flex-direction: column; gap: 12px; }
+.foro-novedad-promo-media { display: block; position: relative; }
+.foro-novedad-promo-img { width: 100%; aspect-ratio: 1 / 1; border: 1px solid var(--foro-line-2); }
+.foro-novedad-promo-img img { width: 100%; height: 100%; object-fit: cover; }
+.foro-novedad-promo-video-badge {
+  position: absolute; left: 10px; bottom: 10px;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--foro-font-mono); font-size: 10.5px; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase; color: #fff;
+  background: rgba(12, 58, 72, .82); padding: 5px 9px;
 }
-.foro-brief-date .foro-idx { font-family: var(--foro-font-mono); font-size: 11px; color: var(--foro-muted-2); }
-.foro-brief-day { font-family: var(--foro-font-serif); font-weight: 600; font-size: 16px; color: var(--foro-navy); }
-.foro-brief-row .foro-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.foro-brief-row h3 { font-size: 18px; font-weight: 600; line-height: 1.32; text-wrap: pretty; }
-.foro-brief-row h3 a { color: var(--foro-navy); }
-.foro-brief-row h3 a:hover {
+.foro-novedad-promo-caption { display: flex; flex-direction: column; gap: 6px; }
+.foro-novedad-promo-date {
+  font-family: var(--foro-font-mono); font-size: 11px; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--foro-muted);
+}
+.foro-novedad-promo-caption h3 { font-size: 17px; font-weight: 600; line-height: 1.32; text-wrap: pretty; }
+.foro-novedad-promo-caption h3 a { color: var(--foro-navy); }
+.foro-novedad-promo-caption h3 a:hover {
   color: var(--foro-teal-700); text-decoration: underline;
   text-decoration-color: var(--foro-teal-tint-2); text-underline-offset: 4px;
-}
-.foro-brief-row .foro-excerpt { font-size: 14px; color: var(--foro-muted); line-height: 1.5; font-family: var(--foro-font-sans); max-width: 64ch; }
-@media (max-width: 620px) {
-  .foro-brief-row { flex-direction: column; gap: 8px; }
-  .foro-brief-date { width: auto; flex-direction: row; align-items: center; gap: 10px; }
 }

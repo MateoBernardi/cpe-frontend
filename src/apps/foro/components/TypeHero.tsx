@@ -1,16 +1,15 @@
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import type { PublicationPreview, KnownPublicationTypeSlug } from '@features/foro'
-import { CategoryTag } from './CategoryTag'
 import { SpotifyLink } from './SpotifyLink'
 import { YouTubeMark } from './PlatformMarks'
 import { formatForoDate, initialsOf, typeSlugToCssVar, typeSlugChannelLabel } from '../lib/typeStyle'
+import { findYouTubeLink } from '../lib/youtube'
 import './magazine.css'
 
 interface TypeHeroProps {
   publication: PublicationPreview
   typeSlug: KnownPublicationTypeSlug | null
-  typeName: string
 }
 
 /** 'spotify' → 'Spotify', 'sitio web' → 'Sitio web'. */
@@ -68,23 +67,37 @@ function ExternalLinksHero({ links, typeSlug, episodeTitle }: { links: Publicati
  * throughout. Falls back to a flat accent-tinted `.foro-ph` panel (same
  * convention as <PublicationListItem>) when there is no cover image.
  *
- * Novedades get a deliberately different treatment (`.foro-novedad-hero`):
- * a full-bleed flat navy band with light type, no image, and a big date
- * eyebrow standing in for the byline — no author identity, since a novedad
- * is an institutional announcement, not an authored piece.
+ * Novedades get a deliberately different, media-first treatment
+ * (`.foro-novedad-hero`): a full-bleed image break-out (no author avatar —
+ * a novedad is an institutional announcement, not an authored piece) with a
+ * compact caption below carrying only the date + title + optional short
+ * subtitle. A small badge flags when the featured novedad has an attached
+ * video (a YouTube-recognizable external link), matching the promotional
+ * video embed the detail page renders for that case.
  */
-export function TypeHero({ publication, typeSlug, typeName }: TypeHeroProps) {
+export function TypeHero({ publication, typeSlug }: TypeHeroProps) {
   const to = `/publicaciones/${publication.id}`
 
   if (typeSlug === 'novedad') {
+    const hasVideo = findYouTubeLink(publication.externalLinks) != null
     return (
       <section className="foro-novedad-hero">
-        <div className="foro-novedad-hero-inner">
+        <Link className="foro-novedad-hero-media" to={to} aria-hidden tabIndex={-1}>
+          <div className="foro-ph foro-novedad-hero-img">
+            {publication.imageUrl
+              ? <img src={publication.imageUrl} alt="" />
+              : <span>img</span>}
+          </div>
+          {hasVideo && (
+            <span className="foro-novedad-hero-video-badge"><YouTubeMark size={14} /> Video</span>
+          )}
+        </Link>
+        <div className="foro-novedad-hero-caption">
           <span className="foro-strip-eyebrow foro-novedad-hero-eyebrow">Destacada · {typeSlugChannelLabel(typeSlug)}</span>
           <h2><Link to={to}>{publication.title}</Link></h2>
           {publication.subtitle && <p className="foro-standfirst">{publication.subtitle}</p>}
           <span className="foro-novedad-hero-date">{formatForoDate(publication.createdAt)}</span>
-          <Link className="foro-sec-link foro-typehero-cta" to={to}>Leer más →</Link>
+          <Link className="foro-sec-link foro-typehero-cta" to={to}>Ver más →</Link>
         </div>
       </section>
     )
@@ -103,7 +116,6 @@ export function TypeHero({ publication, typeSlug, typeName }: TypeHeroProps) {
       </Link>
       <div className="foro-typehero-body">
         <span className="foro-strip-eyebrow">Destacada · {typeSlugChannelLabel(typeSlug)}</span>
-        <CategoryTag slug={typeSlug} label={typeName} />
         <h2><Link to={to}>{publication.title}</Link></h2>
         {publication.subtitle && <p className="foro-standfirst">{publication.subtitle}</p>}
         <div className="foro-card-meta">

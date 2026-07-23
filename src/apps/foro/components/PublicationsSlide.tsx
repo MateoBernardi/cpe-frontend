@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { CSSProperties, MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import type { Category, PublicationPreview } from '@features/foro'
@@ -52,6 +53,18 @@ export function PublicationsSlide({ open, categories, selectedIds, onToggleCateg
   const { data: types, isLoading: typesLoading } = usePublicationTypes()
   const feeds = usePublicationsByCategories(selectedIds)
 
+  // While the slide covers the viewport, the document's own scrollbar is a
+  // dead strip next to the slide's internal one — lock body scroll for the
+  // duration and restore whatever was there on close/unmount.
+  useEffect(() => {
+    if (!open) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [open])
+
   const anyFeedLoading = feeds.some((f) => f.isLoading)
   const isLoading = selectedIds.length > 0 && (anyFeedLoading || typesLoading)
 
@@ -83,132 +96,133 @@ export function PublicationsSlide({ open, categories, selectedIds, onToggleCateg
         <button
           type="button"
           onClick={onClose}
-          className="text-xs font-mono text-[#1A1A1A] hover:text-[#C04A28] transition-colors flex items-center gap-2 font-bold uppercase tracking-wider"
+          className="text-sm font-medium text-[#1A1A1A] hover:text-[#C04A28] transition-colors flex items-center gap-2"
         >
           ← Volver al mapa
         </button>
-
-        <span className="text-[10px] font-mono tracking-widest text-gray-400 uppercase hidden sm:inline">
-          Publicaciones Curadas
-        </span>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-5 md:px-16 py-8 max-w-6xl mx-auto w-full">
-        {/* SELECTOR DE CONCEPTOS DENTRO DEL SLIDE */}
-        <div className="border-b border-[#E2DFD8] pb-6 mb-8 space-y-4">
-          <h2 className="text-xl md:text-3xl font-serif text-[#1A1A1A]">
-            Lecturas sobre: {selectedNames}
-          </h2>
+      {/* The scroll container spans the full slide width so its scrollbar
+          sits at the viewport edge; the width cap + centering live on the
+          inner wrapper instead. */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="px-5 md:px-16 py-8 max-w-6xl mx-auto w-full">
+          {/* SELECTOR DE CONCEPTOS DENTRO DEL SLIDE */}
+          <div className="border-b border-[#E2DFD8] pb-6 mb-8 space-y-4">
+            <h2 className="text-xl md:text-3xl font-serif text-[#1A1A1A]">
+              Lecturas sobre: {selectedNames}
+            </h2>
 
-          {/* SELECCIÓN Y COMBINACIÓN DE CONCEPTOS */}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span className="text-[10px] font-mono text-gray-400 uppercase w-full sm:w-auto">
-              Combinar conceptos:
-            </span>
-            {categories.map((category) => {
-              const isSelected = selectedIds.includes(category.id)
-              return (
-                <button
-                  type="button"
-                  key={category.id}
-                  onClick={() => onToggleCategory(category.id)}
-                  className={`text-[11px] font-mono px-2.5 py-1 border transition-all ${
-                    isSelected
-                      ? 'bg-[#C04A28] text-white border-[#C04A28] font-bold'
-                      : 'bg-white text-gray-600 border-[#E2DFD8] hover:border-black'
-                  }`}
-                >
-                  {isSelected ? `✓ ${category.name}` : `+ ${category.name}`}
-                </button>
-              )
-            })}
+            {/* SELECCIÓN Y COMBINACIÓN DE CONCEPTOS */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-[10px] font-mono text-gray-400 uppercase w-full sm:w-auto">
+                Combinar conceptos:
+              </span>
+              {categories.map((category) => {
+                const isSelected = selectedIds.includes(category.id)
+                return (
+                  <button
+                    type="button"
+                    key={category.id}
+                    onClick={() => onToggleCategory(category.id)}
+                    className={`text-sm font-medium px-2.5 py-1 border transition-all ${
+                      isSelected
+                        ? 'bg-[#C04A28] text-white border-[#C04A28]'
+                        : 'bg-white text-gray-600 border-[#E2DFD8] hover:border-black'
+                    }`}
+                  >
+                    {isSelected ? `✓ ${category.name}` : `+ ${category.name}`}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* TARJETAS CON PORTADA Y TIPO */}
-        {isLoading ? (
-          <div className="py-16 text-center">
-            <p className="font-mono text-xs text-gray-400 uppercase tracking-widest">Cargando publicaciones…</p>
-          </div>
-        ) : activePublications.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
-            {activePublications.map((pub) => {
-              const type = types?.find((t) => t.id === pub.typeId)
-              const slug = resolveKnownSlug(type)
-              const accent = typeSlugToCssVar(slug)
-              const catStyle = { '--foro-cat': accent } as CSSProperties
-              const dateLabel = pub.createdAt.toLocaleDateString('es-AR', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })
+          {/* TARJETAS CON PORTADA Y TIPO */}
+          {isLoading ? (
+            <div className="py-16 text-center">
+              <p className="font-mono text-xs text-gray-400 uppercase tracking-widest">Cargando publicaciones…</p>
+            </div>
+          ) : activePublications.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
+              {activePublications.map((pub) => {
+                const type = types?.find((t) => t.id === pub.typeId)
+                const slug = resolveKnownSlug(type)
+                const accent = typeSlugToCssVar(slug)
+                const catStyle = { '--foro-cat': accent } as CSSProperties
+                const dateLabel = pub.createdAt.toLocaleDateString('es-AR', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })
 
-              return (
-                <Link
-                  key={pub.id}
-                  to={`/publicaciones/${pub.id}`}
-                  className="bg-white border border-[#E2DFD8] shadow-sm hover:shadow-md transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden"
-                >
-                  <div className="w-full h-32 relative flex flex-col justify-between">
-                    {pub.imageUrl ? (
-                      <img
-                        src={pub.imageUrl}
-                        alt=""
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="foro-ph absolute inset-0 flex items-center justify-center">
-                        <span>img</span>
-                      </div>
-                    )}
-                    <div className="relative z-10 p-4 flex justify-between items-start">
-                      {type && (
-                        <span
-                          className="text-[9px] font-mono font-bold tracking-widest px-2 py-0.5 uppercase text-white"
-                          style={{ backgroundColor: accent }}
-                        >
-                          {type.name}
+                return (
+                  <Link
+                    key={pub.id}
+                    to={`/publicaciones/${pub.id}`}
+                    className="bg-white border border-[#E2DFD8] shadow-sm hover:shadow-md transition-all duration-300 flex flex-col group cursor-pointer overflow-hidden"
+                  >
+                    <div className="w-full h-32 relative flex flex-col justify-between">
+                      {pub.imageUrl ? (
+                        <img
+                          src={pub.imageUrl}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="foro-ph absolute inset-0 flex items-center justify-center">
+                          <span>img</span>
+                        </div>
+                      )}
+                      <div className="relative z-10 p-4 flex justify-between items-start">
+                        {type && (
+                          <span
+                            className="text-[9px] font-mono font-bold tracking-widest px-2 py-0.5 uppercase text-white"
+                            style={{ backgroundColor: accent }}
+                          >
+                            {type.name}
+                          </span>
+                        )}
+                        <span className="text-[9px] font-mono text-white/90 bg-black/40 px-2 py-0.5 backdrop-blur ml-auto">
+                          {dateLabel}
                         </span>
-                      )}
-                      <span className="text-[9px] font-mono text-white/90 bg-black/40 px-2 py-0.5 backdrop-blur ml-auto">
-                        {dateLabel}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-5 flex flex-col flex-1 justify-between gap-4" style={catStyle}>
-                    <div className="space-y-1.5">
-                      <h3 className="font-serif font-semibold text-base md:text-lg text-[#1A1A1A] group-hover:text-[#C04A28] transition-colors leading-snug">
-                        {pub.title}
-                      </h3>
-                      {pub.subtitle && (
-                        <p className="font-sans text-xs text-gray-600 line-clamp-2 leading-relaxed">
-                          «{pub.subtitle}»
-                        </p>
-                      )}
-                      <ChannelLinks links={pub.externalLinks} />
+                      </div>
                     </div>
 
-                    <div className="pt-3 border-t border-gray-100 flex items-center justify-end">
-                      <span className="font-mono text-xs font-bold text-[#1A1A1A] group-hover:text-[#C04A28]">
-                        →
-                      </span>
+                    <div className="p-5 flex flex-col flex-1 justify-between gap-4" style={catStyle}>
+                      <div className="space-y-1.5">
+                        <h3 className="font-serif font-semibold text-base md:text-lg text-[#1A1A1A] group-hover:text-[#C04A28] transition-colors leading-snug">
+                          {pub.title}
+                        </h3>
+                        {pub.subtitle && (
+                          <p className="font-sans text-xs text-gray-600 line-clamp-2 leading-relaxed">
+                            «{pub.subtitle}»
+                          </p>
+                        )}
+                        <ChannelLinks links={pub.externalLinks} />
+                      </div>
+
+                      <div className="pt-3 border-t border-gray-100 flex items-center justify-end">
+                        <span className="font-mono text-xs font-bold text-[#1A1A1A] group-hover:text-[#C04A28]">
+                          →
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="py-16 border border-dashed border-[#E2DFD8] text-center bg-white space-y-3 px-4">
-            <p className="font-serif text-base text-[#1A1A1A]">
-              No hay publicaciones que crucen simultáneamente estos conceptos.
-            </p>
-            <p className="text-xs font-sans text-gray-500">
-              Probá quitar alguno de los conceptos arriba para ampliar los resultados.
-            </p>
-          </div>
-        )}
+                  </Link>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="py-16 border border-dashed border-[#E2DFD8] text-center bg-white space-y-3 px-4">
+              <p className="font-serif text-base text-[#1A1A1A]">
+                No hay publicaciones que crucen simultáneamente estos conceptos.
+              </p>
+              <p className="text-xs font-sans text-gray-500">
+                Probá quitar alguno de los conceptos arriba para ampliar los resultados.
+              </p>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )

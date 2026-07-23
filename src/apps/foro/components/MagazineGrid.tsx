@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import type { PublicationPreview, KnownPublicationTypeSlug } from '@features/foro'
 import { PublicationListItem } from './PublicationListItem'
+import { YouTubeMark } from './PlatformMarks'
 import { formatForoDate } from '../lib/typeStyle'
+import { findYouTubeLink } from '../lib/youtube'
 import './magazine.css'
 
 interface MagazineGridProps {
@@ -11,23 +13,31 @@ interface MagazineGridProps {
 }
 
 /**
- * `.foro-brief-row` — dense news-brief row for the novedad type page: a
- * strong date column, no image, no author (novedades are institutional
- * announcements). Rule-separated, text-first — deliberately unlike the
- * image-led card grid papers/podcasts use below <TypeHero>.
+ * `.foro-novedad-promo-card` — image-dominant promo card for the novedad
+ * type page: a big square image (`imageUrl`, big — previews don't carry a
+ * gallery) with just the date + title underneath. No author, no excerpt —
+ * a novedad reads as a promotional announcement, not an article teaser.
+ * Flags a small video badge when the item's external links include a
+ * YouTube-recognizable URL, mirroring the embedded player on the detail page.
  */
-function NovedadBriefRow({ publication, index }: { publication: PublicationPreview; index: number }) {
+function NovedadPromoCard({ publication }: { publication: PublicationPreview }) {
   const to = `/publicaciones/${publication.id}`
-  const n = String(index).padStart(3, '0')
+  const hasVideo = findYouTubeLink(publication.externalLinks) != null
   return (
-    <article className="foro-brief-row">
-      <div className="foro-brief-date">
-        <span className="foro-idx">N.{n}</span>
-        <span className="foro-brief-day">{formatForoDate(publication.createdAt)}</span>
-      </div>
-      <div className="foro-text">
+    <article className="foro-novedad-promo-card">
+      <Link className="foro-novedad-promo-media" to={to}>
+        <div className="foro-ph foro-novedad-promo-img">
+          {publication.imageUrl
+            ? <img src={publication.imageUrl} alt="" />
+            : <span>img</span>}
+        </div>
+        {hasVideo && (
+          <span className="foro-novedad-promo-video-badge"><YouTubeMark size={12} /> Video</span>
+        )}
+      </Link>
+      <div className="foro-novedad-promo-caption">
+        <span className="foro-novedad-promo-date">{formatForoDate(publication.createdAt)}</span>
         <h3><Link to={to}>{publication.title}</Link></h3>
-        {publication.subtitle && <p className="foro-excerpt">{publication.subtitle}</p>}
       </div>
     </article>
   )
@@ -41,19 +51,19 @@ function NovedadBriefRow({ publication, index }: { publication: PublicationPrevi
  * only adds the grid container and a subtle "first row larger" rhythm.
  * 1 column on mobile, 2–3 on desktop.
  *
- * Novedades switch to `<NovedadBriefRow>`: a denser, text-first
- * announcement list (strong dates, no images, no author) matching
- * <TypeHero>'s distinctive novedad band above it. Renders nothing when the
- * list is empty; the page handles the empty state.
+ * Novedades switch to `<NovedadPromoCard>`: an image-forward poster-wall
+ * grid (big square images, date + title only) matching <TypeHero>'s
+ * media-first novedad band above it. Renders nothing when the list is
+ * empty; the page handles the empty state.
  */
 export function MagazineGrid({ publications, typeSlug, typeName }: MagazineGridProps) {
   if (publications.length === 0) return null
 
   if (typeSlug === 'novedad') {
     return (
-      <div className="foro-brief-list">
-        {publications.map((publication, i) => (
-          <NovedadBriefRow key={publication.id} publication={publication} index={i + 1} />
+      <div className="foro-novedad-promo-grid">
+        {publications.map((publication) => (
+          <NovedadPromoCard key={publication.id} publication={publication} />
         ))}
       </div>
     )

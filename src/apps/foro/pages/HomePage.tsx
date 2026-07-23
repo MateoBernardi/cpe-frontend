@@ -85,7 +85,7 @@ function TypeExperience({ typeId, typeSlug, typeName }: { typeId: number; typeSl
 
   return (
     <div className="foro-wrap">
-      <TypeHero publication={featured} typeSlug={typeSlug} typeName={typeName} />
+      <TypeHero publication={featured} typeSlug={typeSlug} />
       <MagazineGrid publications={rest} typeSlug={typeSlug} typeName={typeName} />
     </div>
   )
