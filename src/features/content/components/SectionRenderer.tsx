@@ -5,15 +5,10 @@ import {
   HeroSection,
   SecondaryHeroSection,
   AboutSection,
-  NewsSection,
-  InfoPrimarySection,
   InfoSecondarySection,
   ContactFormSection,
   ServiceDetailSection,
   RecruitmentFormSection,
-  CircuitSection,
-  GenerationalTransferTeaser,
-  ClinicaEmpresariosTeaser,
 } from './sections'
 
 interface SectionRendererProps {
@@ -25,18 +20,11 @@ const SECTION_LAYOUTS: Record<string, React.ComponentType<{ section: Section }>>
   hero: HeroSection,
   secondary_hero: SecondaryHeroSection,
   about: AboutSection,
-  news: NewsSection,
-  info_primary: InfoPrimarySection,
   info_secondary: InfoSecondarySection,
   contact_form: ContactFormSection,
   service_intervencion: ServiceDetailSection,
   service_seleccion: RecruitmentFormSection,
   service_acompanamiento: ServiceDetailSection,
-  traspaso_generacional: ServiceDetailSection,
-  service_clinica_empresarios: ServiceDetailSection,
-  teaser_circuit: CircuitSection,
-  teaser_clinica: ClinicaEmpresariosTeaser,
-  teaser_traspaso: GenerationalTransferTeaser,
 }
 
 /**

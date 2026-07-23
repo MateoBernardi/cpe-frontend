@@ -17,11 +17,7 @@ import { LoadingSpinner, ErrorMessage } from '@shared/components'
 const PREVIEW_GROUPS = [
   {
     label: 'Página principal',
-    sections: ['hero', 'about', 'teaser_circuit', 'teaser_clinica', 'teaser_traspaso', 'info_primary', 'info_secondary', 'secondary_hero'],
-  },
-  {
-    label: 'Novedades',
-    sections: ['news'],
+    sections: ['hero', 'about', 'info_secondary', 'secondary_hero'],
   },
   {
     label: 'Contacto',
@@ -29,7 +25,7 @@ const PREVIEW_GROUPS = [
   },
   {
     label: 'Servicios',
-    sections: ['service_intervencion', 'service_seleccion', 'service_acompanamiento', 'service_clinica_empresarios', 'traspaso_generacional'],
+    sections: ['service_intervencion', 'service_seleccion', 'service_acompanamiento'],
   },
 ] as const
 

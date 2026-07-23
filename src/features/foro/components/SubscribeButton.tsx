@@ -1,6 +1,6 @@
-import { useState, type MouseEvent } from 'react'
+import { useState, type CSSProperties, type MouseEvent } from 'react'
 import { useForoAuth } from '../auth'
-import '../styles/tokens.css'
+import { colors, fonts } from '../../../theme'
 
 export type SubscribeButtonVariant = 'teal' | 'navy' | 'ghost' | 'light'
 
@@ -14,12 +14,34 @@ export interface SubscribeButtonProps {
 }
 
 /**
+ * Solid coloured-fill CTAs (`teal`/`navy`) keep `rounded-xl` — the design's
+ * one remarked exception to the otherwise square-cornered Foro surfaces.
+ * `ghost`/`light` are quiet variants and stay square.
+ */
+const VARIANT_CLASSNAMES: Record<SubscribeButtonVariant, string> = {
+  teal: 'rounded-xl text-white',
+  navy: 'rounded-xl text-white',
+  ghost: '',
+  light: 'border',
+}
+
+function variantStyle(variant: SubscribeButtonVariant): CSSProperties {
+  switch (variant) {
+    case 'teal':
+      return { backgroundColor: colors.ctaPrimary }
+    case 'navy':
+      return { backgroundColor: colors.blueDark }
+    case 'ghost':
+      return { backgroundColor: `${colors.ctaPrimary}1a`, color: colors.ctaPrimary }
+    case 'light':
+      return { backgroundColor: colors.white, color: colors.ctaPrimary, borderColor: colors.lightGray }
+  }
+}
+
+/**
  * The "intelligent subscription" button:
  * - not authenticated -> opens <ForoAuthDialog/> (via ForoAuthProvider's dialog state)
  * - authenticated -> shows "Cerrar sesión" and calls signOut()
- *
- * Wrapped in `.foro-scope` so it can be dropped into the institutional
- * main/admin chrome without leaking Foro's typography/reset globally.
  */
 export function SubscribeButton({
   className,
@@ -44,19 +66,20 @@ export function SubscribeButton({
     }
   }
 
-  const variantClass = `foro-btn-${variant}`
-
   return (
-    <span className="foro-scope" style={{ display: 'inline-flex' }}>
-      <button
-        type="button"
-        className={['foro-btn', variantClass, 'foro-btn-subscribe', className].filter(Boolean).join(' ')}
-        onClick={handleClick}
-        disabled={isLoading || isSigningOut}
-      >
-        {isAuthenticated ? signedInLabel : signedOutLabel}
-      </button>
-    </span>
+    <button
+      type="button"
+      className={[
+        'inline-flex items-center justify-center gap-2 px-[22px] py-3 text-sm font-semibold transition-transform duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0',
+        VARIANT_CLASSNAMES[variant],
+        className,
+      ].filter(Boolean).join(' ')}
+      style={{ fontFamily: fonts.primary, ...variantStyle(variant) }}
+      onClick={handleClick}
+      disabled={isLoading || isSigningOut}
+    >
+      {isAuthenticated ? signedInLabel : signedOutLabel}
+    </button>
   )
 }
 
