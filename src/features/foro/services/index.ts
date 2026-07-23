@@ -1,0 +1,1 @@
+export { foroService } from './foroService'
