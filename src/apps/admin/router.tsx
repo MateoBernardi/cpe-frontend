@@ -10,9 +10,7 @@ import AdminCandidatesPage from './pages/AdminCandidatesPage'
 import AdminCandidateDetailPage from './pages/AdminCandidateDetailPage'
 import AdminForoGate from './pages/foro/AdminForoGate'
 import AdminForoPublicationsPage from './pages/foro/AdminForoPublicationsPage'
-import AdminForoPublicationFormPage from './pages/foro/AdminForoPublicationFormPage'
 import AdminForoTaxonomyPage from './pages/foro/AdminForoTaxonomyPage'
-import AdminForoDemoPage from './pages/foro/AdminForoDemoPage'
 
 export default function AdminRouter() {
   return (
@@ -29,10 +27,7 @@ export default function AdminRouter() {
             <Route path="/candidates/:id" element={<AdminCandidateDetailPage />} />
             <Route path="/foro" element={<AdminForoGate />}>
               <Route index element={<AdminForoPublicationsPage />} />
-              <Route path="new" element={<AdminForoPublicationFormPage />} />
-              <Route path=":id/edit" element={<AdminForoPublicationFormPage />} />
               <Route path="taxonomy" element={<AdminForoTaxonomyPage />} />
-              <Route path="demo" element={<AdminForoDemoPage />} />
             </Route>
           </Routes>
       </AdminLayout>

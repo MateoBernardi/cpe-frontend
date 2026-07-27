@@ -7,6 +7,13 @@ import {
 } from '@features/foro'
 import { LoadingSpinner, ErrorMessage } from '@shared/components'
 
+/**
+ * Authoring (create/edit) lives in the main app now, at `/perfil/publicar`
+ * and `/perfil/publicaciones/:id/editar` — a different SPA/deployment than
+ * this admin app, so those links are plain `<a>` tags (full navigation),
+ * not `react-router-dom` `<Link>`s.
+ */
+
 export default function AdminForoPublicationsPage() {
   const { data: publications, isLoading, error } = usePublications({ limit: 100 })
   const { data: types } = usePublicationTypes()
@@ -37,23 +44,17 @@ export default function AdminForoPublicationsPage() {
         </div>
         <div className="flex gap-2">
           <Link
-            to="/foro/demo"
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            Instancia de previsualización
-          </Link>
-          <Link
             to="/foro/taxonomy"
             className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
           >
             Categorías y etiquetas
           </Link>
-          <Link
-            to="/foro/new"
+          <a
+            href="/perfil/publicar"
             className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-700"
           >
             Nueva publicación
-          </Link>
+          </a>
         </div>
       </div>
 
@@ -119,12 +120,12 @@ export default function AdminForoPublicationsPage() {
                       </span>
                     ) : (
                       <span className="inline-flex gap-2">
-                        <Link
-                          to={`/foro/${p.id}/edit`}
+                        <a
+                          href={`/perfil/publicaciones/${p.id}/editar`}
                           className="rounded bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100"
                         >
                           Editar
-                        </Link>
+                        </a>
                         <button
                           onClick={() => setConfirmDeleteId(p.id)}
                           className="rounded bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100"

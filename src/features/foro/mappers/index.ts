@@ -6,4 +6,6 @@ export {
   mapPublicationPreviewDTO,
   mapPublicationInputToWriteDTO,
   mapPublicationInputToPatchDTO,
+  mapMyInteractionDTO,
 } from './publicationMapper'
+export { mapUserPreferencesDTO } from './userMapper'

@@ -11,7 +11,33 @@ export interface ForoAuthDialogProps {
   defaultMode?: ForoAuthDialogMode
 }
 
-const inputClass = 'w-full border px-3 py-2.5 text-[14.5px] bg-white focus:outline-none'
+// `normal-case` matters: the wrapping <label> is `uppercase`, and text-transform is
+// inherited by inputs — without this the revealed password renders in capitals that
+// don't match what was actually typed, which makes the reveal toggle a liar.
+const inputClass = 'w-full border px-3 py-2.5 text-[14.5px] normal-case bg-white focus:outline-none'
+
+/** Extra right padding so text never runs under the reveal toggle. */
+const passwordInputClass = `${inputClass} pr-11`
+
+function EyeIcon({ crossed }: { crossed: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={18}
+      height={18}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="2.75" />
+      {crossed && <path d="m4 20 16-16" />}
+    </svg>
+  )
+}
 
 const tabButtonClass = (active: boolean) =>
   [
@@ -20,8 +46,8 @@ const tabButtonClass = (active: boolean) =>
   ].join(' ')
 
 /**
- * Login/signup modal: email+password tabs (sign in / sign up) plus
- * "Continuar con Google" / "Continuar con Apple" social buttons.
+ * Login/signup modal: email+password tabs (sign in / sign up) plus a
+ * "Continuar con Google" social button.
  * Controlled via ForoAuthProvider's context (openAuthDialog()) by default,
  * or via `open`/`onClose` props for a fully controlled usage.
  */
@@ -34,6 +60,8 @@ export function ForoAuthDialog({ open, onClose, defaultMode }: ForoAuthDialogPro
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -56,7 +84,15 @@ export function ForoAuthDialog({ open, onClose, defaultMode }: ForoAuthDialogPro
   if (!isOpen) return null
 
   const resetForm = () => {
-    setName(''); setEmail(''); setPassword(''); setError(null)
+    setName(''); setEmail(''); setPassword(''); setConfirmPassword(''); setShowPassword(false); setError(null)
+  }
+
+  // Switching tabs drops the confirmation and any stale mismatch error — otherwise a
+  // "no coinciden" message from the sign-up tab would linger over the sign-in form.
+  const switchMode = (next: ForoAuthDialogMode) => {
+    setMode(next)
+    setConfirmPassword('')
+    setError(null)
   }
 
   const handleClose = () => {
@@ -67,6 +103,10 @@ export function ForoAuthDialog({ open, onClose, defaultMode }: ForoAuthDialogPro
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
+    if (mode === 'sign-up' && password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.')
+      return
+    }
     setSubmitting(true)
     try {
       if (mode === 'sign-up') {
@@ -117,10 +157,10 @@ export function ForoAuthDialog({ open, onClose, defaultMode }: ForoAuthDialogPro
         </button>
 
         <div className="mb-[22px] flex gap-1 rounded-xl p-1" style={{ backgroundColor: foroPalette.surfaceAlt }}>
-          <button type="button" className={tabButtonClass(mode === 'sign-in')} onClick={() => setMode('sign-in')}>
+          <button type="button" className={tabButtonClass(mode === 'sign-in')} onClick={() => switchMode('sign-in')}>
             Iniciar sesión
           </button>
-          <button type="button" className={tabButtonClass(mode === 'sign-up')} onClick={() => setMode('sign-up')}>
+          <button type="button" className={tabButtonClass(mode === 'sign-up')} onClick={() => switchMode('sign-up')}>
             Crear cuenta
           </button>
         </div>
@@ -152,16 +192,43 @@ export function ForoAuthDialog({ open, onClose, defaultMode }: ForoAuthDialogPro
           </label>
           <label className="flex flex-col gap-1.5 text-[12.5px] font-semibold uppercase tracking-wide" style={{ color: colors.blueDark }}>
             Contraseña
-            <input
-              type="password"
-              className={inputClass}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className={passwordInputClass}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 flex items-center px-3"
+                style={{ color: foroPalette.muted }}
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                aria-pressed={showPassword}
+              >
+                <EyeIcon crossed={showPassword} />
+              </button>
+            </div>
           </label>
+
+          {mode === 'sign-up' && (
+            <label className="flex flex-col gap-1.5 text-[12.5px] font-semibold uppercase tracking-wide" style={{ color: colors.blueDark }}>
+              Repetir contraseña
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className={inputClass}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+              />
+            </label>
+          )}
 
           {error && (
             <p className="rounded-lg px-3 py-2 text-[13px]" style={{ backgroundColor: foroPalette.errorBg, color: foroPalette.errorText }}>
@@ -185,24 +252,14 @@ export function ForoAuthDialog({ open, onClose, defaultMode }: ForoAuthDialogPro
           <span className="h-px flex-1" style={{ backgroundColor: foroPalette.line }} />
         </div>
 
-        <div className="flex flex-col gap-2.5">
-          <button
-            type="button"
-            className="rounded-xl border px-[22px] py-3 text-sm font-semibold hover:[background-color:var(--foro-social-hover-bg)]"
-            style={{ borderColor: colors.lightGray, color: colors.ctaPrimary, '--foro-social-hover-bg': foroPalette.tealTint } as CSSProperties}
-            onClick={() => handleSocial('google')}
-          >
-            Continuar con Google
-          </button>
-          <button
-            type="button"
-            className="rounded-xl border px-[22px] py-3 text-sm font-semibold hover:[background-color:var(--foro-social-hover-bg)]"
-            style={{ borderColor: colors.lightGray, color: colors.ctaPrimary, '--foro-social-hover-bg': foroPalette.tealTint } as CSSProperties}
-            onClick={() => handleSocial('apple')}
-          >
-            Continuar con Apple
-          </button>
-        </div>
+        <button
+          type="button"
+          className="block w-full rounded-xl border px-[22px] py-3 text-sm font-semibold hover:[background-color:var(--foro-social-hover-bg)]"
+          style={{ borderColor: colors.lightGray, color: colors.ctaPrimary, '--foro-social-hover-bg': foroPalette.tealTint } as CSSProperties}
+          onClick={() => handleSocial('google')}
+        >
+          Continuar con Google
+        </button>
       </div>
     </div>,
     document.body,

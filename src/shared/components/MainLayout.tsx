@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, type ReactNode, type MouseEve
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { contentKeys, contentService } from '@features/content'
-import { INTERACCIONES_SECTIONS } from '@features/content/components/foro'
+import { INTERACCIONES_SECTIONS, HeaderProfileButton } from '@features/content/components/foro'
 import WhatsAppFab from './WhatsAppFab'
 import LoadingSpinner from './LoadingSpinner'
 import { useSmoothScroll } from '@shared/hooks'
@@ -533,6 +533,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
               </svg>
             </button>
+            <HeaderProfileButton headerActive={headerActive} />
           </nav>
 
           <button type="button" onClick={() => setMobileOpen(!mobileOpen)}
@@ -561,6 +562,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   ? renderNavLink(item, 'block w-full text-center')
                   : renderMobileDropdown(item)
               ))}
+              <div className="w-full">
+                <HeaderProfileButton headerActive={headerActive} onNavigate={() => setMobileOpen(false)} />
+              </div>
               <div className="mt-2 grid grid-cols-5 gap-2">
                 <a
                   href={INSTAGRAM_URL}
@@ -687,14 +691,29 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <WhatsAppFab />
 
       <footer id="footer" style={{ backgroundColor: colors.footerBg, color: colors.footerText }}>
-        <div className={`${layout.container} py-6 md:py-8`}>
-          <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:gap-6 sm:text-left">
-            <img src="/cpeLogo.png" alt="CPE Logo" className="h-8 w-auto flex-shrink-0 brightness-0 invert sm:h-9" />
+        <div className={`${layout.container} py-10 md:py-14`}>
+          <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:justify-between sm:gap-10 sm:text-left">
+            {/* cpeLogo.png es un lienzo 1080x1350 con la marca real de 558x206
+                centrada — el 85% del alto es transparente. Por eso `h-8` lo
+                dejaba en una mota: la caja medía 25px y la marca era una
+                fracción de eso. Acá se recorta al bbox real (misma técnica que
+                el circuito) en vez de agrandar la img y desbordarla como hace
+                el header. */}
+            <div className="relative aspect-[558/206] h-8 shrink-0 overflow-hidden sm:h-10">
+              <img
+                src="/cpeLogo.png"
+                alt="CPE Logo"
+                className="absolute left-[-47.13%] top-[-277.18%] h-[655.34%] w-[193.55%] max-w-none brightness-0 invert"
+              />
+            </div>
 
-            <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs opacity-70 sm:text-sm">
+            {/* 2x2: mail y teléfono apilados en la columna izquierda, política de
+                privacidad centrada contra ambos en la derecha. `grid-flow-col`
+                es lo que llena por columna en vez de por fila. */}
+            <ul className="grid grid-flow-col grid-cols-2 grid-rows-2 gap-x-10 gap-y-2 text-xs opacity-70 sm:text-sm">
               <li><a href="mailto:contacto@clinicaparaempresas.com" className="transition-colors hover:text-white">contacto@clinicaparaempresas.com</a></li>
               <li><a href="tel:+5493512180273" className="transition-colors hover:text-white">+54 9 351 218-0273</a></li>
-              <li><Link to="/politica-de-privacidad" className="transition-colors hover:text-white">Política de privacidad</Link></li>
+              <li className="row-span-2 self-start"><Link to="/politica-de-privacidad" className="transition-colors hover:text-white">Política de privacidad</Link></li>
             </ul>
 
             <div className="flex flex-shrink-0 items-center gap-3">

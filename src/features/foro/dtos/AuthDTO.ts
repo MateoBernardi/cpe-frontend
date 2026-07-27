@@ -43,3 +43,14 @@ export interface SignInSocialResponseDTO {
   url: string
   redirect?: boolean
 }
+
+/** POST /auth/update-user body (Better Auth). Only `name` is wired up today; `image` typed for future avatar support. */
+export interface UpdateUserDTO {
+  name?: string
+  image?: string
+}
+
+/** POST /auth/update-user response (Better Auth). */
+export interface UpdateUserResponseDTO {
+  status: boolean
+}

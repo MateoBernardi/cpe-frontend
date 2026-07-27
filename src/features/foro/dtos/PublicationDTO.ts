@@ -24,6 +24,8 @@ export interface PublicationDTO {
   /** MAP on read: `{ [label]: url }` */
   external_links?: Record<string, string>
   images?: PublicationImageDTO[]
+  /** Draft vs. published. Being added on the backend in parallel — optional until it lands. */
+  status?: 'draft' | 'published'
 }
 
 /** GET /publications — list item (preview) */
@@ -42,12 +44,15 @@ export interface PublicationPreviewDTO {
    * render nothing (never crash). Surfaced for podcast channel chips.
    */
   external_links?: Record<string, string>
+  /** Draft vs. published. Being added on the backend in parallel — optional until it lands. */
+  status?: 'draft' | 'published'
 }
 
 /** Query params for GET /publications (all optional; numeric coercion done server-side) */
 export interface ListPublicationsQueryDTO {
   type_id?: number
   category_id?: number
+  created_by?: string
   limit?: number
   offset?: number
 }
@@ -69,7 +74,17 @@ export interface PublicationWriteDTO {
   category_ids?: number[]
   external_links?: ExternalLinkWriteDTO[]
   image_ids?: number[]
+  status?: 'draft' | 'published'
 }
 
-/** Partial variant for PATCH /publications/:id */
-export type PublicationPatchDTO = Partial<PublicationWriteDTO>
+/**
+ * Partial variant for PATCH /publications/:id. `subtitle` / `front_image_url`
+ * / `type_id` additionally accept an explicit `null` (backend-supported) so a
+ * previously-set value can be cleared — distinct from the key being omitted
+ * entirely, which leaves the field unchanged.
+ */
+export type PublicationPatchDTO = Partial<Omit<PublicationWriteDTO, 'subtitle' | 'front_image_url' | 'type_id'>> & {
+  subtitle?: string | null
+  front_image_url?: string | null
+  type_id?: number | null
+}

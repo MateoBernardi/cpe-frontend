@@ -82,28 +82,15 @@ export function bylineFor(createdBy: string, slug: KnownPublicationTypeSlug | nu
   return displayByline(createdBy) ?? GENERIC_BYLINE
 }
 
-const WORDS_PER_MINUTE = 200
-
-/** "N min de lectura" derived from word count — the API has no reading-time field. */
-export function readingTimeLabel(content: string): string {
-  const words = content.trim().split(/\s+/).filter(Boolean).length
-  const minutes = Math.max(1, Math.round(words / WORDS_PER_MINUTE))
-  return `${minutes} min de lectura`
-}
-
 /**
  * The detail hero's secondary meta slot (clock icon), per format:
- *  - paper / novedad: reading time derived from `content` word count.
  *  - discusión: reply count when the backend sent one, else a generic
  *    "Ver conversación" label — never a fabricated number.
- *  - podcast: always `null`. The API has no episode-duration field, so a
- *    "listening time" is never invented; the slot is simply omitted.
+ *  - every other format (paper / novedad / podcast): always `null` — the
+ *    slot is only meaningful for discusiones.
  */
 export function heroMetaValue(slug: KnownPublicationTypeSlug | null, publication: Publication): string | null {
   switch (slug) {
-    case 'paper':
-    case 'novedad':
-      return readingTimeLabel(publication.content)
     case 'discusion': {
       const n = publication.interactions?.comments
       return n != null && n > 0 ? `${n} respuestas` : 'Ver conversación'

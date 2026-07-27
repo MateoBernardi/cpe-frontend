@@ -1,4 +1,4 @@
-import type { ListPublicationsParams } from '../models'
+import type { ListPublicationsParams, ListMyInteractionsParams } from '../models'
 
 /** Query-key factory for the Foro feature (mirrors `contentKeys`). */
 export const foroKeys = {
@@ -12,4 +12,7 @@ export const foroKeys = {
   publication: (id: number) => [...foroKeys.all, 'publication', id] as const,
   interactions: (publicationId: number, typeId?: number) =>
     [...foroKeys.all, 'interactions', publicationId, typeId ?? null] as const,
+  myInteractions: (params: ListMyInteractionsParams) =>
+    [...foroKeys.all, 'my-interactions', params] as const,
+  userPreferences: () => [...foroKeys.all, 'user-preferences'] as const,
 }

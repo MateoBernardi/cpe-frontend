@@ -1,6 +1,8 @@
 import type { KnownPublicationTypeSlug, Publication, PublicationPreview, PublicationType } from '@features/foro'
-import { PublicationDetail, DiscussionDetail, typeAccent } from '@features/content/components/foro'
-import { foroHairline } from '@/theme'
+import { PublicationDetail } from './PublicationDetail'
+import { DiscussionDetail } from './DiscussionDetail'
+import { typeAccent } from './foroHelpers'
+import { foroHairline } from '../../../../theme'
 
 interface ComposePreviewPaneProps {
   publication: Publication

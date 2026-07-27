@@ -15,6 +15,7 @@ export function usePublications(params?: ListPublicationsParams) {
         {
           type_id: params?.typeId,
           category_id: params?.categoryId,
+          created_by: params?.createdBy,
           limit: params?.limit,
           offset: params?.offset,
         },
@@ -41,6 +42,7 @@ export function useInfinitePublications(
         {
           type_id: params?.typeId,
           category_id: params?.categoryId,
+          created_by: params?.createdBy,
           limit: pageSize,
           offset: pageParam,
         },

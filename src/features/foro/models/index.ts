@@ -7,7 +7,8 @@ export { resolveKnownSlug } from './PublicationType'
 export type { Category } from './Category'
 export type { Tag } from './Tag'
 export type { ForoImage } from './ForoImage'
-export type { InteractionCounts, Interaction } from './Interaction'
+export type { InteractionCounts, Interaction, MyInteraction, ListMyInteractionsParams } from './Interaction'
+export type { UserPreferences } from './UserPreferences'
 
 export type {
   ExternalLink,

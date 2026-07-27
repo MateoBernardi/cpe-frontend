@@ -3,6 +3,8 @@ import { useComments, useCommentMutations } from '@features/foro'
 import { DetailShell } from './DetailShell'
 import { CommentList } from './CommentList'
 import { CommentComposer } from './CommentComposer'
+import { Prose } from './Prose'
+import { Gallery } from './Gallery'
 import { colors } from '../../../../theme'
 
 interface DiscussionDetailProps {
@@ -26,10 +28,12 @@ interface DiscussionDetailProps {
  *
  * `<DetailShell>` supplies the hero (title/meta/share/save), reading-progress
  * bar and the share/related sidebar — this only renders the OP body + the
- * comment thread. Discusiones have no cover image, so the hero falls back to
- * an accent gradient (`<ArticleHero>`'s own handling), and their "share"
- * card/related list work exactly like the other three formats — the save
- * and sharing affordances are the same everywhere.
+ * comment thread. Discusiones can have a cover image and a gallery like the
+ * other formats: `<ArticleHero>` renders `imageUrl` when present (falling
+ * back to an accent gradient otherwise), and `<Gallery>` renders `images[]`
+ * below the body. Their "share" card/related list work exactly like the
+ * other three formats — the save and sharing affordances are the same
+ * everywhere.
  */
 export function DiscussionDetail({ publication, typeName, related, preview = false }: DiscussionDetailProps) {
   const { data: comments, isLoading } = useComments(publication.id)
@@ -40,9 +44,8 @@ export function DiscussionDetail({ publication, typeName, related, preview = fal
   return (
     <DetailShell publication={publication} slug="discusion" typeName={typeName} related={related}>
       <article>
-        <div className="space-y-5 text-base leading-relaxed text-gray-700">
-          {publication.content.split(/\n{2,}/).filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
-        </div>
+        <Prose content={publication.content} />
+        <Gallery images={publication.images} />
 
         <h3 className="font-primary mb-2 mt-10 border-b border-gray-100 pb-3 text-lg font-bold" style={{ color: colors.blueDark }}>
           {replyCount} respuestas

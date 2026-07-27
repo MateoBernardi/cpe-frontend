@@ -33,13 +33,13 @@ export default function InfoSecondarySection({ section }: Props) {
   return (
     <section
       ref={viewRef}
-      className="overflow-hidden lg:flex lg:flex-col lg:h-screen lg:supports-[height:100dvh]:h-[100dvh] pt-[6vh] sm:pt-[8vh] md:pt-[9vh] lg:pt-[10vh] pb-[4vh] sm:pb-[5vh] md:pb-[6vh]"
+      className="overflow-hidden lg:flex lg:flex-col lg:h-screen lg:supports-[height:100dvh]:h-[100dvh] pt-[4vh] sm:pt-[5vh] md:pt-[6vh] lg:pt-[6vh] pb-[4vh] sm:pb-[5vh] md:pb-[6vh]"
       style={{ backgroundColor: colors.infoSecondaryBg }}
     >
       <div className={`${layout.container} lg:flex lg:flex-1 lg:min-h-0 lg:flex-col`}>
         {heading && (
           <h2
-            className={`${layout.headingMb} lg:mb-[2vh] lg:flex-shrink-0 text-center text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl transition-all duration-700 font-primary ${
+            className={`mb-[5vh] sm:mb-[7vh] md:mb-[9vh] lg:mb-[6vh] lg:flex-shrink-0 text-center text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl transition-all duration-700 font-primary ${
               isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
             }`}
             style={{ color: colors.blueDark }}
@@ -106,18 +106,28 @@ export default function InfoSecondarySection({ section }: Props) {
           <div className="flex flex-col items-center lg:min-h-0 lg:justify-start">
             <div
               ref={diagramRef}
-              className="relative mx-auto w-full aspect-[810/1012] max-w-[320px] overflow-hidden sm:max-w-[400px] md:max-w-[460px] lg:w-auto lg:max-w-full lg:flex-1 lg:min-h-0"
+              className="relative mx-auto w-full aspect-[596/720] max-w-[236px] overflow-hidden sm:max-w-[294px] md:max-w-[339px] lg:w-auto lg:max-w-full lg:flex-1 lg:min-h-0 lg:-top-[5vh]"
               style={{
                 opacity: 0.1 + ease * 0.9,
                 transform: `scale(${0.88 + ease * 0.12})`,
                 transition: 'opacity 0.1s, transform 0.1s',
                 backgroundColor: colors.infoSecondaryBg,
+                transformOrigin: 'top center',
               }}
             >
+              {/* El asset trae aire propio: su viewBox es 810x1012.5 pero el
+                  dibujo real vive en (107,146)-(703,866) — o sea ~14% de lienzo
+                  vacío arriba y abajo. Por eso `object-top` no servía: el lienzo
+                  ya llenaba la caja y el hueco estaba adentro de la imagen. Se
+                  recorta acá, escalando la img y corriéndola con offsets
+                  negativos, para no tocar el SVG (que se reexporta desde diseño).
+                  La caja queda con el aspecto del dibujo, así su borde superior
+                  se alinea con el primer collapsible y los hotspots de abajo
+                  siguen midiéndose en % sobre el dibujo recortado. */}
               <img
                 src="/CPE%20%20POST.svg"
                 alt="Circuito integrado de acción"
-                className="block h-full w-full select-none object-contain mix-blend-multiply"
+                className="absolute left-[-17.95%] top-[-20.28%] block h-[140.63%] w-[135.91%] max-w-none select-none object-contain mix-blend-multiply"
                 loading="lazy"
                 draggable={false}
               />
@@ -127,7 +137,7 @@ export default function InfoSecondarySection({ section }: Props) {
                 type="button"
                 aria-label="Intervención directa"
                 onClick={handleNavigate('/servicios/intervencion-directa')}
-                className="absolute left-1/2 top-[20%] h-[25%] w-[55%] -translate-x-1/2 bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="absolute left-[12.6%] top-[7.8%] h-[35.2%] w-[74.8%] bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               />
 
               {/* Selección de Personal (Cuadrado inferior izquierdo) */}
@@ -135,7 +145,7 @@ export default function InfoSecondarySection({ section }: Props) {
                 type="button"
                 aria-label="Selección de personal"
                 onClick={handleNavigate('/servicios/seleccion-de-personal')}
-                className="absolute left-[15%] top-[40%] h-[40%] w-[30%] bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="absolute left-[2.4%] top-[36%] h-[56.2%] w-[40.8%] bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               />
 
               {/* Acompañamiento a las personas (Cuadrado inferior derecho) */}
@@ -143,7 +153,7 @@ export default function InfoSecondarySection({ section }: Props) {
                 type="button"
                 aria-label="Acompañamiento a las personas"
                 onClick={handleNavigate('/servicios/acompanamiento')}
-                className="absolute right-[5%] top-[50%] h-[30%] w-[50%] bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="absolute left-[43.2%] top-[50%] h-[42.2%] w-[56.8%] bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               />
             </div>
 

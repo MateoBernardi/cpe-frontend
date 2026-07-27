@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useMultipleSectionsViewModel } from '@features/content/viewmodels'
+import { ChevronRight } from '../foro/ForoIcons'
 import { textByRole, textsByRole } from './sectionHelpers'
 import { colors, layout } from '../../../../theme'
 
@@ -114,7 +115,7 @@ export default function ServicesAccessSection() {
             <Link
               key={service.section}
               to={service.to}
-              className="group relative flex flex-col items-start gap-4 p-6 text-left transition-all duration-300 ease-out hover:-translate-y-1 hover:rounded-2xl hover:bg-white hover:shadow-xl focus-visible:-translate-y-1 focus-visible:rounded-2xl focus-visible:bg-white focus-visible:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 sm:p-8"
+              className="group relative h-full flex flex-col items-start gap-4 p-6 text-left transition-all duration-300 ease-out hover:-translate-y-1 hover:rounded-2xl hover:bg-white hover:shadow-xl focus-visible:-translate-y-1 focus-visible:rounded-2xl focus-visible:bg-white focus-visible:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 sm:p-8"
               style={{ color: colors.tealDeep }}
             >
               <span
@@ -129,10 +130,13 @@ export default function ServicesAccessSection() {
               <p className="text-sm leading-relaxed" style={{ color: colors.blueMid }}>
                 {service.description}
               </p>
-              <span className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold">
+              <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold">
                 Conocé más
-                <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
-                  →
+                {/* Mismo chevron que las previews de publicaciones (`FeaturedCard`,
+                    `PublicationListItem`) en vez de una flecha "→", para que el
+                    intención de "seguir leyendo" se lea igual en todo el sitio. */}
+                <span aria-hidden="true" className="inline-flex transition-transform duration-300 group-hover:translate-x-1">
+                  <ChevronRight size={16} />
                 </span>
               </span>
             </Link>

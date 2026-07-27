@@ -1,3 +1,5 @@
+import type { PublicationPreview } from './Publication'
+
 export interface InteractionCounts {
   saves: number | null
   visits: number | null
@@ -16,4 +18,19 @@ export interface Interaction {
   imageIds: number[] | null
   createdAt: Date
   updatedAt: Date | null
+}
+
+/** GET /interactions/me — one of the current user's interactions, with the publication it targets. */
+export interface MyInteraction {
+  id: number
+  typeId: number
+  content: string | null
+  createdAt: Date
+  publication: PublicationPreview
+}
+
+export interface ListMyInteractionsParams {
+  typeId: number
+  limit?: number
+  offset?: number
 }

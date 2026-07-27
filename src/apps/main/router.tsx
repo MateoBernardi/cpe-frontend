@@ -9,6 +9,10 @@ import AcompanamientoPage from './pages/AcompanamientoPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import InteraccionSeccionPage from './pages/foro/InteraccionSeccionPage'
 import PublicacionPage from './pages/foro/PublicacionPage'
+import ProfileGate from './pages/perfil/ProfileGate'
+import ProfilePage from './pages/perfil/ProfilePage'
+import PublicarPage from './pages/perfil/PublicarPage'
+import EditarPublicacionPage from './pages/perfil/EditarPublicacionPage'
 
 export default function MainRouter() {
   return (
@@ -26,6 +30,17 @@ export default function MainRouter() {
           <Route path="/interacciones" element={<Navigate to={DEFAULT_INTERACCION_ROUTE} replace />} />
           <Route path="/interacciones/:seccion" element={<InteraccionSeccionPage />} />
           <Route path="/publicaciones/:id" element={<PublicacionPage />} />
+          <Route path="/perfil" element={<ProfileGate />}>
+            <Route index element={<ProfilePage />} />
+            {/* Static segments outrank the dynamic `:panel` below in React
+                Router's route-ranking algorithm, so these two win the match
+                against `/perfil/publicar` and `/perfil/publicaciones` even
+                though `:panel` is also declared here — declared first only
+                for readability, not because order affects the match. */}
+            <Route path="publicar" element={<PublicarPage />} />
+            <Route path="publicaciones/:id/editar" element={<EditarPublicacionPage />} />
+            <Route path=":panel" element={<ProfilePage />} />
+          </Route>
         </Routes>
       </MainLayout>
     </BrowserRouter>

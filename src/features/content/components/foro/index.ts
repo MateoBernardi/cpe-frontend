@@ -16,6 +16,7 @@ export { DiscussionDetail } from './DiscussionDetail'
 export { ExternalLinksCTA } from './ExternalLinksCTA'
 export { ArticleHero } from './ArticleHero'
 export { FeaturedCard } from './FeaturedCard'
+export { Gallery } from './Gallery'
 export { HeaderProfileButton } from './HeaderProfileButton'
 export { LatestList } from './LatestList'
 export { YouTubeMark } from './PlatformMarks'
@@ -26,6 +27,10 @@ export { ShareButton, ShareIconRow } from './ShareButtons'
 export { SpotifyLink } from './SpotifyLink'
 export { TagList } from './TagList'
 export { Prose } from './Prose'
+export { ComposePreviewPane } from './ComposePreviewPane'
+export { TYPE_OPTIONS, TYPE_CONFIG, MAX_NOVEDAD_IMAGES } from './composeConfig'
+export type { CoverMode, TypeFieldConfig } from './composeConfig'
+export { PublicationComposer } from './PublicationComposer'
 
 export {
   typeAccent,
@@ -35,7 +40,6 @@ export {
   displayByline,
   GENERIC_BYLINE,
   bylineFor,
-  readingTimeLabel,
   heroMetaValue,
   previewMetaLine,
   latestListHeading,

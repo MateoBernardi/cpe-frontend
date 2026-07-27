@@ -112,6 +112,15 @@ export function MicIcon({ size = 18, className }: IconProps) {
   )
 }
 
+export function UserIcon({ size = 18, className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.75} className={className} aria-hidden="true">
+      <circle cx="12" cy="8" r="3.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 20c0-3.7 3.13-6 7-6s7 2.3 7 6" />
+    </svg>
+  )
+}
+
 // ── Share row icons (LinkedIn / X / WhatsApp / email / copy) ──
 // Rendered monochrome (never the platforms' brand colors — only Spotify/
 // YouTube are the documented brand-color exception, see `platformColors`).

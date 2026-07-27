@@ -21,6 +21,8 @@ export interface Publication {
   interactions: InteractionCounts | null
   externalLinks: ExternalLink[]
   images: ForoImage[]
+  /** Draft vs. published. Defaults to `'published'` if the backend omits it. */
+  status: 'draft' | 'published'
 }
 
 /** List item — GET /publications */
@@ -39,23 +41,30 @@ export interface PublicationPreview {
    * not include `external_links` — consumers render nothing in that case.
    */
   externalLinks?: ExternalLink[]
+  /** Draft vs. published. Defaults to `'published'` if the backend omits it. */
+  status: 'draft' | 'published'
 }
 
 export interface ListPublicationsParams {
   typeId?: number
   categoryId?: number
+  createdBy?: string
   limit?: number
   offset?: number
 }
 
 export interface PublicationInput {
   title: string
-  subtitle?: string
-  frontImageUrl?: string
+  /** `null` explicitly clears the field on PATCH; `undefined` leaves it unset/unchanged. */
+  subtitle?: string | null
+  /** `null` explicitly clears the field on PATCH; `undefined` leaves it unset/unchanged. */
+  frontImageUrl?: string | null
   content: string
-  typeId?: number
+  /** `null` explicitly clears the field on PATCH; `undefined` leaves it unset/unchanged. */
+  typeId?: number | null
   tagIds?: number[]
   categoryIds?: number[]
   externalLinks?: ExternalLink[]
   imageIds?: number[]
+  status?: 'draft' | 'published'
 }

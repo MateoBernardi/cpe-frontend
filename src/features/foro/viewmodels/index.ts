@@ -20,3 +20,8 @@ export {
   useCommentMutations,
   useInteractionToggle,
 } from './useCommentsViewModel'
+export {
+  useMyInteractions,
+  useUserPreferences,
+  useUpdateUser,
+} from './useProfileViewModel'

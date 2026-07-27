@@ -20,7 +20,9 @@ export default class ErrorBoundary extends Component<Props, State> {
     this.state = { hasError: false }
   }
 
-  static getDerivedStateFromError(_error: Error): State {
+  // React passes the error here, but only the flag is needed — the value is
+  // logged in componentDidCatch. Declaring no parameter keeps the linter happy.
+  static getDerivedStateFromError(): State {
     return { hasError: true }
   }
 

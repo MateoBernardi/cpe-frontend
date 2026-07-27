@@ -9,6 +9,8 @@ export type {
   ForoSocialProvider,
   SignInSocialDTO,
   SignInSocialResponseDTO,
+  UpdateUserDTO,
+  UpdateUserResponseDTO,
 } from './AuthDTO'
 
 export type { PublicationTypeDTO } from './PublicationTypeDTO'
@@ -41,4 +43,8 @@ export type {
   CreateInteractionDTO,
   PatchInteractionDTO,
   InteractionDTO,
+  ListMyInteractionsQueryDTO,
+  MyInteractionDTO,
 } from './InteractionDTO'
+
+export type { UserPreferencesDTO, UpdateUserPreferencesDTO } from './UserPreferencesDTO'

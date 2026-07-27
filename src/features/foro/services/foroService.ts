@@ -20,10 +20,16 @@ import type {
   CreateInteractionDTO,
   PatchInteractionDTO,
   InteractionDTO,
+  ListMyInteractionsQueryDTO,
+  MyInteractionDTO,
   RequestImageUploadUrlDTO,
   ImageUploadUrlResponseDTO,
   ConfirmImageDTO,
   ConfirmImageResponseDTO,
+  UserPreferencesDTO,
+  UpdateUserPreferencesDTO,
+  UpdateUserDTO,
+  UpdateUserResponseDTO,
 } from '../dtos'
 
 function buildQuery(params: Record<string, string | number | undefined>): string {
@@ -82,6 +88,15 @@ export const foroService = {
     })
   },
 
+  /** POST /auth/update-user — Better Auth profile update; only `name` is used today. */
+  updateUser(data: UpdateUserDTO) {
+    return foroApiRequest<UpdateUserResponseDTO, UpdateUserDTO>({
+      method: 'POST',
+      endpoint: '/auth/update-user',
+      body: data,
+    })
+  },
+
   // ── Publications ──
 
   /** GET /publications — public. All query params optional. */
@@ -89,6 +104,7 @@ export const foroService = {
     const qs = buildQuery({
       type_id: query?.type_id,
       category_id: query?.category_id,
+      created_by: query?.created_by,
       limit: query?.limit,
       offset: query?.offset,
     })
@@ -257,6 +273,20 @@ export const foroService = {
     })
   },
 
+  /** GET /interactions/me?type_id=&limit=&offset= — current user's own interactions, each with its publication preview. */
+  getMyInteractions(query: ListMyInteractionsQueryDTO, signal?: AbortSignal) {
+    const qs = buildQuery({
+      type_id: query.type_id,
+      limit: query.limit,
+      offset: query.offset,
+    })
+    return foroApiRequest<MyInteractionDTO[]>({
+      method: 'GET',
+      endpoint: `/interactions/me${qs}`,
+      signal,
+    })
+  },
+
   // ── Images (role publisher|admin) — Cloudflare Images direct upload, 3 steps ──
 
   /** Step 1: POST /images/upload-url, body `{}`. */
@@ -304,5 +334,25 @@ export const foroService = {
     const { upload_url, image_id } = await foroService.requestImageUploadUrl()
     await foroService.uploadImageToCloudflare(upload_url, file)
     return foroService.confirmImage({ image_id, alt_text: altText })
+  },
+
+  // ── User preferences (contract only — backend route not implemented yet) ──
+
+  /** GET /users/me/preferences — see useUserPreferences for 404 handling. */
+  getUserPreferences(signal?: AbortSignal) {
+    return foroApiRequest<UserPreferencesDTO>({
+      method: 'GET',
+      endpoint: '/users/me/preferences',
+      signal,
+    })
+  },
+
+  /** PATCH /users/me/preferences — same not-yet-implemented caveat as above. */
+  updateUserPreferences(data: UpdateUserPreferencesDTO) {
+    return foroApiRequest<UserPreferencesDTO, UpdateUserPreferencesDTO>({
+      method: 'PATCH',
+      endpoint: '/users/me/preferences',
+      body: data,
+    })
   },
 }

@@ -2,20 +2,13 @@ import { Link } from 'react-router-dom'
 import type { PublicationPreview, KnownPublicationTypeSlug } from '@features/foro'
 import { CategoryTag } from './CategoryTag'
 import { ChatBubbleIcon, ChevronRight } from './ForoIcons'
-import { formatForoDate, typeAccent, bylineFor, readingTimeLabel, hexToRgba } from './foroHelpers'
+import { formatForoDate, typeAccent, bylineFor, hexToRgba } from './foroHelpers'
 import { colors } from '../../../../theme'
 
 interface FeaturedCardProps {
   preview: PublicationPreview
   typeSlug: KnownPublicationTypeSlug | null
   typeName: string
-  /**
-   * The publication's full body, fetched separately once it resolves
-   * (`PublicationPreview` carries no `content`, so reading time can't be
-   * derived from the list payload alone). Until it loads, the reading-time
-   * slot is simply omitted rather than guessed.
-   */
-  content?: string
 }
 
 /** Generic image glyph for the card's cover when there is no `imageUrl`. */
@@ -38,7 +31,7 @@ function ImagePlaceholderIcon({ accent }: { accent: string }) {
  * to an accent-tinted panel with the format's chat-bubble glyph instead of a
  * photo, keeping the same card shape as the other three formats.
  */
-export function FeaturedCard({ preview, typeSlug, typeName, content }: FeaturedCardProps) {
+export function FeaturedCard({ preview, typeSlug, typeName }: FeaturedCardProps) {
   const to = `/publicaciones/${preview.id}`
   const accent = typeAccent(typeSlug)
   const isDiscusion = typeSlug === 'discusion'
@@ -48,9 +41,7 @@ export function FeaturedCard({ preview, typeSlug, typeName, content }: FeaturedC
     ? (preview.interactions?.comments != null && preview.interactions.comments > 0
       ? `${preview.interactions.comments} respuestas`
       : 'Ver conversación')
-    : (typeSlug === 'paper' || typeSlug === 'novedad') && content
-      ? readingTimeLabel(content)
-      : null
+    : null
 
   return (
     <Link

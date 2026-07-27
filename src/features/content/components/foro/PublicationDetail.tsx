@@ -4,6 +4,7 @@ import { DetailShell } from './DetailShell'
 import { TagList } from './TagList'
 import { ExternalLinksCTA } from './ExternalLinksCTA'
 import { Prose } from './Prose'
+import { Gallery } from './Gallery'
 import { formatForoDate, interactionRows, getYouTubeEmbedUrl } from './foroHelpers'
 import { colors } from '../../../../theme'
 
@@ -12,46 +13,6 @@ interface PublicationDetailProps {
   type: PublicationType | undefined
   slug: Exclude<KnownPublicationTypeSlug, 'discusion'>
   related: PublicationPreview[]
-}
-
-/**
- * Podcast episode's primary "listen" unit: the episode cover art beside its
- * listen CTA (`<ExternalLinksCTA>`, Spotify/YouTube) so the artwork and the
- * action read as one prominent module instead of the cover living only in
- * the hero, disconnected from the links further down. Cover left / CTA right
- * on desktop, stacked on mobile. Falls back to the plain CTA (no cover
- * frame) when the episode has no `imageUrl`.
- */
-function PodcastListenUnit({ publication, ctaLabel }: { publication: Publication; ctaLabel: string }) {
-  if (publication.externalLinks.length === 0) return null
-
-  const cta = <ExternalLinksCTA label={ctaLabel} title={publication.title} links={publication.externalLinks} />
-
-  if (!publication.imageUrl) {
-    return <div className="mb-7 max-w-md">{cta}</div>
-  }
-
-  return (
-    <div className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-stretch">
-      <div className="mx-auto aspect-square w-40 shrink-0 overflow-hidden rounded-2xl shadow-md ring-1 ring-slate-200/60 sm:mx-0 sm:w-44">
-        <img src={publication.imageUrl} alt="" aria-hidden="true" className="h-full w-full object-cover" />
-      </div>
-      <div className="min-w-0 flex-1">{cta}</div>
-    </div>
-  )
-}
-
-function Gallery({ images }: { images: Publication['images'] }) {
-  if (!images || images.length === 0) return null
-  return (
-    <div className="my-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
-      {images.map((img) => (
-        <div key={img.id} className="aspect-[4/3] overflow-hidden rounded-xl ring-1 ring-slate-200/60">
-          <img src={img.url} alt={img.altText ?? ''} className="h-full w-full object-cover" />
-        </div>
-      ))}
-    </div>
-  )
 }
 
 /**
