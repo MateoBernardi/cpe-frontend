@@ -36,6 +36,14 @@ export type ForoSocialProvider = 'google'
 
 export interface SignInSocialDTO {
   provider: ForoSocialProvider
+  /**
+   * A dónde vuelve el usuario después de autorizar en Google. **No es opcional
+   * en la práctica**: si no se manda, el callback de Better Auth entra en
+   * `if (!callbackURL) redirectOnError(..., 'no_callback_url')` y el usuario
+   * termina en la página de error del BACKEND en vez de volver a la app.
+   * Better Auth lo valida contra `trustedOrigins` (= ALLOWED_ORIGINS).
+   */
+  callbackURL: string
 }
 
 export interface SignInSocialResponseDTO {

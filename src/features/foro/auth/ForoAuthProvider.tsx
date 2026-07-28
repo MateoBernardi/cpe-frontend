@@ -64,15 +64,21 @@ export function ForoAuthProvider({ children }: { children: ReactNode }) {
   }, [resetForoCache])
 
   const signInSocial = useCallback(async (provider: ForoSocialProvider) => {
-    const res = await foroService.signInSocial({ provider })
-    await resetForoCache()
-    // Better Auth validates the redirect against `trustedOrigins` server-side, but
-    // guard the scheme here too so a regression upstream can't smuggle a
-    // `javascript:`/`data:` URL into `window.location.href`.
+    // Volver a la página desde la que se abrió el diálogo. Mandar `callbackURL`
+    // es obligatorio: sin él el callback de Better Auth falla con
+    // `no_callback_url` y deja al usuario en la página de error del backend.
+    const callbackURL = typeof window !== 'undefined' ? window.location.href : '/'
+    const res = await foroService.signInSocial({ provider, callbackURL })
+    // Nada de limpiar cache acá: navegamos fuera de la app y el volver es un
+    // page load completo, así que la cache arranca vacía igual. Resetearla
+    // antes del redirect sólo dispara un refetch de sesión que se tira a la basura.
+    // Better Auth valida el redirect contra `trustedOrigins` del lado del server,
+    // pero igual chequeamos el esquema acá para que una regresión aguas arriba no
+    // pueda meter una URL `javascript:`/`data:` en `window.location.href`.
     if (res?.url && typeof window !== 'undefined' && isSafeHttpsUrl(res.url)) {
       window.location.href = res.url
     }
-  }, [resetForoCache])
+  }, [])
 
   const signOut = useCallback(async () => {
     await foroService.signOut()
