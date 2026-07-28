@@ -2,16 +2,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { foroService } from '../services'
 import { mapInteractionDTO } from '../mappers'
 import { INTERACTION_TYPE_IDS } from '../dtos'
+import { useForoAuth } from '../auth/foroAuthContext'
 import { foroKeys } from './foroKeys'
 
 /**
  * Comments are flat interactions with `type_id = INTERACTION_TYPE_IDS.comentario` (2).
  * Used both by the Discusión detail screen (publication = OP, comments = replies)
- * and by regular Paper/Podcast/Novedad comment counts/lists.
+ * and by regular Paper/Podcast/Novedad comment counts/lists. The list itself is
+ * public, but the key is still scoped by `userId` (see `foroKeys.interactions`)
+ * so a sign-out/sign-in transition in the same tab can't serve stale cache.
  */
 export function useComments(publicationId: number | undefined) {
+  const { user } = useForoAuth()
   return useQuery({
-    queryKey: foroKeys.interactions(publicationId ?? 0, INTERACTION_TYPE_IDS.comentario),
+    queryKey: foroKeys.interactions(user?.id ?? null, publicationId ?? 0, INTERACTION_TYPE_IDS.comentario),
     queryFn: ({ signal }) =>
       foroService.listInteractionsForPublication(publicationId as number, INTERACTION_TYPE_IDS.comentario, signal),
     select: (dtos) => dtos.map(mapInteractionDTO),
@@ -21,8 +25,9 @@ export function useComments(publicationId: number | undefined) {
 
 export function useCommentMutations(publicationId: number) {
   const qc = useQueryClient()
+  const { user } = useForoAuth()
   const invalidate = () =>
-    qc.invalidateQueries({ queryKey: foroKeys.interactions(publicationId, INTERACTION_TYPE_IDS.comentario) })
+    qc.invalidateQueries({ queryKey: foroKeys.interactions(user?.id ?? null, publicationId, INTERACTION_TYPE_IDS.comentario) })
 
   const create = useMutation({
     mutationFn: (content: string) =>

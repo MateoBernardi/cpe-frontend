@@ -9,6 +9,7 @@ import {
   useForoAuth,
   foroService,
   resolveKnownSlug,
+  getForoApiErrorMessage,
   type ExternalLink,
   type Publication,
   type PublicationType,
@@ -19,17 +20,15 @@ import { colors, foroHairline } from '../../../../theme'
 import { ComposePreviewPane } from './ComposePreviewPane'
 import { TYPE_CONFIG } from './composeConfig'
 import { CategoryTag } from './CategoryTag'
+import { isSafeHttpUrl } from './foroHelpers'
 
 /**
  * Shared publication composer — used both by `/perfil/publicar` (create,
  * `slug` fixed by the type picker one screen up) and
  * `/perfil/publicaciones/:id/editar` (edit, type derived from the loaded
- * publication since there is no type-picker in edit mode). Ported from the
- * admin app's `AdminForoPublicationFormPage` (real data + real upload +
- * real mutations) with the demo composer's validation rules
- * (`AdminForoDemoPage.validateForm`) adapted onto this form's actual field
- * shape, and two explicit submit actions (draft vs. published) instead of
- * one.
+ * publication since there is no type-picker in edit mode). Real data + real
+ * upload + real mutations, with two explicit submit actions (draft vs.
+ * published) instead of one.
  *
  * Product decision: unlike the demo composer, EVERY field renders for EVERY
  * type — `TYPE_CONFIG` is only consulted for `bodyLabel` / `channelLabel`,
@@ -98,10 +97,8 @@ function validateForm(form: FormState, bodyLabel: string): FormErrors {
     const url = link.url.trim()
     if (!label && !url) return undefined // fully-empty rows are dropped on submit, not validated
     if (!label || label.length > 100) return 'La etiqueta debe tener entre 1 y 100 caracteres.'
-    try {
-      new URL(url)
-    } catch {
-      return 'La URL no es válida (tiene que incluir "https://").'
+    if (!isSafeHttpUrl(url)) {
+      return 'La URL no es válida (tiene que ser un link http:// o https://).'
     }
     return undefined
   })
@@ -193,7 +190,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType }:
       setForm((f) => ({ ...f, frontImageUrl: img.url }))
       setFrontImagePreviewName(file.name)
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Error subiendo la imagen de portada')
+      setUploadError(getForoApiErrorMessage(err))
     } finally {
       setUploadingFront(false)
       e.target.value = ''
@@ -215,15 +212,28 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType }:
         ],
       }))
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Error subiendo imágenes de la galería')
+      setUploadError(getForoApiErrorMessage(err))
     } finally {
       setUploadingGallery(false)
       e.target.value = ''
     }
   }
 
+  /**
+   * Saca la imagen del form Y la borra del backend/Cloudflare. La galería es
+   * full-replace en el PATCH, así que si sólo la sacáramos del estado el objeto
+   * quedaría colgado en Cloudflare Images sin que nada lo referencie.
+   *
+   * El borrado remoto es best-effort: si falla, igual la sacamos de la galería
+   * (que es lo que el usuario pidió) y la imagen queda huérfana, recuperable
+   * después con `POST /images/purge-orphans`. Bloquear la edición por un fallo
+   * de limpieza sería peor.
+   */
   const removeGalleryImage = (imageId: number) => {
     setForm((f) => ({ ...f, galleryImages: f.galleryImages.filter((img) => img.id !== imageId) }))
+    void foroService.deleteImage(imageId).catch((err) => {
+      console.error('[foro] No se pudo eliminar la imagen de la galería:', err)
+    })
   }
 
   const addExternalLink = () => {
@@ -246,6 +256,10 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType }:
   const canSubmit = isEdit ? publicationId != null : matchedType != null
 
   const handleSave = (status: 'draft' | 'published') => {
+    // Synchronous re-entrancy guard: `disabled={mutationInProgress}` only
+    // takes effect after React commits, so a fast double-click on "Guardar
+    // borrador"/"Publicar" can fire the mutation twice before that render lands.
+    if (mutationInProgress) return
     const nextErrors = validateForm(form, bodyLabel)
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
@@ -314,7 +328,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType }:
   const previewType: PublicationType | null = matchedType ?? (resolvedSlug ? { id: 0, name: config?.name ?? '', slug: resolvedSlug } : null)
 
   if (isEdit && loadError) {
-    return <ErrorMessage message={loadError instanceof Error ? loadError.message : 'Error cargando la publicación'} />
+    return <ErrorMessage message={getForoApiErrorMessage(loadError)} />
   }
 
   return (
@@ -534,11 +548,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType }:
                 </div>
               </div>
 
-              {mutationError && (
-                <ErrorMessage
-                  message={mutationError instanceof Error ? mutationError.message : 'Error al guardar la publicación'}
-                />
-              )}
+              {mutationError && <ErrorMessage message={getForoApiErrorMessage(mutationError)} />}
 
               <div className="flex flex-wrap justify-end gap-2 border-t pt-4" style={{ borderColor: colors.lightGray }}>
                 <button

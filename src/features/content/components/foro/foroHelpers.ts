@@ -17,6 +17,26 @@ export function typeAccent(slug: KnownPublicationTypeSlug | null): string {
   }
 }
 
+/**
+ * Defence-in-depth against stored XSS via `javascript:`/`data:` URLs.
+ * `new URL(url)` alone (the previous check, both here and in the backend's
+ * `z.string().url()`) happily parses `javascript:alert(1)` and
+ * `data:text/html,<script>…</script>` — those are valid URLs, just not safe
+ * ones to put in an `href`. React does not sanitize `href`/`src`, so every
+ * render site that puts a user-supplied URL there must check this too, not
+ * just the composer's `validateForm` — a row saved before this fix (or
+ * written by a direct API call bypassing the client) must not execute.
+ * Only `http:`/`https:` are allowed.
+ */
+export function isSafeHttpUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 /** `#rrggbb` + alpha (0–1) becomes `rgba(r, g, b, a)`. Only accepts the theme's plain 6-digit hex tokens. */
 export function hexToRgba(hex: string, alpha: number): string {
   const clean = hex.replace('#', '')

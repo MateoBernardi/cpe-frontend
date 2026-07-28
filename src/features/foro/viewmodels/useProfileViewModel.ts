@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { foroService } from '../services'
-import { mapMyInteractionDTO, mapUserPreferencesDTO } from '../mappers'
-import type { ListMyInteractionsParams } from '../models'
-import type { UpdateUserPreferencesDTO, UpdateUserDTO } from '../dtos'
+import { mapMyInteractionDTO } from '../mappers'
+import type { ListMyInteractionsParams, UpdateUserPreferencesInput } from '../models'
+import type { UpdateUserDTO } from '../dtos'
 import { ForoApiError } from '../api/foroApiRequest'
+import { useForoAuth } from '../auth/foroAuthContext'
 import { foroKeys } from './foroKeys'
 
 /**
@@ -13,14 +14,16 @@ import { foroKeys } from './foroKeys'
  * second round-trip.
  */
 export function useMyInteractions(params: ListMyInteractionsParams) {
+  const { user, isAuthenticated } = useForoAuth()
   return useQuery({
-    queryKey: foroKeys.myInteractions(params),
+    queryKey: foroKeys.myInteractions(user?.id ?? null, params),
     queryFn: ({ signal }) =>
       foroService.getMyInteractions(
         { type_id: params.typeId, limit: params.limit, offset: params.offset },
         signal,
       ),
     select: (dtos) => dtos.map(mapMyInteractionDTO),
+    enabled: isAuthenticated,
   })
 }
 
@@ -37,19 +40,21 @@ export function useMyInteractions(params: ListMyInteractionsParams) {
  */
 export function useUserPreferences() {
   const qc = useQueryClient()
+  const { user, isAuthenticated } = useForoAuth()
+  const userId = user?.id ?? null
 
   const query = useQuery({
-    queryKey: foroKeys.userPreferences(),
+    queryKey: foroKeys.userPreferences(userId),
     queryFn: ({ signal }) => foroService.getUserPreferences(signal),
-    select: mapUserPreferencesDTO,
     retry: false,
+    enabled: isAuthenticated,
   })
 
   const isUnavailable = query.error instanceof ForoApiError && query.error.status === 404
 
   const update = useMutation({
-    mutationFn: (data: UpdateUserPreferencesDTO) => foroService.updateUserPreferences(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: foroKeys.userPreferences() }),
+    mutationFn: (data: UpdateUserPreferencesInput) => foroService.updateUserPreferences(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: foroKeys.userPreferences(userId) }),
   })
 
   return { data: query.data, isLoading: query.isLoading, isUnavailable, update }

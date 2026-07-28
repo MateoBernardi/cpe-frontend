@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useForoAuth, useUpdateUser } from '@features/foro'
+import { useForoAuth, useUpdateUser, getForoApiErrorMessage } from '@features/foro'
 import { colors } from '@/theme'
 
 /**
@@ -22,8 +22,8 @@ export default function CuentaPanel() {
     try {
       await updateUser.mutateAsync({ name })
       setFeedback('Nombre actualizado.')
-    } catch {
-      setFeedback('No pudimos actualizar tu nombre. Intentá de nuevo.')
+    } catch (err) {
+      setFeedback(getForoApiErrorMessage(err))
     }
   }
 

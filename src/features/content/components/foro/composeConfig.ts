@@ -3,9 +3,8 @@ import type { KnownPublicationTypeSlug } from '@features/foro'
 /**
  * Per-type composer field configuration — mirrors the ONE backend create
  * schema (all fields exist for every publication type); the UI just chooses
- * which ones to show/require per type. Shared between the demo composer
- * (`AdminForoDemoPage`) and the real publisher form's preview pane so both
- * stay in sync with the same rules.
+ * which ones to show/require per type. Shared by the publisher form and its
+ * preview pane so both stay in sync with the same rules.
  *
  * Novedad is promotional (a couple of images or a video, not a long-form
  * article): multi-image cover instead of a single one, and its body is

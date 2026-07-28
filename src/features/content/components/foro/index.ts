@@ -35,6 +35,7 @@ export { PublicationComposer } from './PublicationComposer'
 export {
   typeAccent,
   hexToRgba,
+  isSafeHttpUrl,
   formatForoDate,
   initialsOf,
   displayByline,

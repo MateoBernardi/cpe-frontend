@@ -4,7 +4,7 @@
 // component's import path stays the same.
 import podcastChannelPicture from './assets/podcast-channel.svg'
 import { ChevronRight } from './ForoIcons'
-import { hexToRgba } from './foroHelpers'
+import { hexToRgba, isSafeHttpUrl } from './foroHelpers'
 import { platformColors } from '../../../../theme'
 
 interface SpotifyLinkProps {
@@ -37,16 +37,8 @@ function SpotifyMark({ size = 20 }: { size?: number }) {
  * inside another anchor.
  */
 export function SpotifyLink({ url, episodeTitle }: SpotifyLinkProps) {
-  return (
-    <a
-      className="group flex w-full items-center gap-4 rounded-2xl border-2 bg-white px-5 py-4 shadow-md no-underline transition-all duration-150 hover:-translate-y-1 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{ borderColor: hexToRgba(platformColors.spotifyGreen, 0.35) }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = platformColors.spotifyGreen }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = hexToRgba(platformColors.spotifyGreen, 0.35) }}
-    >
+  const content = (
+    <>
       <span className="relative h-16 w-16 shrink-0">
         <img src={podcastChannelPicture} alt="" className="block h-full w-full rounded-full object-cover ring-1 ring-gray-200" />
         <span
@@ -71,6 +63,34 @@ export function SpotifyLink({ url, episodeTitle }: SpotifyLinkProps) {
       >
         <ChevronRight size={20} />
       </span>
+    </>
+  )
+
+  // Unsafe scheme (javascript:/data:/etc — see `isSafeHttpUrl`): never render
+  // this as a clickable anchor, only as an inert card. Stored data can carry
+  // a bad URL even though the composer now rejects one on save.
+  if (!isSafeHttpUrl(url)) {
+    return (
+      <div
+        className="flex w-full items-center gap-4 rounded-2xl border-2 bg-white px-5 py-4 opacity-60"
+        style={{ borderColor: hexToRgba(platformColors.spotifyGreen, 0.35) }}
+      >
+        {content}
+      </div>
+    )
+  }
+
+  return (
+    <a
+      className="group flex w-full items-center gap-4 rounded-2xl border-2 bg-white px-5 py-4 shadow-md no-underline transition-all duration-150 hover:-translate-y-1 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ borderColor: hexToRgba(platformColors.spotifyGreen, 0.35) }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = platformColors.spotifyGreen }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = hexToRgba(platformColors.spotifyGreen, 0.35) }}
+    >
+      {content}
     </a>
   )
 }

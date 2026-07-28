@@ -24,7 +24,7 @@ function useIsSaved(publicationId: number) {
   const enabled = isAuthenticated && publicationId > 0
 
   const { data } = useQuery({
-    queryKey: foroKeys.interactions(publicationId, INTERACTION_TYPE_IDS.guardado),
+    queryKey: foroKeys.interactions(user?.id ?? null, publicationId, INTERACTION_TYPE_IDS.guardado),
     queryFn: ({ signal }) =>
       foroService.listInteractionsForPublication(publicationId, INTERACTION_TYPE_IDS.guardado, signal),
     select: (dtos) => dtos.map(mapInteractionDTO),
@@ -59,6 +59,10 @@ export function SaveButton({ publicationId, variant = 'pill', accent = colors.ct
   const pending = add.isPending || remove.isPending
 
   const handleClick = () => {
+    // Synchronous re-entrancy guard: `disabled={pending}` only takes effect
+    // after React commits, so a fast double-click can fire both a mutation
+    // and its (still-stale) undo before the first render lands.
+    if (pending) return
     if (!isAuthenticated) {
       openAuthDialog('sign-in')
       return

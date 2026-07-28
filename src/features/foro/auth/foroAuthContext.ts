@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react'
 import type { ForoUser, ForoRole } from '../models'
 import type { ForoSocialProvider } from '../dtos'
 
-export type ForoAuthDialogMode = 'sign-in' | 'sign-up'
+export type ForoAuthDialogMode = 'sign-in' | 'sign-up' | 'check-email' | 'forgot'
 
 export interface ForoAuthContextValue {
   /** Contract-required surface */
@@ -10,11 +10,10 @@ export interface ForoAuthContextValue {
   role: ForoRole | null
   isAuthenticated: boolean
   isLoading: boolean
-  signInEmail: (email: string, password: string) => Promise<void>
-  signUpEmail: (email: string, password: string, name: string) => Promise<void>
-  signInSocial: (provider: ForoSocialProvider, callbackURL?: string) => Promise<void>
+  signInEmail: (email: string, password: string, captchaToken: string) => Promise<void>
+  signUpEmail: (email: string, password: string, name: string, captchaToken: string) => Promise<void>
+  signInSocial: (provider: ForoSocialProvider) => Promise<void>
   signOut: () => Promise<void>
-  refetch: () => void
 
   /** Additive: controls for <ForoAuthDialog/> so it can be mounted once per app. */
   isAuthDialogOpen: boolean

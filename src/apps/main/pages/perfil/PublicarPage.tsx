@@ -6,10 +6,8 @@ import PublisherGate from './PublisherGate'
 
 /**
  * `/perfil/publicar` — URL-driven type picker (`?tipo=`) then the shared
- * composer, ported from the abandoned demo composer's `PublicarFlow` +
- * `TypePicker` (`AdminForoDemoPage.tsx:187-226`). `key={slug}` on the
- * composer resets all of its form state when the type changes, since it's
- * effectively a brand new draft.
+ * composer. `key={slug}` on the composer resets all of its form state when
+ * the type changes, since it's effectively a brand new draft.
  */
 
 const KNOWN_SLUGS = TYPE_OPTIONS.map((t) => t.slug)

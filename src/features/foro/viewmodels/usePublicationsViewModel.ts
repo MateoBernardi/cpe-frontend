@@ -1,10 +1,8 @@
-import { useInfiniteQuery, useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query'
 import { foroService } from '../services'
 import { mapPublicationDTO, mapPublicationPreviewDTO, mapPublicationInputToWriteDTO, mapPublicationInputToPatchDTO } from '../mappers'
 import type { ListPublicationsParams, PublicationInput, PublicationPreview } from '../models'
 import { foroKeys } from './foroKeys'
-
-const DEFAULT_PAGE_SIZE = 20
 
 /** GET /publications — single page (no pagination state). */
 export function usePublications(params?: ListPublicationsParams) {
@@ -22,40 +20,6 @@ export function usePublications(params?: ListPublicationsParams) {
         signal,
       ),
     select: (dtos) => dtos.map(mapPublicationPreviewDTO),
-  })
-}
-
-/**
- * GET /publications with limit/offset-based infinite scroll.
- * Each page requests `pageSize` rows; stops once a page returns fewer than
- * `pageSize` items (no dedicated "total count" in the contract).
- */
-export function useInfinitePublications(
-  params?: Omit<ListPublicationsParams, 'limit' | 'offset'>,
-  pageSize: number = DEFAULT_PAGE_SIZE,
-  enabled: boolean = true,
-) {
-  return useInfiniteQuery({
-    queryKey: foroKeys.publications({ ...params, limit: pageSize }),
-    queryFn: ({ pageParam, signal }) =>
-      foroService.listPublications(
-        {
-          type_id: params?.typeId,
-          category_id: params?.categoryId,
-          created_by: params?.createdBy,
-          limit: pageSize,
-          offset: pageParam,
-        },
-        signal,
-      ),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) =>
-      lastPage.length < pageSize ? undefined : allPages.length * pageSize,
-    select: (data) => ({
-      ...data,
-      pages: data.pages.map((page) => page.map(mapPublicationPreviewDTO)),
-    }),
-    enabled,
   })
 }
 
@@ -83,36 +47,6 @@ export function useFeedsByType(typeIds: number[], limit: number = 4): FeedByType
 
   return typeIds.map((typeId, i) => ({
     typeId,
-    items: (results[i]?.data ?? []).map(mapPublicationPreviewDTO),
-    isLoading: results[i]?.isLoading ?? false,
-  }))
-}
-
-export interface FeedByCategory {
-  categoryId: number
-  items: PublicationPreview[]
-  isLoading: boolean
-}
-
-/**
- * Fetches one page of publications per category id in parallel (via
- * `useQueries`, so the number of hooks stays stable across renders even
- * though `categoryIds` itself may change as the caller toggles selections).
- * Mirrors `useFeedsByType` — consumers that need a strict AND-intersection
- * across the selected categories compute it client-side from the returned
- * per-category lists.
- */
-export function usePublicationsByCategories(categoryIds: number[], limit?: number): FeedByCategory[] {
-  const results = useQueries({
-    queries: categoryIds.map((categoryId) => ({
-      queryKey: foroKeys.publications({ categoryId, limit }),
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        foroService.listPublications({ category_id: categoryId, limit }, signal),
-    })),
-  })
-
-  return categoryIds.map((categoryId, i) => ({
-    categoryId,
     items: (results[i]?.data ?? []).map(mapPublicationPreviewDTO),
     isLoading: results[i]?.isLoading ?? false,
   }))
@@ -147,9 +81,17 @@ export function usePublicationMutations() {
     },
   })
 
+  /**
+   * Soft delete en el backend (`deleted_at`), así que basta con sacar la
+   * publicación de las listas cacheadas; sus imágenes quedan huérfanas y las
+   * limpia `POST /images/purge-orphans` (sólo admin), no el cliente.
+   */
   const remove = useMutation({
     mutationFn: (id: number) => foroService.deletePublication(id),
-    onSuccess: invalidateLists,
+    onSuccess: (_data, id) => {
+      invalidateLists()
+      qc.removeQueries({ queryKey: foroKeys.publication(id) })
+    },
   })
 
   return { create, update, remove }

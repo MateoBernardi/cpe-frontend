@@ -1,6 +1,6 @@
 import FORO_ENV from './foroApiConfig'
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 interface ForoApiRequestOptions<TBody = unknown> {
   method: HttpMethod
@@ -14,14 +14,16 @@ interface ForoApiRequestOptions<TBody = unknown> {
  * Zod: `400 { error, code:'VALIDATION_ERROR', details }`.
  * Dominio: `{ error:<mensaje en español>, code }`.
  * requireAuth: `401 {error:'No autenticado.'}` / `403 {error:'Permisos insuficientes.'}`.
+ * Better Auth (`/auth/*`, via `foroAuthClient`'s `toForoApiError`): `{ message, code }` —
+ * no `error` key. Both shapes flow through this same type so `getForoApiErrorMessage`
+ * works for every foro route.
  */
 interface ForoApiErrorResponse {
-  error: string
+  error?: string
+  message?: string
   code?: string
   details?: unknown
 }
-
-export type ForoApiErrorKind = 'validation' | 'auth' | 'forbidden' | 'not-found' | 'rate-limit' | 'server' | 'unknown'
 
 interface ForoApiErrorMeta {
   endpoint: string
@@ -33,7 +35,6 @@ export class ForoApiError extends Error {
   readonly status: number
   readonly statusText: string
   readonly data: ForoApiErrorResponse
-  readonly kind: ForoApiErrorKind
   readonly code: string | null
   readonly endpoint: string
   readonly method: HttpMethod
@@ -45,12 +46,11 @@ export class ForoApiError extends Error {
     data: ForoApiErrorResponse,
     meta: ForoApiErrorMeta,
   ) {
-    super(data.error ?? statusText)
+    super(data.error ?? data.message ?? statusText)
     this.name = 'ForoApiError'
     this.status = status
     this.statusText = statusText
     this.data = data
-    this.kind = mapStatusToKind(status)
     this.code = data.code ?? null
     this.endpoint = meta.endpoint
     this.method = meta.method
@@ -58,17 +58,23 @@ export class ForoApiError extends Error {
   }
 }
 
-const inflightGetRequests = new Map<string, Promise<unknown>>()
+/**
+ * Fired whenever a foro request (either `foroApiRequest` or the
+ * `foroAuthClient` adapter, see `toForoApiError`) comes back 401. Mirrors
+ * `src/shared/api/apiRequest.ts`'s `app:forbidden-tenant` event — a plain
+ * `window` `CustomEvent` so this module never needs a `QueryClient` import.
+ * `ForoAuthProvider` listens and clears the cached session so an expired
+ * cookie can't leave the header rendering a signed-in user while every
+ * write silently 401s.
+ */
+export const FORO_UNAUTHENTICATED_EVENT = 'foro:unauthenticated'
 
-function mapStatusToKind(status: number): ForoApiErrorKind {
-  if (status === 400) return 'validation'
-  if (status === 401) return 'auth'
-  if (status === 403) return 'forbidden'
-  if (status === 404) return 'not-found'
-  if (status === 429) return 'rate-limit'
-  if (status >= 500) return 'server'
-  return 'unknown'
+export function notifyForoUnauthenticated(): void {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(FORO_UNAUTHENTICATED_EVENT))
 }
+
+const inflightGetRequests = new Map<string, Promise<unknown>>()
 
 function readRetryAfterMs(response: Response): number | null {
   const retryAfter = response.headers.get('retry-after')
@@ -83,25 +89,15 @@ export function getForoApiErrorMessage(error: unknown): string {
     return error instanceof Error ? error.message : 'Error inesperado. Intenta nuevamente.'
   }
 
+  const message = error.data.error ?? error.data.message
+
   if (error.status === 429) return 'Demasiadas solicitudes. Espera unos segundos e intenta nuevamente.'
-  if (error.status === 401) return error.data.error || 'Iniciá sesión para continuar.'
-  if (error.status === 403) return error.data.error || 'No tenés permisos para esta acción.'
+  if (error.status === 401) return message || 'Iniciá sesión para continuar.'
+  if (error.status === 403) return message || 'No tenés permisos para esta acción.'
   if (error.status === 404) return 'El recurso solicitado no existe.'
   if (error.status >= 500) return 'Hubo un problema en el servidor. Intenta de nuevo en unos instantes.'
 
-  return error.data.error || 'No se pudo completar la solicitud.'
-}
-
-export function isForoRateLimitError(error: unknown): error is ForoApiError {
-  return error instanceof ForoApiError && error.status === 429
-}
-
-export function isForoAuthError(error: unknown): error is ForoApiError {
-  return error instanceof ForoApiError && error.status === 401
-}
-
-export function isForoForbiddenError(error: unknown): error is ForoApiError {
-  return error instanceof ForoApiError && error.status === 403
+  return message || 'No se pudo completar la solicitud.'
 }
 
 function getCoalescingKey(url: string, method: HttpMethod): string {
@@ -151,6 +147,8 @@ export async function foroApiRequest<TResponse, TBody = unknown>(
         errorData = { error: response.statusText }
       }
 
+      if (response.status === 401) notifyForoUnauthenticated()
+
       throw new ForoApiError(response.status, response.statusText, errorData, {
         endpoint,
         method,
@@ -158,11 +156,7 @@ export async function foroApiRequest<TResponse, TBody = unknown>(
       })
     }
 
-    // Better Auth's GET /auth/get-session responds 200 with an empty/`null` body
-    // when there is no active session.
-    const text = await response.text()
-    if (!text) return null as TResponse
-    return JSON.parse(text) as TResponse
+    return (await response.json()) as TResponse
   }
 
   // Coalescing is only safe when the request has no `AbortSignal` of its own:

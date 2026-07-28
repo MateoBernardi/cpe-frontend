@@ -1,10 +1,10 @@
-export type ForoRoleDTO = 'visitor' | 'publisher' | 'admin'
+import type { ForoRole } from '../models'
 
 export interface ForoUserDTO {
   id: string
   name: string
   email: string
-  role: ForoRoleDTO
+  role: ForoRole
 }
 
 /** GET /auth/get-session → `{ session, user } | null` */
@@ -32,11 +32,10 @@ export interface SignInEmailResponseDTO {
   user: ForoUserDTO
 }
 
-export type ForoSocialProvider = 'google' | 'apple'
+export type ForoSocialProvider = 'google'
 
 export interface SignInSocialDTO {
   provider: ForoSocialProvider
-  callbackURL?: string
 }
 
 export interface SignInSocialResponseDTO {

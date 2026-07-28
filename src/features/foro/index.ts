@@ -1,7 +1,6 @@
 // ── Public surface of `@features/foro` ──
-// Consumed by the main app (home foro preview) and the admin app
-// (publisher space). Keep this barrel's exports stable — see
-// FORO_INTEGRATION_CONTRACT.md section B.
+// Consumed by the main app (home foro preview and publisher space at
+// `/perfil`). Keep this barrel's exports stable.
 
 export * from './dtos'
 export * from './models'
@@ -11,5 +10,5 @@ export * from './viewmodels'
 export * from './auth'
 export * from './components'
 
-export { foroApiRequest, ForoApiError, getForoApiErrorMessage, isForoRateLimitError, isForoAuthError, isForoForbiddenError } from './api/foroApiRequest'
-export { default as FORO_ENV } from './api/foroApiConfig'
+export { ForoApiError, getForoApiErrorMessage } from './api/foroApiRequest'
+export { foroAuthClient, toForoApiError } from './api/foroAuthClient'

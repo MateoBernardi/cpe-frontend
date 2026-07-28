@@ -5,9 +5,9 @@ import { LoadingSpinner } from '@shared/components'
 import { colors, layout } from '@/theme'
 
 /**
- * Access gate for `/perfil/**`. Unlike `AdminForoGate` (a separate admin
- * SPA), the main app already mounts a single app-wide `<ForoAuthProvider>` +
- * `<ForoAuthDialog>` in `App.tsx` — this gate must NOT mount its own copies.
+ * Access gate for `/perfil/**`. The main app already mounts a single
+ * app-wide `<ForoAuthProvider>` + `<ForoAuthDialog>` in `App.tsx` — this
+ * gate must NOT mount its own copies.
  *
  * - loading session -> spinner
  * - not authenticated -> sign-in prompt card

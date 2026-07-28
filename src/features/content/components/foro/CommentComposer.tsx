@@ -31,6 +31,11 @@ export function CommentComposer({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (preview) return
+    // `disabled` en el botón no alcanza: sólo aplica después del commit de React,
+    // así que un doble Enter rápido dispara `onSubmit` dos veces. Los comentarios
+    // están excluidos del índice único del backend (`interacciones_unique_single_per_user`
+    // filtra `type_id <> 2`), con lo cual el duplicado se persiste de verdad.
+    if (isSubmitting) return
     if (!isAuthenticated) {
       openAuthDialog('sign-in')
       return

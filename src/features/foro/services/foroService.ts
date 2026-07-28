@@ -1,4 +1,5 @@
 import { foroApiRequest } from '../api/foroApiRequest'
+import { foroAuthClient, toForoApiError } from '../api/foroAuthClient'
 import type {
   GetSessionResponseDTO,
   SignUpEmailDTO,
@@ -12,11 +13,6 @@ import type {
   ListPublicationsQueryDTO,
   PublicationWriteDTO,
   PublicationPatchDTO,
-  PublicationTypeDTO,
-  CategoryDTO,
-  CategoryWriteDTO,
-  TagDTO,
-  TagWriteDTO,
   CreateInteractionDTO,
   PatchInteractionDTO,
   InteractionDTO,
@@ -26,11 +22,14 @@ import type {
   ImageUploadUrlResponseDTO,
   ConfirmImageDTO,
   ConfirmImageResponseDTO,
-  UserPreferencesDTO,
-  UpdateUserPreferencesDTO,
   UpdateUserDTO,
   UpdateUserResponseDTO,
 } from '../dtos'
+// `PublicationType`/`Category`/`Tag`/`UserPreferences` have no separate DTO
+// (see `dtos/index.ts`'s note) — the wire shape IS the model, so these
+// routes are typed against `../models` directly instead of round-tripping
+// through an identity mapper.
+import type { PublicationType, Category, Tag, UserPreferences, UpdateUserPreferencesInput } from '../models'
 
 function buildQuery(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams()
@@ -42,59 +41,55 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 }
 
 export const foroService = {
-  // ── Auth (Better Auth) ──
+  // ── Auth (Better Auth SDK — see foroAuthClient.ts. `foroApiRequest` is
+  //    NOT used here; every method below re-throws via `toForoApiError` so
+  //    call sites keep the same throw-based contract.) ──
 
   /** GET /auth/get-session — "me" endpoint. Returns null when there is no session. */
-  getSession(signal?: AbortSignal) {
-    return foroApiRequest<GetSessionResponseDTO | null>({
-      method: 'GET',
-      endpoint: '/auth/get-session',
-      signal,
-    })
+  async getSession(signal?: AbortSignal): Promise<GetSessionResponseDTO | null> {
+    const { data, error } = await foroAuthClient.getSession({ fetchOptions: { signal } })
+    if (error) throw toForoApiError(error, '/auth/get-session', 'GET')
+    return (data as GetSessionResponseDTO | null) ?? null
   },
 
-  /** POST /auth/sign-up/email — new users get role 'visitor'. */
-  signUpEmail(data: SignUpEmailDTO) {
-    return foroApiRequest<SignUpEmailResponseDTO, SignUpEmailDTO>({
-      method: 'POST',
-      endpoint: '/auth/sign-up/email',
-      body: data,
+  /** POST /auth/sign-up/email — new users get role 'visitor'. Captcha-protected. */
+  async signUpEmail(data: SignUpEmailDTO, captchaToken: string): Promise<SignUpEmailResponseDTO> {
+    const { data: res, error } = await foroAuthClient.signUp.email({
+      ...data,
+      fetchOptions: { headers: { 'x-captcha-response': captchaToken } },
     })
+    if (error) throw toForoApiError(error, '/auth/sign-up/email')
+    return res as unknown as SignUpEmailResponseDTO
   },
 
-  /** POST /auth/sign-in/email */
-  signInEmail(data: SignInEmailDTO) {
-    return foroApiRequest<SignInEmailResponseDTO, SignInEmailDTO>({
-      method: 'POST',
-      endpoint: '/auth/sign-in/email',
-      body: data,
+  /** POST /auth/sign-in/email — captcha-protected. */
+  async signInEmail(data: SignInEmailDTO, captchaToken: string): Promise<SignInEmailResponseDTO> {
+    const { data: res, error } = await foroAuthClient.signIn.email({
+      ...data,
+      fetchOptions: { headers: { 'x-captcha-response': captchaToken } },
     })
+    if (error) throw toForoApiError(error, '/auth/sign-in/email')
+    return res as unknown as SignInEmailResponseDTO
   },
 
-  /** POST /auth/sign-in/social — returns a provider redirect URL. */
-  signInSocial(data: SignInSocialDTO) {
-    return foroApiRequest<SignInSocialResponseDTO, SignInSocialDTO>({
-      method: 'POST',
-      endpoint: '/auth/sign-in/social',
-      body: data,
-    })
+  /** POST /auth/sign-in/social — returns a provider redirect URL (or auto-redirects). */
+  async signInSocial(data: SignInSocialDTO): Promise<SignInSocialResponseDTO> {
+    const { data: res, error } = await foroAuthClient.signIn.social(data)
+    if (error) throw toForoApiError(error, '/auth/sign-in/social')
+    return res as unknown as SignInSocialResponseDTO
   },
 
   /** POST /auth/sign-out */
-  signOut() {
-    return foroApiRequest<unknown>({
-      method: 'POST',
-      endpoint: '/auth/sign-out',
-    })
+  async signOut(): Promise<void> {
+    const { error } = await foroAuthClient.signOut()
+    if (error) throw toForoApiError(error, '/auth/sign-out')
   },
 
   /** POST /auth/update-user — Better Auth profile update; only `name` is used today. */
-  updateUser(data: UpdateUserDTO) {
-    return foroApiRequest<UpdateUserResponseDTO, UpdateUserDTO>({
-      method: 'POST',
-      endpoint: '/auth/update-user',
-      body: data,
-    })
+  async updateUser(data: UpdateUserDTO): Promise<UpdateUserResponseDTO> {
+    const { data: res, error } = await foroAuthClient.updateUser(data)
+    if (error) throw toForoApiError(error, '/auth/update-user')
+    return res as unknown as UpdateUserResponseDTO
   },
 
   // ── Publications ──
@@ -142,9 +137,14 @@ export const foroService = {
     })
   },
 
-  /** DELETE /publications/:id — role publisher|admin. Soft delete. */
+  /**
+   * DELETE /publications/:id — role publisher|admin, y sólo sobre las propias
+   * (el backend aplica `assertOwnerOrAdmin`). Es un SOFT delete: la fila queda
+   * con `deleted_at`, y sus imágenes quedan huérfanas pero recuperables hasta
+   * que un admin corra `POST /images/purge-orphans`.
+   */
   deletePublication(id: number) {
-    return foroApiRequest<unknown>({
+    return foroApiRequest<void>({
       method: 'DELETE',
       endpoint: `/publications/${id}`,
     })
@@ -154,7 +154,7 @@ export const foroService = {
 
   /** GET /publication-types — public. */
   listPublicationTypes(signal?: AbortSignal) {
-    return foroApiRequest<PublicationTypeDTO[]>({
+    return foroApiRequest<PublicationType[]>({
       method: 'GET',
       endpoint: '/publication-types',
       signal,
@@ -165,36 +165,10 @@ export const foroService = {
 
   /** GET /categories — public. */
   listCategories(signal?: AbortSignal) {
-    return foroApiRequest<CategoryDTO[]>({
+    return foroApiRequest<Category[]>({
       method: 'GET',
       endpoint: '/categories',
       signal,
-    })
-  },
-
-  /** POST /categories — role publisher|admin. */
-  createCategory(data: CategoryWriteDTO) {
-    return foroApiRequest<CategoryDTO, CategoryWriteDTO>({
-      method: 'POST',
-      endpoint: '/categories',
-      body: data,
-    })
-  },
-
-  /** PATCH /categories/:id — role publisher|admin. */
-  updateCategory(id: number, data: Partial<CategoryWriteDTO>) {
-    return foroApiRequest<CategoryDTO, Partial<CategoryWriteDTO>>({
-      method: 'PATCH',
-      endpoint: `/categories/${id}`,
-      body: data,
-    })
-  },
-
-  /** DELETE /categories/:id — role publisher|admin. */
-  deleteCategory(id: number) {
-    return foroApiRequest<unknown>({
-      method: 'DELETE',
-      endpoint: `/categories/${id}`,
     })
   },
 
@@ -202,36 +176,10 @@ export const foroService = {
 
   /** GET /tags — public. */
   listTags(signal?: AbortSignal) {
-    return foroApiRequest<TagDTO[]>({
+    return foroApiRequest<Tag[]>({
       method: 'GET',
       endpoint: '/tags',
       signal,
-    })
-  },
-
-  /** POST /tags — role publisher|admin. */
-  createTag(data: TagWriteDTO) {
-    return foroApiRequest<TagDTO, TagWriteDTO>({
-      method: 'POST',
-      endpoint: '/tags',
-      body: data,
-    })
-  },
-
-  /** PATCH /tags/:id — role publisher|admin. */
-  updateTag(id: number, data: Partial<TagWriteDTO>) {
-    return foroApiRequest<TagDTO, Partial<TagWriteDTO>>({
-      method: 'PATCH',
-      endpoint: `/tags/${id}`,
-      body: data,
-    })
-  },
-
-  /** DELETE /tags/:id — role publisher|admin. */
-  deleteTag(id: number) {
-    return foroApiRequest<unknown>({
-      method: 'DELETE',
-      endpoint: `/tags/${id}`,
     })
   },
 
@@ -321,14 +269,6 @@ export const foroService = {
     })
   },
 
-  /** DELETE /images/:id */
-  deleteImage(id: number) {
-    return foroApiRequest<unknown>({
-      method: 'DELETE',
-      endpoint: `/images/${id}`,
-    })
-  },
-
   /** Convenience: runs the full 3-step upload flow, returns the confirmed image. */
   async uploadImage(file: File, altText?: string): Promise<ConfirmImageResponseDTO> {
     const { upload_url, image_id } = await foroService.requestImageUploadUrl()
@@ -336,11 +276,24 @@ export const foroService = {
     return foroService.confirmImage({ image_id, alt_text: altText })
   },
 
+  /**
+   * DELETE /images/:id — borra la fila Y el objeto en Cloudflare. El backend
+   * exige owner-or-admin. Se llama cuando el usuario saca una imagen de la
+   * galería en el composer: sin esto el objeto queda colgado en Cloudflare
+   * para siempre, porque la galería es full-replace y nadie más lo referencia.
+   */
+  deleteImage(id: number) {
+    return foroApiRequest<void>({
+      method: 'DELETE',
+      endpoint: `/images/${id}`,
+    })
+  },
+
   // ── User preferences (contract only — backend route not implemented yet) ──
 
   /** GET /users/me/preferences — see useUserPreferences for 404 handling. */
   getUserPreferences(signal?: AbortSignal) {
-    return foroApiRequest<UserPreferencesDTO>({
+    return foroApiRequest<UserPreferences>({
       method: 'GET',
       endpoint: '/users/me/preferences',
       signal,
@@ -348,8 +301,8 @@ export const foroService = {
   },
 
   /** PATCH /users/me/preferences — same not-yet-implemented caveat as above. */
-  updateUserPreferences(data: UpdateUserPreferencesDTO) {
-    return foroApiRequest<UserPreferencesDTO, UpdateUserPreferencesDTO>({
+  updateUserPreferences(data: UpdateUserPreferencesInput) {
+    return foroApiRequest<UserPreferences, UpdateUserPreferencesInput>({
       method: 'PATCH',
       endpoint: '/users/me/preferences',
       body: data,
