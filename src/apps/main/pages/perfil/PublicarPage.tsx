@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type { KnownPublicationTypeSlug } from '@features/foro'
-import { CategoryTag, PublicationComposer, TYPE_OPTIONS, TYPE_CONFIG, typeAccent, EMPTY_FORM, type FormState } from '@features/content/components/foro'
+import { TypePill, PublicationComposer, TYPE_OPTIONS, TYPE_CONFIG, typeAccent, EMPTY_FORM, type FormState } from '@features/content/components/foro'
 import { colors, layout, foroHairline } from '@/theme'
 import PublisherGate from './PublisherGate'
 
@@ -79,7 +79,7 @@ function TypePicker({ hasDraft, onPick }: { hasDraft: boolean; onPick: (slug: Kn
               className="flex flex-col items-start gap-2 rounded-2xl bg-white p-4 text-left transition-colors hover:bg-gray-50"
               style={{ border: `1px solid ${foroHairline}`, borderTop: `3px solid ${typeAccent(opt.slug)}` }}
             >
-              <CategoryTag slug={opt.slug} label={opt.name} />
+              <TypePill slug={opt.slug} label={opt.name} />
               <h2 className="text-base font-semibold" style={{ color: colors.blueDark }}>{opt.name}</h2>
               <span className="text-xs text-gray-500">{config.channelLabel}</span>
             </button>

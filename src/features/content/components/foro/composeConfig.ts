@@ -20,8 +20,8 @@ import type { ExternalLink, KnownPublicationTypeSlug } from '@features/foro'
  *   - External links: paper / podcast (`<ExternalLinksCTA>`), novedad (YouTube
  *     link embeds, the rest go through `<ExternalLinksCTA>`) — NOT discusión.
  *     `DiscussionDetail` never renders `externalLinks`.
- *   - Tags: all four (`<TagList>`), untouched/unnarrowed by this task — see
- *     `showTags` below.
+ *   - Categories: all four (`<CategoryList>`) — la taxonomía es una sola y aplica a todos los
+ *     formatos, así que no tiene eje propio en esta tabla.
  *
  * Novedad's body is labeled "Texto promocional" (still the same `content`
  * field the backend requires for every type) because it reads as promotional
@@ -40,7 +40,6 @@ export interface TypeFieldConfig {
    * podcast — see the capability table above. */
   showGallery: boolean
   showLinks: boolean
-  showTags: boolean
   /** Editorial "channel" descriptor shown next to the type picker card. */
   channelLabel: string
   /** Overrides the generic label-based links hint for types whose embed
@@ -94,7 +93,6 @@ export interface FormState {
   subtitle: string
   content: string
   categoryIds: number[]
-  tagIds: number[]
   frontImageUrl: string
   galleryImages: GalleryImage[]
   externalLinks: ExternalLink[]
@@ -105,7 +103,6 @@ export const EMPTY_FORM: FormState = {
   subtitle: '',
   content: '',
   categoryIds: [],
-  tagIds: [],
   frontImageUrl: '',
   galleryImages: [],
   externalLinks: [],
@@ -119,7 +116,6 @@ export const TYPE_CONFIG: Record<KnownPublicationTypeSlug, TypeFieldConfig> = {
     coverMode: 'single',
     showGallery: true,
     showLinks: true,
-    showTags: true,
     channelLabel: 'Investigación',
   },
   podcast: {
@@ -133,7 +129,6 @@ export const TYPE_CONFIG: Record<KnownPublicationTypeSlug, TypeFieldConfig> = {
     // is sent on save (see `PublicationComposer.handleSave`).
     showGallery: false,
     showLinks: true,
-    showTags: true,
     channelLabel: 'Audio',
   },
   novedad: {
@@ -145,23 +140,21 @@ export const TYPE_CONFIG: Record<KnownPublicationTypeSlug, TypeFieldConfig> = {
     coverMode: 'single',
     showGallery: true,
     showLinks: true,
-    showTags: true,
     channelLabel: 'Actualidad',
     linksHint: 'Un enlace de YouTube se muestra como video embebido.',
   },
   discusion: {
     name: 'Discusión',
     bodyLabel: 'Descripción',
-    // `<ArticleHero>` (cover + subtitle) and `<TagList>` are shared by every
+    // `<ArticleHero>` (cover + subtitle) and `<CategoryList>` are shared by every
     // format including discusión — verified by reading `DiscussionDetail.tsx`,
-    // which renders tags and a gallery like the other three. Only external
+    // which renders categories and a gallery like the other three. Only external
     // links are genuinely unsupported: `DiscussionDetail` never touches
     // `publication.externalLinks`.
     showSubtitle: true,
     coverMode: 'single',
     showGallery: true,
     showLinks: false,
-    showTags: true,
     channelLabel: 'Comunidad',
   },
 }

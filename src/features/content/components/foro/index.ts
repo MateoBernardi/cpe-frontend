@@ -2,13 +2,13 @@
 // Consumed by `src/apps/main/pages/**` (interacciones/publicaciones screens),
 // and by the admin app's live-preview pane (`PublicationDetail`/
 // `DiscussionDetail`, keep their prop signatures stable) and demo composer
-// (`CategoryTag`, `typeAccent`). `ForoPreviewSection.tsx` (home page, owned
+// (`TypePill`, `typeAccent`). `ForoPreviewSection.tsx` (home page, owned
 // by a different in-flight redesign) also still imports `heroCtaVerb`,
 // `INTERACCIONES_SECTIONS`, `typeAccent` and `formatForoDate` from here —
 // keep those five specifically working even as the rest of this module is
 // redesigned.
 
-export { CategoryTag } from './CategoryTag'
+export { TypePill } from './TypePill'
 export { CommentComposer } from './CommentComposer'
 export { CommentList } from './CommentList'
 export { DetailShell } from './DetailShell'
@@ -23,9 +23,13 @@ export { YouTubeMark } from './PlatformMarks'
 export { PublicationDetail } from './PublicationDetail'
 export { PublicationListItem } from './PublicationListItem'
 export { SaveButton } from './SaveButton'
+export { FavoriteButton } from './FavoriteButton'
+export { InteractionToggleButton } from './InteractionToggleButton'
+export type { ToggleVariant } from './InteractionToggleButton'
+export { CommentThread } from './CommentThread'
 export { ShareButton, ShareIconRow } from './ShareButtons'
 export { SpotifyLink } from './SpotifyLink'
-export { TagList } from './TagList'
+export { CategoryList } from './CategoryList'
 export { Prose } from './Prose'
 export { ComposePreviewPane } from './ComposePreviewPane'
 export { TYPE_OPTIONS, TYPE_CONFIG, MAX_NOVEDAD_IMAGES, PUBLICATION_CONTENT_MAX, EMPTY_FORM } from './composeConfig'

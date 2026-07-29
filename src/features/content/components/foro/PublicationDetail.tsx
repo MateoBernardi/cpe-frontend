@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import type { Publication, PublicationPreview, PublicationType, KnownPublicationTypeSlug } from '@features/foro'
 import { DetailShell } from './DetailShell'
-import { TagList } from './TagList'
+import { CategoryList } from './CategoryList'
 import { ExternalLinksCTA } from './ExternalLinksCTA'
 import { Prose } from './Prose'
 import { Gallery } from './Gallery'
+import { CommentThread } from './CommentThread'
 import { formatForoDate, interactionRows, getYouTubeEmbedUrl } from './foroHelpers'
 import { colors } from '../../../../theme'
 
@@ -125,7 +126,7 @@ export function PublicationDetail({ publication, type, slug, related, embedded =
         <Prose content={publication.content} />
         <Gallery images={publication.images} />
         <footer className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-6">
-          <TagList tags={publication.tags} />
+          <CategoryList categories={publication.categories} />
           <InteractionsRow rows={rows} />
         </footer>
         {publication.externalLinks.length > 0 && (
@@ -133,6 +134,7 @@ export function PublicationDetail({ publication, type, slug, related, embedded =
             <ExternalLinksCTA label={ctaLabel} title={publication.title} links={publication.externalLinks} />
           </div>
         )}
+        <CommentThread publicationId={publication.id} commentCount={publication.interactions?.comments} />
       </article>
     )
   } else if (slug === 'podcast') {
@@ -145,9 +147,10 @@ export function PublicationDetail({ publication, type, slug, related, embedded =
         )}
         <Prose content={publication.content} />
         <footer className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-6">
-          <TagList tags={publication.tags} />
+          <CategoryList categories={publication.categories} />
           <InteractionsRow rows={rows} />
         </footer>
+        <CommentThread publicationId={publication.id} commentCount={publication.interactions?.comments} />
       </article>
     )
   } else {
@@ -157,7 +160,7 @@ export function PublicationDetail({ publication, type, slug, related, embedded =
 
     body = (
       <article>
-        <div className="mb-5"><TagList tags={publication.tags} /></div>
+        <div className="mb-5"><CategoryList categories={publication.categories} /></div>
         {embedUrl
           ? <NovedadVideo embedUrl={embedUrl} title={publication.title} />
           : <NovedadCollage images={publication.images} />}
@@ -170,6 +173,7 @@ export function PublicationDetail({ publication, type, slug, related, embedded =
         <div className="mt-8 border-t border-gray-100 pt-6">
           <InteractionsRow rows={rows} />
         </div>
+        <CommentThread publicationId={publication.id} commentCount={publication.interactions?.comments} />
       </article>
     )
   }

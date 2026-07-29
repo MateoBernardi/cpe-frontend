@@ -1,6 +1,7 @@
 import type { KnownPublicationTypeSlug, Publication } from '@features/foro'
 import { SaveButton } from './SaveButton'
-import { CategoryTag } from './CategoryTag'
+import { FavoriteButton } from './FavoriteButton'
+import { TypePill } from './TypePill'
 import { CalendarIcon, ClockIcon } from './ForoIcons'
 import { typeAccent, bylineFor, heroMetaValue, formatForoDate, hexToRgba } from './foroHelpers'
 import { colors, layout } from '../../../../theme'
@@ -39,7 +40,7 @@ export function ArticleHero({ publication, slug, typeName }: ArticleHeroProps) {
 
       <div className={`relative ${layout.container} pb-10 pt-32 sm:pb-12 sm:pt-36 lg:pb-14 lg:pt-40`}>
         <div className="mb-5">
-          <CategoryTag slug={slug} label={typeName} variant="glass" />
+          <TypePill slug={slug} label={typeName} variant="glass" />
         </div>
 
         <h1 className="max-w-3xl font-primary text-4xl font-bold leading-tight text-white sm:text-5xl">
@@ -67,7 +68,23 @@ export function ArticleHero({ publication, slug, typeName }: ArticleHeroProps) {
               del sidebar (`DetailShell`) ya ofrece exactamente las mismas
               opciones, y tener las dos duplicaba la acción en la misma
               pantalla. Guardar sí se queda: no está en ningún otro lado. */}
-          {isReal && <SaveButton publicationId={publication.id} variant="pill" accent={accent} />}
+          {isReal && (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* `viewer` viene sin la clave cuando no hay sesión: para un anónimo ambos arrancan
+                  apagados y el click abre el diálogo de login. */}
+              <FavoriteButton
+                publicationId={publication.id}
+                favorited={publication.viewer?.favorited ?? false}
+                variant="pill"
+              />
+              <SaveButton
+                publicationId={publication.id}
+                saved={publication.viewer?.saved ?? false}
+                variant="pill"
+                accent={accent}
+              />
+            </div>
+          )}
         </div>
       </div>
     </section>

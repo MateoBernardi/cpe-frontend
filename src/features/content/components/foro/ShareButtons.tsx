@@ -113,7 +113,7 @@ export function ShareIconRow({ url, copyUrl, title, accent = colors.tealDeep }: 
 interface ShareButtonProps {
   url: string
   title: string
-  /** Format accent — the glass border color, matching `<CategoryTag variant="glass">`'s hairline. */
+  /** Format accent — the glass border color, matching `<TypePill variant="glass">`'s hairline. */
   accent: string
 }
 
@@ -121,7 +121,7 @@ interface ShareButtonProps {
  * Hero pill button ("Compartir") that reveals a small popover with
  * `<ShareIconRow>` on click. Closes on outside click / Escape. Sits over the
  * cover image, so it uses the same glass treatment as the hero's format
- * badge (`<CategoryTag variant="glass">`): translucent navy scrim,
+ * badge (`<TypePill variant="glass">`): translucent navy scrim,
  * `backdrop-blur`, an accent-colored hairline border, white label — one
  * visual system across the hero's overlaid controls.
  */

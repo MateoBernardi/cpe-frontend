@@ -2,7 +2,7 @@ import type { KnownPublicationTypeSlug } from '@features/foro'
 import { typeAccent, hexToRgba } from './foroHelpers'
 import { colors } from '../../../../theme'
 
-interface CategoryTagProps {
+interface TypePillProps {
   slug: KnownPublicationTypeSlug | null
   label: string
   /**
@@ -30,10 +30,10 @@ const BASE_CLASSES = 'inline-flex w-fit items-center rounded-full px-2.5 py-1 te
  * the `solid` variant, a light background tint) all derive from the
  * format's accent (`typeAccent`) — no dot. Color is never the only signal:
  * the label text always carries the format name. NOT the same treatment as
- * content tags (`<TagList>`), so this can be restyled freely without
+ * content categories (`<CategoryList>`), so this can be restyled freely without
  * touching those.
  */
-export function CategoryTag({ slug, label, variant = 'solid' }: CategoryTagProps) {
+export function TypePill({ slug, label, variant = 'solid' }: TypePillProps) {
   const accent = typeAccent(slug)
 
   if (variant === 'glass') {

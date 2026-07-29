@@ -2,7 +2,7 @@ export { foroKeys } from './foroKeys'
 export {
   usePublicationTypes,
   useCategories,
-  useTags,
+  useCategoryMutations,
 } from './useTaxonomyViewModel'
 export {
   usePublications,

@@ -35,6 +35,18 @@ export function BookmarkIcon({ size = 18, className, filled = false }: IconProps
   )
 }
 
+/**
+ * Estrella del botón de favorito. Estrella y no corazón a propósito: el foro es un espacio
+ * editorial/académico y un corazón lo hace leer como red social (ver DECISIONS D48).
+ */
+export function StarIcon({ size = 18, className, filled = false }: IconProps & { filled?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={1.75} className={className} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m12 3.5 2.6 5.55 6.02.79-4.4 4.2 1.1 6-5.32-2.9-5.32 2.9 1.1-6-4.4-4.2 6.02-.79L12 3.5Z" />
+    </svg>
+  )
+}
+
 export function ShareIcon({ size = 18, className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.75} className={className} aria-hidden="true">

@@ -139,6 +139,38 @@ html.lenis, html.lenis body {
   animation: actionButtonCheck 0.3s ease-out forwards;
 }
 
+/* ── Toggle de interacción (favorito / guardado) ──
+   Mismo criterio que el mark del checkbox de acá abajo: apagar tiene que pesar
+   visualmente lo mismo que encender, así que hay dos animaciones y no una.
+   `pop` sobrepasa la escala y vuelve (el gesto de marcar se siente como un
+   golpecito); `drop` se hunde y vuelve, más corto y sin sobrepaso, para que
+   quitar no se lea como un segundo "marcar". Las dos duran menos de 300ms:
+   corren sobre un estado ya actualizado de forma optimista, así que no pueden
+   demorar la lectura del nuevo estado. */
+@keyframes interactionTogglePop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.32); }
+  70%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+@keyframes interactionToggleDrop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(0.82); }
+  100% { transform: scale(1); }
+}
+.interaction-toggle-pop {
+  animation: interactionTogglePop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.interaction-toggle-drop {
+  animation: interactionToggleDrop 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .interaction-toggle-pop,
+  .interaction-toggle-drop {
+    animation: none;
+  }
+}
+
 /* ── Checkbox mark (preferences toggles) ──
    Se dibuja al marcar y se BORRA al desmarcar (el trazo se retrae en lugar de
    desaparecer de golpe), así el gesto de apagar tiene el mismo peso visual que

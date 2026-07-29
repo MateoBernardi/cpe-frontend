@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { usePublicationTypes, useFeedsByType, resolveKnownSlug } from '@features/foro'
 import type { PublicationPreview } from '@features/foro'
-import { INTERACCIONES_SECTIONS, typeAccent, formatForoDate, heroCtaVerb, CategoryTag, ChevronRight } from '@features/content/components/foro'
+import { INTERACCIONES_SECTIONS, typeAccent, formatForoDate, heroCtaVerb, TypePill, ChevronRight } from '@features/content/components/foro'
 import type { InteraccionSection } from '@features/content/components/foro'
 import { colors } from '../../../../theme'
 
@@ -72,14 +72,14 @@ export default function ForoPreviewSection() {
             const accent = typeAccent(section.slug)
             return (
               <div key={section.slug} className="flex flex-col gap-3">
-                {/* Format link — the shared `<CategoryTag>` pill, same as every
+                {/* Format link — the shared `<TypePill>` pill, same as every
                     other place a format is identified, so the home preview
                     can't drift from the pages' pill styling. */}
                 <Link
                   to={`/interacciones/${section.path}`}
                   className="group inline-flex w-fit items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
-                  <CategoryTag slug={section.slug} label={section.label} />
+                  <TypePill slug={section.slug} label={section.label} />
                   <ChevronRight size={16} className="text-gray-400 transition-transform duration-300 group-hover:translate-x-1" />
                 </Link>
 

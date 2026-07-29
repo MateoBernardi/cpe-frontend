@@ -1,12 +1,9 @@
 import type { Publication, PublicationPreview } from '@features/foro'
-import { useComments, useCommentMutations } from '@features/foro'
 import { DetailShell } from './DetailShell'
-import { CommentList } from './CommentList'
-import { CommentComposer } from './CommentComposer'
-import { TagList } from './TagList'
+import { CommentThread } from './CommentThread'
+import { CategoryList } from './CategoryList'
 import { Prose } from './Prose'
 import { Gallery } from './Gallery'
-import { colors } from '../../../../theme'
 
 interface DiscussionDetailProps {
   publication: Publication
@@ -39,33 +36,20 @@ interface DiscussionDetailProps {
  * everywhere.
  */
 export function DiscussionDetail({ publication, typeName, related, preview = false, embedded = false }: DiscussionDetailProps) {
-  const { data: comments, isLoading } = useComments(publication.id)
-  const { create, remove } = useCommentMutations(publication.id)
-
-  const replyCount = comments?.length ?? publication.interactions?.comments ?? 0
-
   return (
     <DetailShell publication={publication} slug="discusion" typeName={typeName} related={related} embedded={embedded}>
       <article>
-        {publication.tags.length > 0 && (
-          <div className="mb-5"><TagList tags={publication.tags} /></div>
+        {publication.categories.length > 0 && (
+          <div className="mb-5"><CategoryList categories={publication.categories} /></div>
         )}
         <Prose content={publication.content} />
         <Gallery images={publication.images} />
 
-        <h3 className="font-primary mb-2 mt-10 border-b border-gray-100 pb-3 text-lg font-bold" style={{ color: colors.blueDark }}>
-          {replyCount} respuestas
-        </h3>
-        {isLoading ? (
-          <p className="py-5 text-sm text-gray-500">Cargando respuestas…</p>
-        ) : (
-          <CommentList comments={comments ?? []} onDelete={(id) => remove.mutate(id)} />
-        )}
-
-        <CommentComposer
+        <CommentThread
+          publicationId={publication.id}
+          commentCount={publication.interactions?.comments}
+          noun="respuestas"
           preview={preview}
-          onSubmit={(content) => (preview ? Promise.resolve() : create.mutateAsync(content))}
-          isSubmitting={create.isPending}
         />
       </article>
     </DetailShell>

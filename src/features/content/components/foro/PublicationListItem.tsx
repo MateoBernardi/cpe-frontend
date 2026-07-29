@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 import type { PublicationPreview, KnownPublicationTypeSlug } from '@features/foro'
 import { SaveButton } from './SaveButton'
-import { CategoryTag } from './CategoryTag'
+import { FavoriteButton } from './FavoriteButton'
+import { TypePill } from './TypePill'
 import { PlayIcon, ChatBubbleIcon } from './ForoIcons'
 import { formatForoDate, typeAccent, previewMetaLine } from './foroHelpers'
-import { TagList } from './TagList'
+import { CategoryList } from './CategoryList'
 import { colors } from '../../../../theme'
 
 interface PublicationListItemProps {
@@ -87,7 +88,7 @@ export function PublicationListItem({ publication, typeSlug, typeName, size = 'd
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
-          <CategoryTag slug={typeSlug} label={typeName} />
+          <TypePill slug={typeSlug} label={typeName} />
           {statusBadge === 'draft' && (
             // Ámbar sólido, no el azul tenue de antes: un borrador es un estado
             // que hay que poder distinguir de un vistazo entre publicaciones ya
@@ -106,12 +107,21 @@ export function PublicationListItem({ publication, typeSlug, typeName, size = 'd
           {publication.title}
         </Link>
         {metaLine && <span className="truncate text-xs text-gray-400">{metaLine}</span>}
-        <TagList tags={publication.tags} max={3} size="sm" />
+        <CategoryList categories={publication.categories} max={3} size="sm" />
       </div>
 
       {showSave && (
-        <div className="shrink-0 self-center">
-          <SaveButton publicationId={publication.id} variant="icon" />
+        <div className="flex shrink-0 items-center gap-1 self-center">
+          <FavoriteButton
+            publicationId={publication.id}
+            favorited={publication.viewer?.favorited ?? false}
+            variant="icon"
+          />
+          <SaveButton
+            publicationId={publication.id}
+            saved={publication.viewer?.saved ?? false}
+            variant="icon"
+          />
         </div>
       )}
     </div>

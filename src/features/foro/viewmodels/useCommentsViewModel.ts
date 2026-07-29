@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { foroService } from '../services'
 import { mapInteractionDTO } from '../mappers'
 import { INTERACTION_TYPE_IDS } from '../dtos'
-import type { InteractionDTO, InteractionCountsDTO, PublicationDTO, PublicationPreviewDTO } from '../dtos'
+import type { InteractionDTO, InteractionCountsDTO, MyInteractionDTO, PublicationDTO, PublicationPreviewDTO } from '../dtos'
 import { useForoAuth } from '../auth/foroAuthContext'
 import { foroKeys } from './foroKeys'
 
@@ -68,7 +68,17 @@ export function useCommentMutations(publicationId: number) {
   const qc = useQueryClient()
   const { user } = useForoAuth()
   const commentsKey = () => foroKeys.comments(user?.id ?? null, publicationId)
-  const invalidate = () => qc.invalidateQueries({ queryKey: commentsKey() })
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: commentsKey() })
+    // Un comentario es una interacción, así que también aparece en el panel "Interacciones" del
+    // perfil (`GET /interactions/me`). Sin esto, comentar y después ir al perfil mostraba la lista
+    // vieja hasta que algo más la invalidara.
+    void qc.invalidateQueries({ queryKey: foroKeys.myInteractionsPrefix() })
+    // El contador de comentarios de la publicación vive en el DTO de detalle y en cada preview
+    // cacheada, así que crear o borrar un comentario los deja desactualizados.
+    void qc.invalidateQueries({ queryKey: foroKeys.publication(publicationId) })
+    void qc.invalidateQueries({ queryKey: foroKeys.publicationsPrefix() })
+  }
 
   /** `parentId` makes this a reply instead of a root comment; the backend re-parents
    *  (flattens) anything past `MAX_COMMENT_DEPTH` rather than rejecting it. */
@@ -230,6 +240,24 @@ export function useInteractionToggle(publicationId: number, typeId: number, pare
     )
   }
 
+  /**
+   * Saca la fila correspondiente de las listas de `GET /interactions/me`.
+   *
+   * En los paneles del perfil la fila ES la interacción, así que no hay ningún flag que invertir:
+   * `<SaveButton saved>` / `<FavoriteButton favorited>` se renderizan ahí siempre encendidos. Sin
+   * esto, quitar un guardado desde el panel no producía NINGÚN cambio visible hasta que volvía la
+   * invalidación — el botón se veía igual y la fila seguía en su lugar.
+   *
+   * Sólo aplica al target-publicación: un favorito sobre un comentario no aparece en estos paneles.
+   */
+  const removeFromMyInteractions = () => {
+    if (parentId !== undefined) return
+    qc.setQueriesData<MyInteractionDTO[] | undefined>(
+      { queryKey: foroKeys.myInteractionsPrefix() },
+      (old) => old?.filter((row) => !(row.publication.id === publicationId && row.type_id === typeId)),
+    )
+  }
+
   const applyToComment = (delta: 1 | -1, viewerValue: boolean) => {
     if (parentId === undefined) return
     qc.setQueryData<InteractionDTO[]>(commentsKey, (old) =>
@@ -247,6 +275,10 @@ export function useInteractionToggle(publicationId: number, typeId: number, pare
     void qc.invalidateQueries({ queryKey: pubKey })
     void qc.invalidateQueries({ queryKey: foroKeys.publicationsPrefix() })
     if (parentId !== undefined) void qc.invalidateQueries({ queryKey: commentsKey })
+    // `GET /interactions/me` alimenta los paneles "Guardados" e "Interacciones" del perfil, y sus
+    // filas SON estas interacciones: sin esto, quitar un guardado desde el panel deja la fila
+    // colgada hasta el próximo refetch por otro motivo.
+    void qc.invalidateQueries({ queryKey: foroKeys.myInteractionsPrefix() })
   }
 
   const add = useMutation({
@@ -279,8 +311,10 @@ export function useInteractionToggle(publicationId: number, typeId: number, pare
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: pubKey })
       await qc.cancelQueries({ queryKey: foroKeys.publicationsPrefix() })
+      await qc.cancelQueries({ queryKey: foroKeys.myInteractionsPrefix() })
       const previousPublication = qc.getQueryData<PublicationDTO>(pubKey)
       const previousLists = qc.getQueriesData<PublicationPreviewDTO[]>({ queryKey: foroKeys.publicationsPrefix() })
+      const previousMyInteractions = qc.getQueriesData<MyInteractionDTO[]>({ queryKey: foroKeys.myInteractionsPrefix() })
       let previousComments: InteractionDTO[] | undefined
       if (parentId !== undefined) {
         await qc.cancelQueries({ queryKey: commentsKey })
@@ -289,11 +323,13 @@ export function useInteractionToggle(publicationId: number, typeId: number, pare
       } else {
         applyToPublication(-1, false)
       }
-      return { previousPublication, previousLists, previousComments }
+      removeFromMyInteractions()
+      return { previousPublication, previousLists, previousMyInteractions, previousComments }
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.previousPublication !== undefined) qc.setQueryData(pubKey, ctx.previousPublication)
       ctx?.previousLists?.forEach(([key, data]) => qc.setQueryData(key, data))
+      ctx?.previousMyInteractions?.forEach(([key, data]) => qc.setQueryData(key, data))
       if (ctx?.previousComments !== undefined) qc.setQueryData(commentsKey, ctx.previousComments)
     },
     onSettled: invalidate,

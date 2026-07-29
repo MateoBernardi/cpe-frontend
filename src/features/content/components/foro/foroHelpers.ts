@@ -261,7 +261,7 @@ export function interactionRows(counts: InteractionCounts | null, slug: KnownPub
   // mismo dato (`visits`) en todos, y llamarlo "Reproducciones" en un caso
   // sugería una métrica de reproducción de audio que nadie está midiendo.
   if (counts.visits != null) rows.push({ label: 'Visitas', value: counts.visits })
-  if (counts.likes != null) rows.push({ label: 'Me gusta', value: counts.likes })
+  if (counts.favorites != null) rows.push({ label: 'Favoritos', value: counts.favorites })
   if (counts.comments != null) {
     rows.push({ label: slug === 'discusion' ? 'Respuestas' : 'Comentarios', value: counts.comments })
   }

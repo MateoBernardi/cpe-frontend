@@ -4,7 +4,7 @@ import {
   usePublication,
   usePublicationTypes,
   useCategories,
-  useTags,
+  useCategoryMutations,
   usePublicationMutations,
   useForoAuth,
   foroService,
@@ -18,7 +18,7 @@ import { LoadingSpinner, ErrorMessage } from '@shared/components'
 import { colors, foroHairline } from '../../../../theme'
 import { ComposePreviewPane } from './ComposePreviewPane'
 import { TYPE_CONFIG, PUBLICATION_CONTENT_MAX, MAX_NOVEDAD_IMAGES, EMPTY_FORM, type FormState, type TypeFieldConfig } from './composeConfig'
-import { CategoryTag } from './CategoryTag'
+import { TypePill } from './TypePill'
 import { ActionButton } from './ActionButton'
 import { isSafeHttpUrl } from './foroHelpers'
 
@@ -86,7 +86,7 @@ interface FormErrors {
 }
 
 /** Adapted from the demo composer's `validateForm` — same rules, ported onto
- * this form's real shape (`tagIds`/`frontImageUrl`/`galleryImages` instead
+ * this form's real shape (`categoryIds`/`frontImageUrl`/`galleryImages` instead
  * of `tagsText`/`coverObjectUrl`). Subtitle and links are only validated when
  * `config` says the active type actually shows that field — a hidden field's
  * leftover value (e.g. links kept from before switching to discusión) must
@@ -160,7 +160,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const { data: existing, isLoading: loadingExisting, error: loadError } = usePublication(isEdit ? publicationId : undefined)
   const { data: types, isLoading: loadingTypes } = usePublicationTypes()
   const { data: categories, isLoading: loadingCategories } = useCategories()
-  const { data: tags, isLoading: loadingTags } = useTags()
+  const { create: createCategory, remove: removeCategory } = useCategoryMutations()
   const { create, update } = usePublicationMutations()
 
   // Controlled from above in create mode, internal in edit mode. The internal
@@ -182,22 +182,17 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const [openLinkKind, setOpenLinkKind] = useState<LinkLabel | null>(null)
 
   // Prefill on edit once the publication loads.
-  // Publication detail exposes tag NAMES, not ids, so resolve them back to ids
-  // via the loaded tags list. This is required for correctness, not just UX:
-  // the publication PATCH does a FULL-REPLACE of `tag_ids`, so submitting an
-  // empty/incomplete set would silently wipe the publication's existing tags.
+  // Antes acá había que re-resolver nombres→ids porque la lectura devolvía nombres de tag y la
+  // escritura pedía ids. Ahora el detalle trae la categoría RESUELTA (`{id,name,slug}`), así que
+  // los ids salen directo. Sigue importando llenarlo completo: el PATCH hace FULL-REPLACE de
+  // `category_ids`, con lo cual mandar un set incompleto borraría las categorías existentes.
   useEffect(() => {
     if (!isEdit || !existing) return
-    const tagIdByName = new Map((tags ?? []).map((t) => [t.name, t.id]))
-    const resolvedTagIds = existing.tags
-      .map((name) => tagIdByName.get(name))
-      .filter((tagId): tagId is number => tagId != null)
     setForm({
       title: existing.title,
       subtitle: existing.subtitle ?? '',
       content: existing.content,
-      categoryIds: existing.categoryIds,
-      tagIds: resolvedTagIds,
+      categoryIds: existing.categories.map((category) => category.id),
       frontImageUrl: existing.imageUrl ?? '',
       galleryImages: existing.images.map((img) => ({
         id: img.id,
@@ -208,7 +203,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
     })
     // `setForm` es estable: es o el setter de `useState` o el que baja por
     // props desde `PublicarFlow` (también un setter de `useState`).
-  }, [isEdit, existing, tags, setForm])
+  }, [isEdit, existing, setForm])
 
   // Edit mode has no type picker — the type is fixed to whatever the
   // publication already has, derived from the loaded type list.
@@ -231,10 +226,34 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const showGallery = config?.showGallery ?? true
   const showLinks = config?.showLinks ?? true
 
-  const isLoadingRefData = loadingTypes || loadingCategories || loadingTags || (isEdit && loadingExisting)
+  const isLoadingRefData = loadingTypes || loadingCategories || (isEdit && loadingExisting)
 
   const toggleInArray = (arr: number[], value: number): number[] =>
     arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]
+
+  const [newCategoryName, setNewCategoryName] = useState('')
+
+  // Alta inline de categoría: se crea y se auto-selecciona, que es siempre la intención de quien la
+  // está escribiendo mientras carga una publicación.
+  const handleCreateCategory = async () => {
+    const name = newCategoryName.trim()
+    if (!name || createCategory.isPending) return
+    const created = await createCategory.mutateAsync(name)
+    setNewCategoryName('')
+    setForm((f) => ({ ...f, categoryIds: [...f.categoryIds, created.id] }))
+  }
+
+  // La baja cascadea sobre `categories_publications`, o sea que desvincula la categoría de TODAS las
+  // publicaciones, no sólo de esta. Por eso se confirma antes, misma pauta que el borrado de
+  // publicación en `MisPublicacionesPanel`.
+  const handleDeleteCategory = async (id: number, name: string) => {
+    const confirmed = window.confirm(
+      `¿Eliminar la categoría "${name}"? Se va a desvincular de todas las publicaciones que la usen, no sólo de esta.`,
+    )
+    if (!confirmed || removeCategory.isPending) return
+    await removeCategory.mutateAsync(id)
+    setForm((f) => ({ ...f, categoryIds: f.categoryIds.filter((categoryId) => categoryId !== id) }))
+  }
 
   const handleFrontImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -381,7 +400,6 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
       subtitle: showSubtitle && form.subtitle.trim() ? form.subtitle.trim() : null,
       content: form.content,
       categoryIds: form.categoryIds,
-      tagIds: form.tagIds,
       frontImageUrl: showCover && form.frontImageUrl ? form.frontImageUrl : null,
       imageIds: showGallery ? form.galleryImages.map((img) => img.id) : [],
       externalLinks: showLinks ? form.externalLinks.filter((l) => l.label.trim() && l.url.trim()) : [],
@@ -402,15 +420,16 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   }
 
   const categoryList = useMemo(() => categories ?? [], [categories])
-  const tagList = useMemo(() => tags ?? [], [tags])
 
   // ── Live preview: builds a throwaway (id: 0) Publication from the current
   // form state and renders it through the ACTUAL public detail components,
   // so publishers see exactly what readers will see before saving. ──
-  const previewTagNames = useMemo(() => {
-    const nameById = new Map(tagList.map((t) => [t.id, t.name]))
-    return form.tagIds.map((tagId) => nameById.get(tagId)).filter((n): n is string => n != null)
-  }, [tagList, form.tagIds])
+  // La vista previa necesita las categorías resueltas, no sólo sus ids: es lo que consume
+  // `<CategoryList>` en las plantillas reales de detalle.
+  const previewCategories = useMemo(
+    () => categoryList.filter((category) => form.categoryIds.includes(category.id)),
+    [categoryList, form.categoryIds],
+  )
 
   const previewPublication: Publication = useMemo(
     () => ({
@@ -426,14 +445,15 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
       // someone else's publication as an admin).
       authorName: existing?.authorName ?? user?.name ?? 'Vos',
       createdAt: existing?.createdAt ?? new Date(),
-      tags: previewTagNames,
-      categoryIds: form.categoryIds,
+      categories: previewCategories,
+      // La vista previa no es de nadie: no hay estado de favorito/guardado que mostrar.
+      viewer: null,
       interactions: existing?.interactions ?? null,
       externalLinks: form.externalLinks.filter((l) => l.label.trim() && l.url.trim()),
       images: form.galleryImages.map((img) => ({ id: img.id, url: img.url, altText: null })),
       status: existing?.status ?? 'draft',
     }),
-    [form, existing, previewTagNames, matchedType, user],
+    [form, existing, previewCategories, matchedType, user],
   )
 
   const previewType: PublicationType | null = matchedType ?? (resolvedSlug ? { id: 0, name: config?.name ?? '', slug: resolvedSlug } : null)
@@ -446,7 +466,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          {resolvedSlug && <CategoryTag slug={resolvedSlug} label={config?.name ?? ''} />}
+          {resolvedSlug && <TypePill slug={resolvedSlug} label={config?.name ?? ''} />}
           <div>
             <h1 className="text-xl font-bold sm:text-2xl" style={{ color: colors.blueDark }}>
               {isEdit ? 'Editar publicación' : `Publicar ${(config?.name ?? '').toLowerCase()}`}
@@ -553,55 +573,81 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
                   {categoryList.map((c) => {
                     const active = form.categoryIds.includes(c.id)
                     return (
-                      <button
+                      <span
                         key={c.id}
-                        type="button"
-                        onClick={() => setForm((f) => ({ ...f, categoryIds: toggleInArray(f.categoryIds, c.id) }))}
-                        className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
+                        className="inline-flex items-center gap-1 rounded-full pl-3 pr-1.5 py-1.5 text-xs font-medium transition-colors"
                         style={active ? { backgroundColor: colors.ctaPrimary, color: colors.white } : { backgroundColor: colors.lightGray, color: colors.blueDark }}
                       >
-                        {c.name}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, categoryIds: toggleInArray(f.categoryIds, c.id) }))}
+                          aria-pressed={active}
+                        >
+                          {c.name}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteCategory(c.id, c.name)}
+                          aria-label={`Eliminar la categoría ${c.name}`}
+                          title="Eliminar categoría"
+                          className="leading-none opacity-60 transition-opacity hover:opacity-100"
+                        >
+                          ×
+                        </button>
+                      </span>
                     )
                   })}
                 </div>
-              </div>
 
-              {/* ── Etiquetas ── */}
-              <div>
-                <span className="mb-2 block text-sm font-medium text-gray-700">Etiquetas</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {tagList.length === 0 && (
-                    <span className="text-xs text-gray-400">No hay etiquetas creadas todavía.</span>
-                  )}
-                  {tagList.map((t) => {
-                    const active = form.tagIds.includes(t.id)
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setForm((f) => ({ ...f, tagIds: toggleInArray(f.tagIds, t.id) }))}
-                        className="inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
-                        style={active ? { backgroundColor: colors.blueMid, color: colors.white } : { backgroundColor: colors.lightGray, color: colors.blueDark }}
-                      >
-                        {t.name}
-                      </button>
-                    )
-                  })}
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Enter no debe enviar el formulario de la publicación.
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        void handleCreateCategory()
+                      }
+                    }}
+                    placeholder="Nueva categoría"
+                    className="w-44 rounded-lg border px-3 py-1.5 text-xs focus:outline-none focus:ring-1"
+                    style={FIELD_STYLE}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleCreateCategory()}
+                    disabled={!newCategoryName.trim() || createCategory.isPending}
+                    className="rounded-full px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{ backgroundColor: colors.ctaPrimary }}
+                  >
+                    Crear
+                  </button>
                 </div>
+                {(createCategory.error || removeCategory.error) && (
+                  <span role="alert" className="mt-1 block text-xs text-red-600">
+                    {getForoApiErrorMessage(createCategory.error ?? removeCategory.error)}
+                  </span>
+                )}
               </div>
 
               {/* ── Imagen de portada ── */}
-              <div>
-                <span className="mb-1 block text-sm font-medium text-gray-700">Imagen de portada</span>
-                {form.frontImageUrl && (
-                  <img src={form.frontImageUrl} alt="" className="mb-2 h-32 w-full max-w-xs rounded-lg object-cover ring-1 ring-gray-200" />
-                )}
-                <input type="file" accept="image/*" onChange={handleFrontImageChange} disabled={uploadingFront} className="text-sm" />
-                {uploadingFront && <p className="mt-1 text-xs text-gray-400">Subiendo {frontImagePreviewName}…</p>}
-              </div>
+              {showCover && (
+                <div>
+                  <span className="mb-1 block text-sm font-medium text-gray-700">Imagen de portada</span>
+                  {form.frontImageUrl && (
+                    <img src={form.frontImageUrl} alt="" className="mb-2 h-32 w-full max-w-xs rounded-lg object-cover ring-1 ring-gray-200" />
+                  )}
+                  <input type="file" accept="image/*" onChange={handleFrontImageChange} disabled={uploadingFront} className="text-sm" />
+                  {uploadingFront && <p className="mt-1 text-xs text-gray-400">Subiendo {frontImagePreviewName}…</p>}
+                </div>
+              )}
 
-              {/* ── Galería de imágenes ── */}
+              {/* ── Galería de imágenes ──
+                  Oculta cuando la plantilla del formato no la renderiza (podcast): subir acá dejaría
+                  las imágenes en `images[]` sin que ningún lector las vea nunca. */}
+              {showGallery && (
               <div>
                 <span className="mb-1 block text-sm font-medium text-gray-700">Galería de imágenes</span>
                 <input type="file" accept="image/*" multiple onChange={handleGalleryImagesChange} disabled={uploadingGallery} className="text-sm" />
@@ -619,6 +665,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
                   </ul>
                 )}
               </div>
+              )}
 
               {uploadError && <ErrorMessage message={uploadError} />}
 
@@ -627,7 +674,11 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
                   justamente lo que decide cómo se renderiza el link al leer
                   (`ExternalLinksCTA` distingue 'spotify'/'youtube', y
                   `getYouTubeEmbedUrl` decide si va embebido), así que dejarla a
-                  mano garantizaba que un typo rompiera la vista pública. */}
+                  mano garantizaba que un typo rompiera la vista pública.
+
+                  Ocultos cuando el formato no los renderiza (discusión): `DiscussionDetail` nunca
+                  toca `externalLinks`. */}
+              {showLinks && (
               <div>
                 <span className="mb-2 block text-sm font-medium text-gray-700">Links externos</span>
                 {config?.linksHint && <p className="mb-2 text-xs text-gray-400">{config.linksHint}</p>}
@@ -694,6 +745,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
                   ))}
                 </div>
               </div>
+              )}
 
               {mutationError && <ErrorMessage message={getForoApiErrorMessage(mutationError)} />}
 

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 import type { PublicationPreview, KnownPublicationTypeSlug } from '@features/foro'
-import { CategoryTag } from './CategoryTag'
+import { TypePill } from './TypePill'
 import { ChatBubbleIcon, ChevronRight } from './ForoIcons'
-import { TagList } from './TagList'
+import { CategoryList } from './CategoryList'
 import { formatForoDate, typeAccent, bylineFor, hexToRgba } from './foroHelpers'
 import { colors } from '../../../../theme'
 
@@ -76,7 +76,7 @@ export function FeaturedCard({ preview, typeSlug, typeName }: FeaturedCardProps)
 
       <div className="p-6 sm:p-8">
         <div className="flex flex-wrap items-center gap-2">
-          <CategoryTag slug={typeSlug} label={typeName} />
+          <TypePill slug={typeSlug} label={typeName} />
           <span className="text-gray-300" aria-hidden="true">·</span>
           <span className="text-xs font-medium text-gray-400">{formatForoDate(preview.createdAt)}</span>
         </div>
@@ -87,7 +87,7 @@ export function FeaturedCard({ preview, typeSlug, typeName }: FeaturedCardProps)
           <p className="mt-3 line-clamp-2 text-base leading-relaxed text-gray-500">{preview.subtitle}</p>
         )}
         <div className="mt-4">
-          <TagList tags={preview.tags} max={3} size="sm" />
+          <CategoryList categories={preview.categories} max={3} size="sm" />
         </div>
 
         <div className="mt-6 flex items-center justify-between gap-4 border-t border-gray-100 pt-5">
