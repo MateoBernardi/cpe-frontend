@@ -128,6 +128,53 @@ html.lenis, html.lenis body {
   max-height: 500px;
 }
 
+/* ── Action button success check (draws the tick) ── */
+@keyframes actionButtonCheck {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.action-button-check {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: actionButtonCheck 0.3s ease-out forwards;
+}
+
+/* ── Checkbox mark (preferences toggles) ──
+   Se dibuja al marcar y se BORRA al desmarcar (el trazo se retrae en lugar de
+   desaparecer de golpe), así el gesto de apagar tiene el mismo peso visual que
+   el de encender. */
+@keyframes checkboxMarkDraw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes checkboxMarkErase {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 1; }
+}
+.checkbox-mark {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.checkbox-mark-checked {
+  animation: checkboxMarkDraw 0.25s ease-out forwards;
+}
+.checkbox-mark-unchecked {
+  animation: checkboxMarkErase 0.2s ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-button-check,
+  .checkbox-mark-checked {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  /* El borrado no se anima: el trazo simplemente ya no está. */
+  .checkbox-mark-unchecked {
+    animation: none;
+    stroke-dashoffset: 1;
+  }
+}
+
 /* ── CV upload zone pulse ring ── */
 @keyframes cvPulse {
   0% { box-shadow: 0 0 0 0 rgba(1, 136, 141, 0.25); }

@@ -3,6 +3,7 @@ import { useComments, useCommentMutations } from '@features/foro'
 import { DetailShell } from './DetailShell'
 import { CommentList } from './CommentList'
 import { CommentComposer } from './CommentComposer'
+import { TagList } from './TagList'
 import { Prose } from './Prose'
 import { Gallery } from './Gallery'
 import { colors } from '../../../../theme'
@@ -18,6 +19,8 @@ interface DiscussionDetailProps {
    * hilo tampoco hace lecturas.
    */
   preview?: boolean
+  /** Forwarded to `<DetailShell>` — full-width, single-column, no sidebar (composer preview). */
+  embedded?: boolean
 }
 
 /**
@@ -35,15 +38,18 @@ interface DiscussionDetailProps {
  * other three formats — the save and sharing affordances are the same
  * everywhere.
  */
-export function DiscussionDetail({ publication, typeName, related, preview = false }: DiscussionDetailProps) {
+export function DiscussionDetail({ publication, typeName, related, preview = false, embedded = false }: DiscussionDetailProps) {
   const { data: comments, isLoading } = useComments(publication.id)
   const { create, remove } = useCommentMutations(publication.id)
 
   const replyCount = comments?.length ?? publication.interactions?.comments ?? 0
 
   return (
-    <DetailShell publication={publication} slug="discusion" typeName={typeName} related={related}>
+    <DetailShell publication={publication} slug="discusion" typeName={typeName} related={related} embedded={embedded}>
       <article>
+        {publication.tags.length > 0 && (
+          <div className="mb-5"><TagList tags={publication.tags} /></div>
+        )}
         <Prose content={publication.content} />
         <Gallery images={publication.images} />
 

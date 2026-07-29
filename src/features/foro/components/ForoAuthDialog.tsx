@@ -4,7 +4,7 @@ import { useForoAuth, type ForoAuthDialogMode } from '../auth'
 import { foroAuthClient, toForoApiError } from '../api/foroAuthClient'
 import { getForoApiErrorMessage } from '../api/foroApiRequest'
 import { TurnstileWidget, type TurnstileWidgetHandle } from './TurnstileWidget'
-import { colors, fonts, foroPalette } from '../../../theme'
+import { colors, fonts, foroPalette, platformColors } from '../../../theme'
 
 // `normal-case` matters: the wrapping <label> is `uppercase`, and text-transform is
 // inherited by inputs — without this the revealed password renders in capitals that
@@ -39,11 +39,57 @@ function EyeIcon({ crossed }: { crossed: boolean }) {
   )
 }
 
+/**
+ * "G" oficial de Google, en SVG inline — mismo criterio que `<YouTubeMark>`:
+ * nada de icon fonts ni assets remotos (la CSP del sitio sólo permite `'self'`
+ * para imágenes, y este diálogo tiene que renderizar sin red).
+ *
+ * Los cuatro colores van fijos desde `platformColors`, no `currentColor`: es un
+ * mark multicolor y recolorearlo dejaría de ser el logo de Google.
+ */
+function GoogleMark({ size = 18 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 48 48" width={size} height={size} aria-hidden="true" focusable="false">
+      <path
+        fill={platformColors.googleYellow}
+        d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+      />
+      <path
+        fill={platformColors.googleRed}
+        d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"
+      />
+      <path
+        fill={platformColors.googleGreen}
+        d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"
+      />
+      <path
+        fill={platformColors.googleBlue}
+        d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"
+      />
+    </svg>
+  )
+}
+
 const tabButtonClass = (active: boolean) =>
   [
     'flex-1 border-none px-3 py-[9px] text-[13.5px] font-semibold cursor-pointer transition-colors',
     active ? 'bg-white shadow-sm' : 'bg-transparent',
   ].join(' ')
+
+/**
+ * Normalizes each word to `Primera Mayúscula` — handles accidental ALL CAPS
+ * / all-lowercase input and multi-word names ("de la cruz" → "De La Cruz").
+ * `toLocaleUpperCase('es')`/`toLocaleLowerCase('es')` (not the locale-less
+ * variants) so accented first letters (á, é, í, ó, ú, ñ) case correctly.
+ */
+function capitalizeName(value: string): string {
+  return value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toLocaleUpperCase('es') + word.slice(1).toLocaleLowerCase('es'))
+    .join(' ')
+}
 
 /**
  * Login/signup modal: email+password tabs (sign in / sign up) plus a
@@ -61,11 +107,16 @@ export function ForoAuthDialog() {
   const close = ctx.closeAuthDialog
 
   const [mode, setMode] = useState<ForoAuthDialogMode>(ctx.authDialogMode)
-  const [name, setName] = useState('')
+  // Nombre y apellido se piden por separado (es lo que la gente espera de un
+  // registro), pero Better Auth tiene un único campo `name`: se concatenan
+  // normalizados recién al enviar. El backend no cambia.
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -86,7 +137,8 @@ export function ForoAuthDialog() {
   }
 
   const resetForm = () => {
-    setName(''); setEmail(''); setPassword(''); setConfirmPassword(''); setShowPassword(false); setError(null)
+    setFirstName(''); setLastName(''); setEmail(''); setPassword(''); setConfirmPassword('')
+    setShowPassword(false); setShowConfirmPassword(false); setError(null)
     setForgotSent(false); setResendState('idle'); setResendError(null)
     resetCaptcha()
   }
@@ -147,7 +199,8 @@ export function ForoAuthDialog() {
     setSubmitting(true)
     try {
       if (mode === 'sign-up') {
-        await ctx.signUpEmail(email, password, name, captchaToken)
+        const fullName = [capitalizeName(firstName), capitalizeName(lastName)].filter(Boolean).join(' ')
+        await ctx.signUpEmail(email, password, fullName, captchaToken)
         // No session yet — `requireEmailVerification` blocks sign-in until the link is
         // clicked. Keep the email around for the resend button, drop the passwords.
         setPassword(''); setConfirmPassword('')
@@ -227,7 +280,7 @@ export function ForoAuthDialog() {
       role="presentation"
     >
       <div
-        className="relative w-full max-w-[420px] bg-white px-7 pb-7 pt-8 shadow-2xl"
+        className="relative w-full max-w-[420px] bg-white px-5 pb-7 pt-8 shadow-2xl sm:px-7"
         style={{ color: foroPalette.ink }}
         role="dialog"
         aria-modal="true"
@@ -257,17 +310,30 @@ export function ForoAuthDialog() {
 
             <form className="flex flex-col gap-3.5" onSubmit={handleSubmit} aria-busy={submitting}>
               {mode === 'sign-up' && (
-                <label className={labelClass} style={{ color: colors.blueDark }}>
-                  Nombre
-                  <input
-                    type="text"
-                    className={inputClass}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    autoComplete="name"
-                  />
-                </label>
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                  <label className={labelClass} style={{ color: colors.blueDark }}>
+                    Nombre
+                    <input
+                      type="text"
+                      className={inputClass}
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      autoComplete="given-name"
+                    />
+                  </label>
+                  <label className={labelClass} style={{ color: colors.blueDark }}>
+                    Apellido
+                    <input
+                      type="text"
+                      className={inputClass}
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      autoComplete="family-name"
+                    />
+                  </label>
+                </div>
               )}
               <label className={labelClass} style={{ color: colors.blueDark }}>
                 Email
@@ -308,15 +374,30 @@ export function ForoAuthDialog() {
               {mode === 'sign-up' && (
                 <label className={labelClass} style={{ color: colors.blueDark }}>
                   Repetir contraseña
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className={inputClass}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    minLength={8}
-                    autoComplete="new-password"
-                  />
+                  {/* Toggle propio, no compartido con el campo de arriba: revelar
+                      la confirmación mientras la primera queda oculta es
+                      justamente lo que permite comparar lo que se escribió. */}
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      className={passwordInputClass}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 flex items-center px-3"
+                      style={{ color: foroPalette.muted }}
+                      onClick={() => setShowConfirmPassword((v) => !v)}
+                      aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      aria-pressed={showConfirmPassword}
+                    >
+                      <EyeIcon crossed={showConfirmPassword} />
+                    </button>
+                  </div>
                 </label>
               )}
 
@@ -352,12 +433,13 @@ export function ForoAuthDialog() {
 
             <button
               type="button"
-              className="block w-full rounded-xl border px-[22px] py-3 text-sm font-semibold hover:[background-color:var(--foro-social-hover-bg)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2.5 rounded-xl border px-[22px] py-3 text-sm font-semibold hover:[background-color:var(--foro-social-hover-bg)] disabled:cursor-not-allowed disabled:opacity-60"
               style={{ borderColor: colors.lightGray, color: colors.ctaPrimary, '--foro-social-hover-bg': foroPalette.tealTint } as CSSProperties}
               onClick={() => handleSocial('google')}
               disabled={submitting}
             >
-              Continuar con Google
+              <GoogleMark />
+              Google
             </button>
           </>
         )}

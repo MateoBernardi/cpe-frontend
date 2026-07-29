@@ -1,17 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { foroService } from '../services'
 import { mapMyInteractionDTO } from '../mappers'
-import type { ListMyInteractionsParams, UpdateUserPreferencesInput } from '../models'
+import type { ListMyInteractionsParams, UpdateUserPreferencesInput, UserPreferences } from '../models'
 import type { UpdateUserDTO } from '../dtos'
 import { ForoApiError } from '../api/foroApiRequest'
 import { useForoAuth } from '../auth/foroAuthContext'
 import { foroKeys } from './foroKeys'
 
 /**
- * GET /interactions/me — the signed-in user's own interactions of a given
- * type (e.g. saved/liked publications for the profile screen), each row
- * already carrying its parent publication preview so cards render without a
- * second round-trip.
+ * GET /interactions/me — the signed-in user's own interactions across one or
+ * more types (e.g. comentario + favorito together for the "Interacciones"
+ * panel, or just guardado for "Guardados"), each row already carrying its
+ * parent publication preview so cards render without a second round-trip.
+ * `typeIds` is joined into the CSV `type_ids` param the backend expects
+ * (`myInteractionsQuerySchema` — was a single `type_id` before).
  */
 export function useMyInteractions(params: ListMyInteractionsParams) {
   const { user, isAuthenticated } = useForoAuth()
@@ -19,7 +21,11 @@ export function useMyInteractions(params: ListMyInteractionsParams) {
     queryKey: foroKeys.myInteractions(user?.id ?? null, params),
     queryFn: ({ signal }) =>
       foroService.getMyInteractions(
-        { type_id: params.typeId, limit: params.limit, offset: params.offset },
+        {
+          type_ids: params.typeIds.length > 0 ? params.typeIds.join(',') : undefined,
+          limit: params.limit,
+          offset: params.offset,
+        },
         signal,
       ),
     select: (dtos) => dtos.map(mapMyInteractionDTO),
@@ -42,9 +48,10 @@ export function useUserPreferences() {
   const qc = useQueryClient()
   const { user, isAuthenticated } = useForoAuth()
   const userId = user?.id ?? null
+  const key = foroKeys.userPreferences(userId)
 
   const query = useQuery({
-    queryKey: foroKeys.userPreferences(userId),
+    queryKey: key,
     queryFn: ({ signal }) => foroService.getUserPreferences(signal),
     retry: false,
     enabled: isAuthenticated,
@@ -54,7 +61,20 @@ export function useUserPreferences() {
 
   const update = useMutation({
     mutationFn: (data: UpdateUserPreferencesInput) => foroService.updateUserPreferences(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: foroKeys.userPreferences(userId) }),
+    onMutate: async (data) => {
+      await qc.cancelQueries({ queryKey: key })
+      const previous = qc.getQueryData<UserPreferences>(key)
+      qc.setQueryData<UserPreferences>(key, (old) => ({
+        emailNotifications: old?.emailNotifications ?? false,
+        pushNotifications: old?.pushNotifications ?? false,
+        ...data,
+      }))
+      return { previous }
+    },
+    onError: (_err, _data, ctx) => {
+      if (ctx?.previous !== undefined) qc.setQueryData(key, ctx.previous)
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: key }),
   })
 
   return { data: query.data, isLoading: query.isLoading, isUnavailable, update }

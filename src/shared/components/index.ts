@@ -12,6 +12,7 @@
 // instead. See Part 7 of rustling-wobbling-bentley.md.
 export { default as AdminLayout } from './AdminLayout'
 export { default as LoadingSpinner } from './LoadingSpinner'
+export { default as AnimatedCheckbox } from './AnimatedCheckbox'
 export { default as ErrorMessage } from './ErrorMessage'
 export { default as QueryState } from './QueryState'
 export { default as WhatsAppFab } from './WhatsAppFab'

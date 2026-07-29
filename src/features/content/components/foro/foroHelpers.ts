@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react'
 import type { InteractionCounts, KnownPublicationTypeSlug, Publication, PublicationPreview } from '@features/foro'
+import FORO_ENV from '@features/foro/api/foroApiConfig'
 import { foroAccents } from '../../../../theme'
 
 /**
@@ -72,34 +73,24 @@ export function initialsOf(name: string): string {
 }
 
 /**
- * `createdBy` is a raw backend user id, never joined to a human name by the
- * API (e.g. `"s4SQKY9ela9Uh2sU2UVzahs0yeJQzKAN"`) — it must never be rendered
- * verbatim. This heuristic recognizes that opaque-id shape (long, no spaces,
- * mixed alphanumerics) and returns `null` for it so callers fall back to a
- * generic byline. Demo/preview data that carries an actual human name
- * (contains a space) passes through untouched.
+ * Institutional fallback, used only when the backend couldn't resolve an
+ * author name (deleted user / orphaned FK). It is NOT the normal case any
+ * more: `created_by_name` is joined server-side, so real publications carry
+ * the real person's name.
  */
-const OPAQUE_ID_RE = /^[A-Za-z0-9_-]{16,}$/
-export function displayByline(createdBy: string | null | undefined): string | null {
-  if (!createdBy) return null
-  const trimmed = createdBy.trim()
-  if (!trimmed) return null
-  if (!trimmed.includes(' ') && OPAQUE_ID_RE.test(trimmed)) return null
-  return trimmed
-}
-
-/** Generic institutional byline used whenever `createdBy` resolves to "no author" (see `displayByline`). */
 export const GENERIC_BYLINE = 'Equipo CPE'
 
 /**
- * Byline shown for a publication card/detail: `null` for novedades (they're
- * institutional announcements, never authored — existing rule), otherwise
- * the real name when `displayByline` can extract one, falling back to the
- * generic institutional byline instead of ever rendering a raw id.
+ * Byline shown for a publication card/detail — the creator's real name.
+ *
+ * This used to hide the byline entirely for novedades (treating them as
+ * unsigned institutional announcements) and to run a heuristic over
+ * `createdBy` to avoid printing a raw Better Auth id. Both are gone: the API
+ * now returns `created_by_name`, and every format shows who wrote it.
  */
-export function bylineFor(createdBy: string, slug: KnownPublicationTypeSlug | null): string | null {
-  if (slug === 'novedad') return null
-  return displayByline(createdBy) ?? GENERIC_BYLINE
+export function bylineFor(authorName: string | null | undefined): string {
+  const trimmed = authorName?.trim()
+  return trimmed ? trimmed : GENERIC_BYLINE
 }
 
 /**
@@ -131,7 +122,7 @@ export function previewMetaLine(slug: KnownPublicationTypeSlug | null, publicati
     const n = publication.interactions?.comments
     return n != null && n > 0 ? `${n} respuestas` : 'Ver conversación'
   }
-  return bylineFor(publication.createdBy, slug)
+  return bylineFor(publication.authorName)
 }
 
 /** "Últimas novedades" / "Últimos papers" / "Últimos episodios" / "Últimas discusiones". */
@@ -156,10 +147,28 @@ export function shareCardTitle(slug: KnownPublicationTypeSlug | null): string {
   }
 }
 
-/** Absolute URL for a publication's detail screen — used by the share links. */
+/** Absolute URL for a publication's detail screen — what a human should end up looking at. */
 export function publicationUrl(id: number): string {
   if (typeof window === 'undefined') return `/publicaciones/${id}`
   return `${window.location.origin}/publicaciones/${id}`
+}
+
+/**
+ * URL handed to the social networks instead of `publicationUrl`.
+ *
+ * This site is a client-rendered SPA: WhatsApp, LinkedIn, X and friends fetch
+ * a shared link with a plain HTTP crawler that never runs JavaScript, so they
+ * only ever see `index.html`'s generic site-wide Open Graph tags — every
+ * publication would preview identically. The backend's `/publications/:id/share`
+ * returns a small HTML document carrying that publication's real og:title /
+ * og:description / og:image and then redirects a real browser on to
+ * `publicationUrl(id)`.
+ *
+ * Deliberately NOT used by the "copy link" button: a person pasting a link
+ * into a chat should get the clean, readable URL.
+ */
+export function publicationShareUrl(id: number): string {
+  return `${FORO_ENV.API_BASE_URL}/publications/${id}/share`
 }
 
 /**
@@ -172,6 +181,11 @@ export function publicationUrl(id: number): string {
  * Anything else (Spotify, a plain "sitio web" link, a non-YouTube video
  * host…) returns `null` so callers fall back to the existing
  * `<ExternalLinksCTA>` chip idiom instead of trying to embed it.
+ *
+ * Always emits a `youtube-nocookie.com` embed URL (including when the input
+ * was already a plain `youtube.com/embed/<id>` URL) — the privacy-enhanced
+ * host doesn't set tracking cookies until the viewer presses play, and it's
+ * the only YouTube host allow-listed in `index.html`'s CSP `frame-src`.
  */
 export function getYouTubeEmbedUrl(url: string): string | null {
   let parsed: URL
@@ -185,16 +199,17 @@ export function getYouTubeEmbedUrl(url: string): string | null {
 
   if (host === 'youtu.be') {
     const id = parsed.pathname.slice(1).split('/')[0]
-    return id ? `https://www.youtube.com/embed/${id}` : null
+    return id ? `https://www.youtube-nocookie.com/embed/${id}` : null
   }
 
   if (host === 'youtube.com') {
     if (parsed.pathname === '/watch') {
       const id = parsed.searchParams.get('v')
-      return id ? `https://www.youtube.com/embed/${id}` : null
+      return id ? `https://www.youtube-nocookie.com/embed/${id}` : null
     }
     if (parsed.pathname.startsWith('/embed/')) {
-      return url
+      const id = parsed.pathname.slice('/embed/'.length).split('/')[0]
+      return id ? `https://www.youtube-nocookie.com/embed/${id}` : null
     }
   }
 
@@ -242,8 +257,10 @@ export function interactionRows(counts: InteractionCounts | null, slug: KnownPub
   if (!counts) return []
   const rows: InteractionRow[] = []
 
-  const visitsLabel = slug === 'podcast' ? 'Reproducciones' : 'Vistas'
-  if (counts.visits != null) rows.push({ label: visitsLabel, value: counts.visits })
+  // "visitas" para todos los formatos, incluido podcast: el contador es el
+  // mismo dato (`visits`) en todos, y llamarlo "Reproducciones" en un caso
+  // sugería una métrica de reproducción de audio que nadie está midiendo.
+  if (counts.visits != null) rows.push({ label: 'Visitas', value: counts.visits })
   if (counts.likes != null) rows.push({ label: 'Me gusta', value: counts.likes })
   if (counts.comments != null) {
     rows.push({ label: slug === 'discusion' ? 'Respuestas' : 'Comentarios', value: counts.comments })

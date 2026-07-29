@@ -15,6 +15,7 @@ import type {
   PublicationPatchDTO,
   CreateInteractionDTO,
   PatchInteractionDTO,
+  DeleteInteractionByTargetDTO,
   InteractionDTO,
   ListMyInteractionsQueryDTO,
   MyInteractionDTO,
@@ -25,11 +26,11 @@ import type {
   UpdateUserDTO,
   UpdateUserResponseDTO,
 } from '../dtos'
-// `PublicationType`/`Category`/`Tag`/`UserPreferences` have no separate DTO
+// `PublicationType`/`Category`/`UserPreferences` have no separate DTO
 // (see `dtos/index.ts`'s note) — the wire shape IS the model, so these
 // routes are typed against `../models` directly instead of round-tripping
 // through an identity mapper.
-import type { PublicationType, Category, Tag, UserPreferences, UpdateUserPreferencesInput } from '../models'
+import type { PublicationType, Category, UserPreferences, UpdateUserPreferencesInput } from '../models'
 
 function buildQuery(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams()
@@ -119,6 +120,21 @@ export const foroService = {
     })
   },
 
+  /**
+   * GET /publications/:id/comments — public, full comment tree (nested
+   * `replies[]`, capped server-side at `MAX_COMMENT_DEPTH`). `viewer_favorited`
+   * on each node still depends on the caller's session (cookie), which is why
+   * `useComments` scopes its query key by `userId` even though the route
+   * itself needs no auth.
+   */
+  listComments(publicationId: number, signal?: AbortSignal) {
+    return foroApiRequest<InteractionDTO[]>({
+      method: 'GET',
+      endpoint: `/publications/${publicationId}/comments`,
+      signal,
+    })
+  },
+
   /** POST /publications — role publisher|admin. */
   createPublication(data: PublicationWriteDTO) {
     return foroApiRequest<PublicationDTO, PublicationWriteDTO>({
@@ -172,14 +188,27 @@ export const foroService = {
     })
   },
 
-  // ── Tags ──
+  /**
+   * POST /categories — role publisher|admin. Managed from the composer (no
+   * standalone admin screen for this) — see `useCategoryMutations`.
+   */
+  createCategory(data: { name: string }) {
+    return foroApiRequest<Category, { name: string }>({
+      method: 'POST',
+      endpoint: '/categories',
+      body: data,
+    })
+  },
 
-  /** GET /tags — public. */
-  listTags(signal?: AbortSignal) {
-    return foroApiRequest<Tag[]>({
-      method: 'GET',
-      endpoint: '/tags',
-      signal,
+  /**
+   * DELETE /categories/:id — role publisher|admin. Cascades over
+   * `categories_publications` on the backend — the composer confirms with
+   * `window.confirm` before calling this, same pattern as publication delete.
+   */
+  deleteCategory(id: number) {
+    return foroApiRequest<void>({
+      method: 'DELETE',
+      endpoint: `/categories/${id}`,
     })
   },
 
@@ -194,13 +223,19 @@ export const foroService = {
     })
   },
 
-  /** GET /interactions/publication/:id?type_id=N */
-  listInteractionsForPublication(publicationId: number, typeId?: number, signal?: AbortSignal) {
-    const qs = buildQuery({ type_id: typeId })
-    return foroApiRequest<InteractionDTO[]>({
-      method: 'GET',
-      endpoint: `/interactions/publication/${publicationId}${qs}`,
-      signal,
+  /**
+   * DELETE /interactions — delete-by-target: removes the CALLER's own row
+   * matching `(publication_id, type_id, parent_id)`, no id needed. Replaces
+   * the old pattern of fetching `GET /interactions/publication/:id` just to
+   * find the row id to pass to `DELETE /interactions/:id` — that route is
+   * gone (it exposed the full list of who saved/favorited each publication
+   * to anyone). Used to un-favorite/un-save.
+   */
+  deleteInteractionByTarget(data: DeleteInteractionByTargetDTO) {
+    return foroApiRequest<void, DeleteInteractionByTargetDTO>({
+      method: 'DELETE',
+      endpoint: '/interactions',
+      body: data,
     })
   },
 
@@ -221,10 +256,11 @@ export const foroService = {
     })
   },
 
-  /** GET /interactions/me?type_id=&limit=&offset= — current user's own interactions, each with its publication preview. */
+  /** GET /interactions/me?type_ids=&limit=&offset= — current user's own interactions, each with its publication preview.
+   *  `type_ids` is CSV (e.g. `"1,2"`) — was a single `type_id` before. */
   getMyInteractions(query: ListMyInteractionsQueryDTO, signal?: AbortSignal) {
     const qs = buildQuery({
-      type_id: query.type_id,
+      type_ids: query.type_ids,
       limit: query.limit,
       offset: query.offset,
     })

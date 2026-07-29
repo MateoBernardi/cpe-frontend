@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import type { PublicationPreview, KnownPublicationTypeSlug } from '@features/foro'
 import { CategoryTag } from './CategoryTag'
 import { ChatBubbleIcon, ChevronRight } from './ForoIcons'
+import { TagList } from './TagList'
 import { formatForoDate, typeAccent, bylineFor, hexToRgba } from './foroHelpers'
 import { colors } from '../../../../theme'
 
@@ -27,15 +28,16 @@ function ImagePlaceholderIcon({ accent }: { accent: string }) {
 /**
  * Large featured card for the newest publication of a type page — 16:9
  * cover with a "DESTACADO" badge, then title/subtitle/footer on a white
- * surface. Discusiones have no cover image, so their cover area falls back
- * to an accent-tinted panel with the format's chat-bubble glyph instead of a
+ * surface. The cover image (`imageUrl`) wins whenever it's set, regardless
+ * of type. When a Discusión has no cover, its cover area falls back to an
+ * accent-tinted panel with the format's chat-bubble glyph instead of a
  * photo, keeping the same card shape as the other three formats.
  */
 export function FeaturedCard({ preview, typeSlug, typeName }: FeaturedCardProps) {
   const to = `/publicaciones/${preview.id}`
   const accent = typeAccent(typeSlug)
   const isDiscusion = typeSlug === 'discusion'
-  const byline = bylineFor(preview.createdBy, typeSlug)
+  const byline = bylineFor(preview.authorName)
 
   const metaValue = isDiscusion
     ? (preview.interactions?.comments != null && preview.interactions.comments > 0
@@ -49,19 +51,19 @@ export function FeaturedCard({ preview, typeSlug, typeName }: FeaturedCardProps)
       className="group block overflow-hidden rounded-xl bg-white shadow-md ring-1 ring-slate-200/60 transition-shadow duration-300 hover:shadow-xl"
     >
       <div className="relative aspect-video w-full overflow-hidden" style={{ backgroundColor: `${accent}14` }}>
-        {isDiscusion
+        {preview.imageUrl
           ? (
-            <span className="absolute inset-0 flex items-center justify-center" style={{ color: accent }}>
-              <ChatBubbleIcon size={56} />
-            </span>
+            <img
+              src={preview.imageUrl}
+              alt={preview.title}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
           )
-          : preview.imageUrl
+          : isDiscusion
             ? (
-              <img
-                src={preview.imageUrl}
-                alt={preview.title}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
+              <span className="absolute inset-0 flex items-center justify-center" style={{ color: accent }}>
+                <ChatBubbleIcon size={56} />
+              </span>
             )
             : <ImagePlaceholderIcon accent={accent} />}
         <span
@@ -84,6 +86,9 @@ export function FeaturedCard({ preview, typeSlug, typeName }: FeaturedCardProps)
         {preview.subtitle && (
           <p className="mt-3 line-clamp-2 text-base leading-relaxed text-gray-500">{preview.subtitle}</p>
         )}
+        <div className="mt-4">
+          <TagList tags={preview.tags} max={3} size="sm" />
+        </div>
 
         <div className="mt-6 flex items-center justify-between gap-4 border-t border-gray-100 pt-5">
           <span className="truncate text-sm text-gray-500">{byline}</span>

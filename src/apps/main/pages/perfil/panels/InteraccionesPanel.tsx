@@ -1,7 +1,6 @@
-import { useMyInteractions, usePublicationTypes, resolveKnownSlug, INTERACTION_TYPE_IDS, getForoApiErrorMessage } from '@features/foro'
-import { PublicationListItem } from '@features/content/components/foro'
+import { useMyInteractions, usePublicationTypes, INTERACTION_TYPE_IDS, getForoApiErrorMessage } from '@features/foro'
 import { QueryState } from '@shared/components'
-import { colors } from '@/theme'
+import InteractionCard from '../InteractionCard'
 
 /** The user's own comments — `INTERACTION_TYPE_IDS.comentario` interactions, with the comment text plus the publication it belongs to. */
 export default function InteraccionesPanel() {
@@ -18,22 +17,9 @@ export default function InteraccionesPanel() {
       emptyMessage="Todavía no comentaste ninguna publicación."
     >
       {(items) => (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-3">
           {items.map((item) => (
-            <div key={item.id} className="border-b py-5 first:pt-0 last:border-b-0 last:pb-0" style={{ borderColor: colors.lightGray }}>
-              {item.content && (
-                <p className="mb-3 text-sm leading-relaxed" style={{ color: colors.blueDark }}>
-                  &ldquo;{item.content}&rdquo;
-                </p>
-              )}
-              <PublicationListItem
-                publication={item.publication}
-                typeSlug={resolveKnownSlug(types?.find((t) => t.id === item.publication.typeId))}
-                typeName={types?.find((t) => t.id === item.publication.typeId)?.name ?? ''}
-                size="compact"
-                showSave={false}
-              />
-            </div>
+            <InteractionCard key={item.id} interaction={item} types={types} actionLabel="Comentaste" />
           ))}
         </div>
       )}

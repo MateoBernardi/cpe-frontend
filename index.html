@@ -4,16 +4,32 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Content Security Policy -->
-    <meta 
-      http-equiv="Content-Security-Policy" 
+    <!--
+      Content Security Policy.
+
+      Ojo: esto es sólo la mitad de la politica. `frame-ancestors` y HSTS NO se pueden expresar
+      en un meta tag, asi que el servidor estatico tiene que mandar los headers de
+      docs/security-headers.md. El navegador aplica la INTERSECCION de las dos politicas.
+
+      De esa interseccion dependen dos entradas de acá:
+        - http://localhost:*  -> sólo para dev (VITE_API_BASE_URL sin setear cae a localhost:3000)
+        - https://picsum.photos + https://fastly.picsum.photos -> imagenes de relleno de las
+          publicaciones que crea `pnpm db:seed` en el backend (src/db/seed.ts). NO es contenido
+          real. Hacen falta LOS DOS hosts: picsum responde un redirect a su CDN de Fastly, y CSP
+          vuelve a chequear la URL destino del redirect contra la lista (no hereda el permiso
+          del host original).
+      Ninguna de las dos esta en el header de produccion, asi que en prod quedan bloqueadas.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
       content="
         default-src 'self';
         script-src 'self' https://challenges.cloudflare.com;
         style-src 'self' 'unsafe-inline';
-        img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net;
+        img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com http://localhost:* https://picsum.photos https://fastly.picsum.photos;
+        media-src 'self' blob: https://api.clinicaparaempresas.com http://localhost:*;
         connect-src 'self' https://challenges.cloudflare.com https://imagedelivery.net http://localhost:* https://api.clinicaparaempresas.com;
-        frame-src 'self' https://challenges.cloudflare.com;
+        frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com;
         font-src 'self' data:;
         object-src 'none';
         base-uri 'self';

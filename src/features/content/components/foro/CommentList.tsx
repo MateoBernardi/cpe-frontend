@@ -19,7 +19,9 @@ export function CommentList({ comments, onDelete }: CommentListProps) {
   return (
     <div className="flex flex-col divide-y divide-gray-100">
       {comments.map((comment) => {
-        const author = comment.createdBy ?? 'Miembro del foro'
+        // `authorName` viene resuelto por el backend (JOIN a `user.name`); el
+        // fallback sólo aplica a un usuario borrado, no al caso normal.
+        const author = comment.authorName?.trim() || 'Miembro del foro'
         const canManage = onDelete && (comment.userId === user?.id || role === 'admin')
         return (
           <div className="flex gap-3 py-5" key={comment.id}>

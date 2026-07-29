@@ -67,11 +67,36 @@ export interface TurnstileWidgetProps {
   onExpire?: () => void
 }
 
+/**
+ * Cloudflare renders the widget at a FIXED 300px width inside an iframe we
+ * can't restyle. On a 360px phone the auth dialog only leaves ~264px of
+ * content box, so the challenge visibly hangs out of the modal. Scaling the
+ * wrapper down is the only lever available from our side; the height is
+ * scaled by the same factor so the layout below doesn't get a gap.
+ */
+const TURNSTILE_WIDTH = 300
+const TURNSTILE_HEIGHT = 65
+
 export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidgetProps>(
   function TurnstileWidget({ onVerify, onExpire }, ref) {
     const containerRef = useRef<HTMLDivElement>(null)
+    const wrapperRef = useRef<HTMLDivElement>(null)
     const widgetIdRef = useRef<string | null>(null)
     const [loadError, setLoadError] = useState(false)
+    const [scale, setScale] = useState(1)
+
+    // Never scales UP: at ≥300px of available width the widget renders at its
+    // native size, which is also the only size Cloudflare guarantees is legible.
+    useEffect(() => {
+      const wrapper = wrapperRef.current
+      if (!wrapper) return
+      const observer = new ResizeObserver(([entry]) => {
+        const available = entry.contentRect.width
+        setScale(available > 0 ? Math.min(1, available / TURNSTILE_WIDTH) : 1)
+      })
+      observer.observe(wrapper)
+      return () => observer.disconnect()
+    }, [])
 
     // Sin site key no hay nada que renderizar: Cloudflare dispara su
     // `error-callback` con `sitekey: undefined` y el usuario ve un fallo que
@@ -126,7 +151,15 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetHandle, TurnstileWidget
 
     return (
       <div>
-        <div ref={containerRef} />
+        {/* `overflow-hidden` + a scaled inner box: the transform doesn't affect
+            layout size, so the wrapper's height is set explicitly to the scaled
+            height to avoid leaving dead space under the challenge. */}
+        <div ref={wrapperRef} className="overflow-hidden" style={{ height: TURNSTILE_HEIGHT * scale }}>
+          <div
+            ref={containerRef}
+            style={{ width: TURNSTILE_WIDTH, transform: `scale(${scale})`, transformOrigin: 'left top' }}
+          />
+        </div>
         {isMisconfigured ? (
           <p className="text-[12.5px]" style={{ color: foroPalette.errorText }}>
             La verificación no está configurada. Avisale al equipo — recargar no lo soluciona.

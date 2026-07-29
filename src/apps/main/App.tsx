@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ApiError } from '@shared/api'
 import { ForoApiError, ForoAuthProvider, ForoAuthDialog } from '@features/foro'
+import { ExternalLinkGuardProvider } from '@features/content/components/foro'
 import MainRouter from './router'
 import ErrorBoundary from '@shared/components/ErrorBoundary'
 
@@ -38,8 +39,12 @@ export default function MainApp() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <ForoAuthProvider>
-          <MainRouter />
-          <ForoAuthDialog />
+          {/* Un solo interstitial de salida para toda la app, igual que el
+              diálogo de auth — ver `externalLinkGuard.tsx`. */}
+          <ExternalLinkGuardProvider>
+            <MainRouter />
+            <ForoAuthDialog />
+          </ExternalLinkGuardProvider>
         </ForoAuthProvider>
       </ErrorBoundary>
     </QueryClientProvider>

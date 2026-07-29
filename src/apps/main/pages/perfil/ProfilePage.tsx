@@ -140,7 +140,11 @@ export default function ProfilePage() {
           role="tablist"
           aria-label="Secciones del perfil"
           className={[
-            'relative w-full flex-col gap-1 rounded-full p-1',
+            // Stacked in a column on mobile, `rounded-full` reads as a circle —
+            // it only looks like a pill once the tabs actually lay out
+            // horizontally at md+. Below md the track (and its tabs/pill below)
+            // use a softer rectangular radius instead.
+            'relative w-full flex-col gap-1 rounded-2xl p-1 md:rounded-full',
             menuOpen ? 'mt-2 flex' : 'hidden',
             // md+: always visible, horizontal, hugging its tabs.
             'md:mt-6 md:flex md:w-fit md:max-w-full md:flex-row md:flex-wrap',
@@ -150,7 +154,11 @@ export default function ProfilePage() {
           {pill && (
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute rounded-full backdrop-blur-md motion-reduce:transition-none"
+              // The radius swap has to be a class, not an inline style: it's a
+              // breakpoint decision, and inline styles can't carry a media query.
+              // Mirrors the track/tabs' own swap so the sliding pill never reads
+              // as a perfect circle while the tabs are stacked.
+              className="pointer-events-none absolute rounded-xl backdrop-blur-md motion-reduce:transition-none md:rounded-full"
               style={{
                 transform: `translate3d(${pill.left}px, ${pill.top}px, 0)`,
                 width: pill.width,
@@ -180,7 +188,11 @@ export default function ProfilePage() {
                 onClick={() => setMenuOpen(false)}
                 className={[
                   // `relative` keeps the label above the sliding pill.
-                  'relative rounded-full border border-transparent px-4 py-2 text-[13.5px] font-semibold transition-colors duration-200',
+                  'relative border border-transparent px-4 py-2 text-[13.5px] font-semibold transition-colors duration-200',
+                  // Stacked on mobile: full-width rows reading left-to-right, so
+                  // the open menu is a proper box of options. At md+ they go back
+                  // to hugging pills in a row.
+                  'block w-full rounded-xl text-left md:inline-block md:w-auto md:rounded-full md:text-center',
                   isActive ? 'text-white' : 'text-white/70 hover:text-white',
                 ].join(' ')}
               >

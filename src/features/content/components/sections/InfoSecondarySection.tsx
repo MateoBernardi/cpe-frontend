@@ -33,10 +33,13 @@ export default function InfoSecondarySection({ section }: Props) {
   return (
     <section
       ref={viewRef}
-      className="overflow-hidden lg:flex lg:flex-col lg:h-screen lg:supports-[height:100dvh]:h-[100dvh] pt-[4vh] sm:pt-[5vh] md:pt-[6vh] lg:pt-[6vh] pb-[4vh] sm:pb-[5vh] md:pb-[6vh]"
+      // Sin `min-h-screen`: la sección la mide su contenido. Forzar el alto del
+      // viewport dejaba una franja gris muerta debajo del par
+      // collapsibles-circuito cuando la lista era más corta que la pantalla.
+      className="overflow-hidden lg:flex lg:flex-col pt-[4vh] sm:pt-[5vh] md:pt-[6vh] lg:pt-[6vh] pb-[4vh] sm:pb-[5vh] md:pb-[6vh]"
       style={{ backgroundColor: colors.infoSecondaryBg }}
     >
-      <div className={`${layout.container} lg:flex lg:flex-1 lg:min-h-0 lg:flex-col`}>
+      <div className={`${layout.container} lg:flex lg:flex-col`}>
         {heading && (
           <h2
             className={`mb-[5vh] sm:mb-[7vh] md:mb-[9vh] lg:mb-[6vh] lg:flex-shrink-0 text-center text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl transition-all duration-700 font-primary ${
@@ -48,10 +51,16 @@ export default function InfoSecondarySection({ section }: Props) {
           </h2>
         )}
 
-        <div className="grid gap-[4vh] sm:gap-[5vh] lg:gap-[6vh] lg:grid-cols-2 lg:items-stretch lg:flex-1 lg:min-h-0">
+        {/* La altura de esta fila la dicta la columna de collapsibles: el
+            circuito se posiciona absoluto dentro de la suya (ver abajo), así
+            que no aporta altura y termina midiendo exactamente lo mismo que la
+            lista de la izquierda. Antes la sección era `h-screen` y la lista
+            scrolleaba internamente, con lo cual las dos columnas medían el
+            viewport y no tenían relación entre sí. */}
+        <div className="grid gap-[4vh] sm:gap-[5vh] lg:gap-[6vh] lg:grid-cols-2 lg:items-stretch">
           {/* Collapsibles (left) */}
           <div
-            className={`space-y-3 transition-all duration-700 delay-200 lg:min-h-0 lg:overflow-y-auto lg:pr-1 ${
+            className={`space-y-3 transition-all duration-700 delay-200 ${
               isInView ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'
             }`}
           >
@@ -102,11 +111,24 @@ export default function InfoSecondarySection({ section }: Props) {
             ))}
           </div>
 
-          {/* Circuito de intervención (right) — reemplaza a la dona */}
-          <div className="flex flex-col items-center lg:min-h-0 lg:justify-start">
+          {/* Circuito de intervención (right) — reemplaza a la dona.
+              En desktop la columna es `relative` y el diagrama va absoluto
+              adentro: al salir del flujo no aporta altura, así que la fila la
+              sigue midiendo la lista de la izquierda y el circuito se escala
+              (`object-contain`) a ese alto exacto. En mobile nada de esto
+              aplica — el diagrama conserva su `aspect-[596/720]` y sus
+              `max-w-*`, y sigue apareciendo debajo de los collapsibles. */}
+          <div className="flex flex-col items-center lg:relative lg:justify-start">
+            {/* Wrapper absoluto sólo en desktop. El diagrama de adentro CONSERVA
+                su `aspect-[596/720]` y pasa a estar limitado por alto
+                (`h-full w-auto`): los hotspots están posicionados en % sobre
+                esa caja recortada, así que cambiarle el aspecto los
+                desalinearía. Limitar por alto es lo que hace que mida lo mismo
+                que la lista sin tocar la geometría del dibujo. */}
+            <div className="contents lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-8 lg:flex lg:items-start lg:justify-center">
             <div
               ref={diagramRef}
-              className="relative mx-auto w-full aspect-[596/720] max-w-[236px] overflow-hidden sm:max-w-[294px] md:max-w-[339px] lg:w-auto lg:max-w-full lg:flex-1 lg:min-h-0 lg:-top-[5vh]"
+              className="relative mx-auto w-full aspect-[596/720] max-w-[236px] overflow-hidden sm:max-w-[294px] md:max-w-[339px] lg:mx-0 lg:h-full lg:w-auto lg:max-w-none"
               style={{
                 opacity: 0.1 + ease * 0.9,
                 transform: `scale(${0.88 + ease * 0.12})`,
@@ -156,10 +178,16 @@ export default function InfoSecondarySection({ section }: Props) {
                 className="absolute left-[43.2%] top-[50%] h-[42.2%] w-[56.8%] bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               />
             </div>
+            </div>
 
-            {/* Hint */}
+            {/* Hint — queda EN FLUJO también en desktop: es el único hijo en
+                flujo de la columna, así que `mt-auto` lo empuja al fondo de la
+                fila. Sacarlo del flujo (absolute + translate) lo dejaba colgando
+                fuera de la sección, que tiene `overflow-hidden` y ahora ya no
+                tiene alto sobrante donde apoyarse. Los `lg:bottom-8` del wrapper
+                del diagrama son el espacio que se le reserva acá. */}
             <div
-              className="mt-2 text-center text-sm text-gray-500 lg:flex-shrink-0"
+              className="mt-2 text-center text-sm text-gray-500 lg:mt-auto"
               style={{
                 opacity: Math.max(0, (progress - 0.43) / 0.1),
                 transition: 'opacity 0.1s',

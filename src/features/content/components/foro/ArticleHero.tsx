@@ -1,9 +1,8 @@
 import type { KnownPublicationTypeSlug, Publication } from '@features/foro'
-import { ShareButton } from './ShareButtons'
 import { SaveButton } from './SaveButton'
 import { CategoryTag } from './CategoryTag'
 import { CalendarIcon, ClockIcon } from './ForoIcons'
-import { typeAccent, bylineFor, heroMetaValue, formatForoDate, hexToRgba, publicationUrl } from './foroHelpers'
+import { typeAccent, bylineFor, heroMetaValue, formatForoDate, hexToRgba } from './foroHelpers'
 import { colors, layout } from '../../../../theme'
 
 interface ArticleHeroProps {
@@ -21,10 +20,9 @@ interface ArticleHeroProps {
  */
 export function ArticleHero({ publication, slug, typeName }: ArticleHeroProps) {
   const accent = typeAccent(slug)
-  const byline = bylineFor(publication.createdBy, slug)
+  const byline = bylineFor(publication.authorName)
   const metaValue = heroMetaValue(slug, publication)
   const isReal = publication.id > 0
-  const url = publicationUrl(publication.id)
 
   const overlay = publication.imageUrl
     ? `linear-gradient(to top, rgba(6,10,14,0.92), rgba(6,10,14,0.55) 55%, ${hexToRgba(accent, 0.35)} 100%)`
@@ -65,12 +63,11 @@ export function ArticleHero({ publication, slug, typeName }: ArticleHeroProps) {
             {byline && <span className="font-medium text-white">{byline}</span>}
           </div>
 
-          {isReal && (
-            <div className="flex items-center gap-2.5">
-              <ShareButton url={url} title={publication.title} accent={accent} />
-              <SaveButton publicationId={publication.id} variant="pill" accent={accent} />
-            </div>
-          )}
+          {/* Sin botón de compartir acá: la tarjeta "Compartir esta <formato>"
+              del sidebar (`DetailShell`) ya ofrece exactamente las mismas
+              opciones, y tener las dos duplicaba la acción en la misma
+              pantalla. Guardar sí se queda: no está en ningún otro lado. */}
+          {isReal && <SaveButton publicationId={publication.id} variant="pill" accent={accent} />}
         </div>
       </div>
     </section>

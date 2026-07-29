@@ -4,6 +4,7 @@ import { SaveButton } from './SaveButton'
 import { CategoryTag } from './CategoryTag'
 import { PlayIcon, ChatBubbleIcon } from './ForoIcons'
 import { formatForoDate, typeAccent, previewMetaLine } from './foroHelpers'
+import { TagList } from './TagList'
 import { colors } from '../../../../theme'
 
 interface PublicationListItemProps {
@@ -12,8 +13,15 @@ interface PublicationListItemProps {
   typeName: string
   /** `default`: ~96px thumbnail (the type page's "Últimas <formato>" list). `compact`: ~64px ("Te puede interesar" sidebar). */
   size?: 'default' | 'compact'
-  /** Whether to render the trailing bookmark/save button. Off in the sidebar's compact "Te puede interesar" list to keep it light. */
+  /** Whether to render the trailing bookmark/save button. Off in the sidebar's compact "También te puede interesar" list to keep it light. */
   showSave?: boolean
+  /**
+   * Renders a status chip inside the row, next to the format pill. Only
+   * `'draft'` today. It lives here rather than above the row (where
+   * `MisPublicacionesPanel` used to put it) so it reads as a property of the
+   * publication instead of a floating label between rows.
+   */
+  statusBadge?: 'draft'
 }
 
 /** Generic image glyph shown when a publication has no cover image (papers/novedades/podcast without a set `imageUrl`). */
@@ -33,11 +41,12 @@ function ImagePlaceholderIcon({ accent }: { accent: string }) {
  * The single row layout used across the Foro's publication lists — the
  * type page's "Últimas <formato>" strip and the detail screen's "Te puede
  * interesar" sidebar. Thumbnail on the left carries a format-specific
- * overlay: a play badge for CPEVoz, a chat-bubble placeholder for
- * Discusiones (which have no cover image), nothing extra for Papers/
- * Novedades.
+ * overlay: a play badge for CPEVoz. The cover image (`imageUrl`) wins
+ * whenever it's set, regardless of type; the fallback when there's none is a
+ * chat-bubble placeholder for Discusiones, or the generic image glyph for
+ * every other format.
  */
-export function PublicationListItem({ publication, typeSlug, typeName, size = 'default', showSave = true }: PublicationListItemProps) {
+export function PublicationListItem({ publication, typeSlug, typeName, size = 'default', showSave = true, statusBadge }: PublicationListItemProps) {
   const to = `/publicaciones/${publication.id}`
   const accent = typeAccent(typeSlug)
   const isDiscusion = typeSlug === 'discusion'
@@ -49,19 +58,19 @@ export function PublicationListItem({ publication, typeSlug, typeName, size = 'd
   return (
     <div className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
       <Link to={to} className={`group relative shrink-0 overflow-hidden rounded-xl ${thumbSize}`} style={{ backgroundColor: `${accent}14` }}>
-        {isDiscusion
+        {publication.imageUrl
           ? (
-            <span className="absolute inset-0 flex items-center justify-center" style={{ color: accent }}>
-              <ChatBubbleIcon size={size === 'compact' ? 20 : 26} />
-            </span>
+            <img
+              src={publication.imageUrl}
+              alt={publication.title}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
           )
-          : publication.imageUrl
+          : isDiscusion
             ? (
-              <img
-                src={publication.imageUrl}
-                alt={publication.title}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
+              <span className="absolute inset-0 flex items-center justify-center" style={{ color: accent }}>
+                <ChatBubbleIcon size={size === 'compact' ? 20 : 26} />
+              </span>
             )
             : <ImagePlaceholderIcon accent={accent} />}
         {isPodcast && (
@@ -79,6 +88,17 @@ export function PublicationListItem({ publication, typeSlug, typeName, size = 'd
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
           <CategoryTag slug={typeSlug} label={typeName} />
+          {statusBadge === 'draft' && (
+            // Ámbar sólido, no el azul tenue de antes: un borrador es un estado
+            // que hay que poder distinguir de un vistazo entre publicaciones ya
+            // publicadas, y el azul se confundía con el resto de la fila.
+            <span
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+              style={{ backgroundColor: colors.draftBadge }}
+            >
+              Borrador
+            </span>
+          )}
           <span className="text-gray-300" aria-hidden="true">·</span>
           <span className="text-xs font-medium text-gray-400">{formatForoDate(publication.createdAt)}</span>
         </div>
@@ -86,6 +106,7 @@ export function PublicationListItem({ publication, typeSlug, typeName, size = 'd
           {publication.title}
         </Link>
         {metaLine && <span className="truncate text-xs text-gray-400">{metaLine}</span>}
+        <TagList tags={publication.tags} max={3} size="sm" />
       </div>
 
       {showSave && (

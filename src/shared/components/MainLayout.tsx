@@ -551,10 +551,17 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </div>
 
         {mobileOpen && (
-          <div className={`border-t px-4 pb-4 md:hidden transition-colors duration-500 max-h-[70vh] overflow-y-auto ${
-            headerActive ? 'border-gray-200 bg-white' : 'border-white/10'
-          }`}
-          style={{ backgroundColor: headerActive ? colors.white : colors.blueDark }}
+          /* `data-lenis-prevent` no es opcional: Lenis captura el scroll de la
+             página entera, así que sin esto el panel NO scrollea y todo lo que
+             pase de `max-h` queda cortado — que es por qué la fila de iconos de
+             redes se veía tajeada por abajo. Ver la regla
+             `.lenis.lenis-smooth [data-lenis-prevent]` en `index.css`. */
+          <div
+            data-lenis-prevent
+            className={`border-t px-4 pb-6 md:hidden transition-colors duration-500 max-h-[75vh] overflow-y-auto overscroll-contain ${
+              headerActive ? 'border-gray-200 bg-white' : 'border-white/10'
+            }`}
+            style={{ backgroundColor: headerActive ? colors.white : colors.blueDark }}
           >
             <nav className="flex flex-col gap-3 pt-3">
               {NAV_LINKS.map((item) => (
@@ -563,7 +570,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   : renderMobileDropdown(item)
               ))}
               <div className="w-full">
-                <HeaderProfileButton headerActive={headerActive} onNavigate={() => setMobileOpen(false)} />
+                {/* `variant="full"`: en el panel mobile el perfil es un ítem más
+                    del nav (avatar + nombre completo), no el círculo de
+                    iniciales del header de escritorio, que acá quedaba como una
+                    bolita suelta en una esquina. */}
+                <HeaderProfileButton headerActive={headerActive} variant="full" onNavigate={() => setMobileOpen(false)} />
               </div>
               <div className="mt-2 grid grid-cols-5 gap-2">
                 <a

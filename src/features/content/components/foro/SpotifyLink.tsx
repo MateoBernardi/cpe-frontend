@@ -5,6 +5,7 @@
 import podcastChannelPicture from './assets/podcast-channel.svg'
 import { ChevronRight } from './ForoIcons'
 import { hexToRgba, isSafeHttpUrl } from './foroHelpers'
+import { SafeExternalLink } from './externalLinkGuard'
 import { platformColors } from '../../../../theme'
 
 interface SpotifyLinkProps {
@@ -81,16 +82,14 @@ export function SpotifyLink({ url, episodeTitle }: SpotifyLinkProps) {
   }
 
   return (
-    <a
+    <SafeExternalLink
       className="group flex w-full items-center gap-4 rounded-2xl border-2 bg-white px-5 py-4 shadow-md no-underline transition-all duration-150 hover:-translate-y-1 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       href={url}
-      target="_blank"
-      rel="noopener noreferrer"
       style={{ borderColor: hexToRgba(platformColors.spotifyGreen, 0.35) }}
       onMouseEnter={(e) => { e.currentTarget.style.borderColor = platformColors.spotifyGreen }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = hexToRgba(platformColors.spotifyGreen, 0.35) }}
     >
       {content}
-    </a>
+    </SafeExternalLink>
   )
 }

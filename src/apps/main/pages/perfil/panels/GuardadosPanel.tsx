@@ -1,6 +1,6 @@
-import { useMyInteractions, usePublicationTypes, resolveKnownSlug, INTERACTION_TYPE_IDS, getForoApiErrorMessage } from '@features/foro'
-import { PublicationListItem } from '@features/content/components/foro'
+import { useMyInteractions, usePublicationTypes, INTERACTION_TYPE_IDS, getForoApiErrorMessage } from '@features/foro'
 import { QueryState } from '@shared/components'
+import InteractionCard from '../InteractionCard'
 
 /** Publications the user bookmarked — `INTERACTION_TYPE_IDS.guardado` interactions. */
 export default function GuardadosPanel() {
@@ -17,19 +17,10 @@ export default function GuardadosPanel() {
       emptyMessage="Todavía no guardaste ninguna publicación."
     >
       {(items) => (
-        <div className="flex flex-col divide-y divide-gray-200">
-          {items.map((item) => {
-            const type = types?.find((t) => t.id === item.publication.typeId)
-            return (
-              <PublicationListItem
-                key={item.id}
-                publication={item.publication}
-                typeSlug={resolveKnownSlug(type)}
-                typeName={type?.name ?? ''}
-                size="compact"
-              />
-            )
-          })}
+        <div className="flex flex-col gap-3">
+          {items.map((item) => (
+            <InteractionCard key={item.id} interaction={item} types={types} actionLabel="Guardaste" />
+          ))}
         </div>
       )}
     </QueryState>

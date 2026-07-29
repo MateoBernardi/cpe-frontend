@@ -65,14 +65,6 @@ export default function MisPublicacionesPanel() {
               const type = types?.find((t) => t.id === pub.typeId)
               return (
                 <div key={pub.id} className="flex flex-col gap-1.5 py-1">
-                  {pub.status === 'draft' && (
-                    <span
-                      className="inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
-                      style={{ backgroundColor: `${colors.blueMid}1a`, color: colors.blueMid }}
-                    >
-                      Borrador
-                    </span>
-                  )}
                   <div className="flex items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <PublicationListItem
@@ -81,6 +73,10 @@ export default function MisPublicacionesPanel() {
                         typeName={type?.name ?? ''}
                         size="compact"
                         showSave={false}
+                        // El chip de borrador va DENTRO de la fila, junto al
+                        // pill de formato: antes flotaba encima y se leía como
+                        // un separador entre publicaciones.
+                        statusBadge={pub.status === 'draft' ? 'draft' : undefined}
                       />
                     </div>
                     <Link

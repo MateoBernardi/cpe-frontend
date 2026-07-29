@@ -1,13 +1,19 @@
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type { KnownPublicationTypeSlug } from '@features/foro'
-import { CategoryTag, PublicationComposer, TYPE_OPTIONS, TYPE_CONFIG, typeAccent } from '@features/content/components/foro'
+import { CategoryTag, PublicationComposer, TYPE_OPTIONS, TYPE_CONFIG, typeAccent, EMPTY_FORM, type FormState } from '@features/content/components/foro'
 import { colors, layout, foroHairline } from '@/theme'
 import PublisherGate from './PublisherGate'
 
 /**
  * `/perfil/publicar` — URL-driven type picker (`?tipo=`) then the shared
- * composer. `key={slug}` on the composer resets all of its form state when
- * the type changes, since it's effectively a brand new draft.
+ * composer.
+ *
+ * The draft lives HERE, not in the composer: picking a format swaps this
+ * screen between the picker and the composer, and the composer used to carry
+ * `key={slug}` on top of that — so changing your mind about the format threw
+ * away everything already written. Holding the form state one level up makes
+ * the format a property of the draft instead of a reason to start over.
  */
 
 const KNOWN_SLUGS = TYPE_OPTIONS.map((t) => t.slug)
@@ -33,21 +39,34 @@ function PublicarFlow() {
   const tipoParam = searchParams.get('tipo')
   const slug = isKnownSlug(tipoParam) ? tipoParam : null
 
+  const [form, setForm] = useState<FormState>(EMPTY_FORM)
+  const hasDraft = form.title.trim() !== '' || form.content.trim() !== ''
+
   if (!slug) {
-    return <TypePicker onPick={(picked) => setSearchParams({ tipo: picked })} />
+    return <TypePicker hasDraft={hasDraft} onPick={(picked) => setSearchParams({ tipo: picked })} />
   }
 
-  return <PublicationComposer key={slug} mode="create" slug={slug} onChangeType={() => setSearchParams({})} />
+  return (
+    <PublicationComposer
+      mode="create"
+      slug={slug}
+      form={form}
+      onFormChange={setForm}
+      onChangeType={() => setSearchParams({})}
+    />
+  )
 }
 
-function TypePicker({ onPick }: { onPick: (slug: KnownPublicationTypeSlug) => void }) {
+function TypePicker({ hasDraft, onPick }: { hasDraft: boolean; onPick: (slug: KnownPublicationTypeSlug) => void }) {
   return (
     <div>
       <h1 className="text-xl font-bold sm:text-2xl" style={{ color: colors.blueDark }}>
         ¿Qué querés publicar?
       </h1>
       <p className="mt-1 max-w-xl text-sm text-gray-500">
-        Elegí un formato para empezar. Vas a ver la vista previa real mientras escribís.
+        {hasDraft
+          ? 'Elegí otro formato: lo que ya escribiste se conserva.'
+          : 'Elegí un formato para empezar. Vas a ver la vista previa real mientras escribís.'}
       </p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {TYPE_OPTIONS.map((opt) => {

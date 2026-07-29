@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useForoAuth, useUpdateUser, getForoApiErrorMessage } from '@features/foro'
+import { ActionButton, type ActionButtonStatus } from '@features/content/components/foro'
 import { colors } from '@/theme'
 
 /**
@@ -13,6 +14,12 @@ export default function CuentaPanel() {
   const [name, setName] = useState(user?.name ?? '')
   const [isSigningOut, setIsSigningOut] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
+  // This screen doesn't navigate away on save, so the button's success state
+  // has to time out on its own or it would read as "saved" forever.
+  const [saveStatus, setSaveStatus] = useState<ActionButtonStatus>('idle')
+  const successTimeout = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  useEffect(() => () => clearTimeout(successTimeout.current), [])
 
   if (!user) return null
 
@@ -22,8 +29,12 @@ export default function CuentaPanel() {
     try {
       await updateUser.mutateAsync({ name })
       setFeedback('Nombre actualizado.')
+      setSaveStatus('success')
+      clearTimeout(successTimeout.current)
+      successTimeout.current = setTimeout(() => setSaveStatus('idle'), 2000)
     } catch (err) {
       setFeedback(getForoApiErrorMessage(err))
+      setSaveStatus('idle')
     }
   }
 
@@ -47,7 +58,9 @@ export default function CuentaPanel() {
             onChange={(e) => setName(e.target.value)}
             required
             className="w-full rounded-lg border px-3 py-2.5 text-[14.5px]"
-            style={{ borderColor: colors.inputBorder }}
+            // Explicit color: `MainLayout`'s root sets `color: white` and form
+            // controls inherit it, so without this the field is white-on-white.
+            style={{ borderColor: colors.inputBorder, color: colors.blueDark }}
           />
         </label>
 
@@ -67,16 +80,16 @@ export default function CuentaPanel() {
           <p className="text-sm" style={{ color: colors.tealDeep }}>{feedback}</p>
         )}
 
-        <button
+        <ActionButton
           type="submit"
-          disabled={updateUser.isPending || name.trim() === ''}
-          className="self-start rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-colors disabled:cursor-not-allowed disabled:opacity-60"
-          style={{ backgroundColor: colors.ctaPrimary }}
-          onMouseEnter={(e) => { if (!updateUser.isPending) e.currentTarget.style.backgroundColor = colors.ctaPrimaryHover }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = colors.ctaPrimary }}
+          className="self-start shadow-md"
+          status={updateUser.isPending ? 'pending' : saveStatus}
+          disabled={name.trim() === ''}
+          pendingLabel="Guardando…"
+          successLabel="Guardado"
         >
-          {updateUser.isPending ? 'Guardando…' : 'Guardar cambios'}
-        </button>
+          Guardar cambios
+        </ActionButton>
       </form>
 
       <div className="border-t pt-6" style={{ borderColor: colors.lightGray }}>

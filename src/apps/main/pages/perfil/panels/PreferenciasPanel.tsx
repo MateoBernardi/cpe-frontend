@@ -1,13 +1,13 @@
 import { useUserPreferences } from '@features/foro'
-import { LoadingSpinner } from '@shared/components'
-import { colors } from '@/theme'
+import { LoadingSpinner, AnimatedCheckbox } from '@shared/components'
 
 /**
- * Two notification toggles. No switch component exists in this repo — the
- * precedent is the native checkbox in `ContactPage`'s privacy field
- * (`h-4 w-4 accent-teal-600`). `isUnavailable` means the backend endpoint
- * isn't implemented yet, so the toggles render disabled with an inline note
- * instead of an error state.
+ * Two notification toggles. `isUnavailable` means the backend endpoint isn't
+ * implemented yet, so the toggles render disabled with an inline note instead
+ * of an error state.
+ *
+ * El marcado se dibuja al instante porque `useUserPreferences.update` es
+ * optimista: el check no espera al round-trip.
  */
 export default function PreferenciasPanel() {
   const { data, isLoading, isUnavailable, update } = useUserPreferences()
@@ -28,27 +28,19 @@ export default function PreferenciasPanel() {
         </p>
       )}
 
-      <label className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          checked={emailChecked}
-          disabled={disabled}
-          onChange={(e) => update.mutate({ emailNotifications: e.target.checked })}
-          className="h-4 w-4 rounded border-gray-300 accent-teal-600 disabled:cursor-not-allowed disabled:opacity-50"
-        />
-        <span className="text-sm" style={{ color: colors.blueDark }}>Recibir emails</span>
-      </label>
+      <AnimatedCheckbox
+        label="Recibir emails"
+        checked={emailChecked}
+        disabled={disabled}
+        onChange={(next) => update.mutate({ emailNotifications: next })}
+      />
 
-      <label className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          checked={pushChecked}
-          disabled={disabled}
-          onChange={(e) => update.mutate({ pushNotifications: e.target.checked })}
-          className="h-4 w-4 rounded border-gray-300 accent-teal-600 disabled:cursor-not-allowed disabled:opacity-50"
-        />
-        <span className="text-sm" style={{ color: colors.blueDark }}>Recibir notificaciones</span>
-      </label>
+      <AnimatedCheckbox
+        label="Recibir notificaciones"
+        checked={pushChecked}
+        disabled={disabled}
+        onChange={(next) => update.mutate({ pushNotifications: next })}
+      />
     </div>
   )
 }

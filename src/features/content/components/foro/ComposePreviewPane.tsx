@@ -18,6 +18,11 @@ interface ComposePreviewPaneProps {
  * (`PublicationDetail` / `DiscussionDetail`) against the in-progress form
  * state, so publishers see exactly what readers will see. Read-only —
  * never mounted with a real publication id from a persisted publication.
+ *
+ * Always renders `embedded` on `DetailShell` (via those two components) —
+ * inside the composer's half-width column, the normal `layout.container` +
+ * share/related sidebar just strangles the body; a draft has no share URL or
+ * related list worth showing anyway.
  */
 export function ComposePreviewPane({ publication, type, slug, related, label = 'Vista previa' }: ComposePreviewPaneProps) {
   return (
@@ -31,9 +36,9 @@ export function ComposePreviewPane({ publication, type, slug, related, label = '
       </div>
       <div className="max-h-[80vh] overflow-y-auto px-4 py-6 sm:px-6" aria-hidden>
         {slug === 'discusion' ? (
-          <DiscussionDetail publication={publication} typeName={type.name} related={related} preview />
+          <DiscussionDetail publication={publication} typeName={type.name} related={related} preview embedded />
         ) : (
-          <PublicationDetail publication={publication} type={type} slug={slug} related={related} />
+          <PublicationDetail publication={publication} type={type} slug={slug} related={related} embedded />
         )}
       </div>
     </div>

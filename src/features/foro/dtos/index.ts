@@ -12,13 +12,15 @@ export type {
   UpdateUserResponseDTO,
 } from './AuthDTO'
 
-// NOTE: `PublicationTypeDTO`/`CategoryDTO`/`TagDTO`/`UserPreferencesDTO` and
+// NOTE: `PublicationTypeDTO`/`CategoryDTO`/`UserPreferencesDTO` and
 // `ForoRoleDTO` were deleted — their wire shape was byte-identical to the
-// corresponding model (`PublicationType`/`Category`/`Tag`/`UserPreferences`/
+// corresponding model (`PublicationType`/`Category`/`UserPreferences`/
 // `ForoRole` in `../models`) and the "mapper" was a pure identity function.
 // `foroService` now reads/writes those models directly; see
 // `UpdateUserPreferencesInput` in `models/UserPreferences.ts` for the PATCH
 // body type. Keep this note so nobody reintroduces the pair by accident.
+// `Tag`/`TagDTO` are gone outright — the taxonomy dropped tags in favor of
+// categories only (see `models/Category.ts`).
 
 export type {
   PublicationImageDTO,
@@ -30,6 +32,7 @@ export type {
 
 export type {
   InteractionCountsDTO,
+  PublicationViewerStateDTO,
   PublicationDTO,
   PublicationPreviewDTO,
   ListPublicationsQueryDTO,
@@ -45,6 +48,7 @@ export type {
   InteractionTypeId,
   CreateInteractionDTO,
   PatchInteractionDTO,
+  DeleteInteractionByTargetDTO,
   InteractionDTO,
   ListMyInteractionsQueryDTO,
   MyInteractionDTO,

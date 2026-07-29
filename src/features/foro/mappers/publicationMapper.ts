@@ -1,10 +1,16 @@
-import type { PublicationDTO, PublicationPreviewDTO, PublicationWriteDTO, PublicationPatchDTO, MyInteractionDTO } from '../dtos'
-import type { Publication, PublicationPreview, PublicationInput, ExternalLink, MyInteraction } from '../models'
+import type { PublicationDTO, PublicationPreviewDTO, PublicationWriteDTO, PublicationPatchDTO, MyInteractionDTO, PublicationViewerStateDTO } from '../dtos'
+import type { Publication, PublicationPreview, PublicationInput, ExternalLink, MyInteraction, PublicationViewerState } from '../models'
 import { mapInteractionCountsDTO } from './interactionMapper'
 
 function mapExternalLinksMap(map: Record<string, string> | undefined): ExternalLink[] {
   if (!map) return []
   return Object.entries(map).map(([label, url]) => ({ label, url }))
+}
+
+/** `undefined` (anonymous viewer, backend omits the key) maps to `null` — never a fake `false/false`. */
+function mapViewerDTO(dto: PublicationViewerStateDTO | undefined): PublicationViewerState | null {
+  if (!dto) return null
+  return { favorited: dto.favorited, saved: dto.saved }
 }
 
 export function mapPublicationDTO(dto: PublicationDTO): Publication {
@@ -16,13 +22,14 @@ export function mapPublicationDTO(dto: PublicationDTO): Publication {
     content: dto.content,
     typeId: dto.type_id ?? null,
     createdBy: dto.created_by,
+    authorName: dto.created_by_name ?? null,
     createdAt: new Date(dto.created_at),
-    tags: dto.tags ?? [],
-    categoryIds: dto.category_ids ?? [],
+    categories: dto.categories ?? [],
     interactions: mapInteractionCountsDTO(dto.interactions),
     externalLinks: mapExternalLinksMap(dto.external_links),
     images: (dto.images ?? []).map((img) => ({ id: img.id, url: img.url, altText: img.alt_text ?? null })),
     status: dto.status ?? 'published',
+    viewer: mapViewerDTO(dto.viewer),
   }
 }
 
@@ -34,9 +41,12 @@ export function mapPublicationPreviewDTO(dto: PublicationPreviewDTO): Publicatio
     imageUrl: dto.image_url ?? null,
     typeId: dto.type_id ?? null,
     createdBy: dto.created_by,
+    authorName: dto.created_by_name ?? null,
     createdAt: new Date(dto.created_at),
+    categories: dto.categories ?? [],
     interactions: mapInteractionCountsDTO(dto.interactions),
     status: dto.status ?? 'published',
+    viewer: mapViewerDTO(dto.viewer),
   }
   // Only surface `externalLinks` when the backend actually sent the map — kept
   // undefined otherwise so consumers can cleanly render nothing (never crash).
@@ -76,7 +86,6 @@ export function mapPublicationInputToWriteDTO(input: PublicationInput): Publicat
   if (input.subtitle != null) dto.subtitle = input.subtitle
   if (input.frontImageUrl != null) dto.front_image_url = input.frontImageUrl
   if (input.typeId != null) dto.type_id = input.typeId
-  if (input.tagIds !== undefined) dto.tag_ids = input.tagIds
   if (input.categoryIds !== undefined) dto.category_ids = input.categoryIds
   if (input.externalLinks !== undefined) {
     dto.external_links = input.externalLinks.map((l) => ({ label: l.label, url: l.url }))
@@ -101,7 +110,6 @@ export function mapPublicationInputToPatchDTO(input: Partial<PublicationInput>):
   if (input.subtitle !== undefined) dto.subtitle = input.subtitle
   if (input.frontImageUrl !== undefined) dto.front_image_url = input.frontImageUrl
   if (input.typeId !== undefined) dto.type_id = input.typeId
-  if (input.tagIds !== undefined) dto.tag_ids = input.tagIds
   if (input.categoryIds !== undefined) dto.category_ids = input.categoryIds
   if (input.externalLinks !== undefined) {
     dto.external_links = input.externalLinks.map((l) => ({ label: l.label, url: l.url }))

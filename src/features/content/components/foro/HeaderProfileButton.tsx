@@ -8,6 +8,13 @@ export interface HeaderProfileButtonProps {
   headerActive: boolean
   /** Called after any action that should dismiss the mobile menu. */
   onNavigate?: () => void
+  /**
+   * `compact` (default): the desktop header's initials circle.
+   * `full`: a full-width nav row — avatar + the user's whole name + chevron —
+   * for the mobile panel, where a bare circle floating in a corner read as a
+   * stray dot rather than "your account".
+   */
+  variant?: 'compact' | 'full'
 }
 
 const iconColor = (headerActive: boolean) => (headerActive ? colors.tealDeep : 'rgba(255,255,255,0.7)')
@@ -24,7 +31,7 @@ const iconColor = (headerActive: boolean) => (headerActive ? colors.tealDeep : '
  * - signed in -> initials avatar that links straight to `/perfil` (the
  *   account dropdown — and sign-out — now live on the profile screen).
  */
-export function HeaderProfileButton({ headerActive, onNavigate }: HeaderProfileButtonProps) {
+export function HeaderProfileButton({ headerActive, onNavigate, variant = 'compact' }: HeaderProfileButtonProps) {
   const { user, isAuthenticated, isLoading, openAuthDialog } = useForoAuth()
 
   if (isLoading) {
@@ -46,6 +53,10 @@ export function HeaderProfileButton({ headerActive, onNavigate }: HeaderProfileB
           // Scrolled: a circular icon button at md+ so the pill header keeps its
           // breathing room. Otherwise the roomier labelled CTA.
           headerActive ? 'px-3 py-2 md:h-9 md:w-9 md:p-0 lg:h-10 lg:w-10' : 'px-3 py-2',
+          // En el panel mobile ocupa el ancho completo, como el resto de los
+          // ítems del nav (que son `block w-full text-center`); si no, quedaba
+          // pegado a la izquierda mientras todo lo demás estaba centrado.
+          variant === 'full' ? 'w-full' : '',
         ].join(' ')}
         style={{ backgroundColor: colors.ctaPrimary, boxShadow: `0 4px 14px ${colors.ctaShadow}` }}
         onClick={() => { openAuthDialog('sign-in'); onNavigate?.() }}
@@ -60,15 +71,44 @@ export function HeaderProfileButton({ headerActive, onNavigate }: HeaderProfileB
     )
   }
 
+  const avatar = (
+    <span
+      className="inline-flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full font-sans text-[11px] font-semibold lg:h-[30px] lg:w-[30px]"
+      style={{ backgroundColor: foroPalette.tealTint, color: colors.tealDeep }}
+      aria-hidden="true"
+    >
+      {initialsOf(user.name)}
+    </span>
+  )
+
+  if (variant === 'full') {
+    return (
+      <Link
+        to="/perfil"
+        onClick={() => onNavigate?.()}
+        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+        style={{ color: headerActive ? colors.blueDark : colors.white }}
+      >
+        {avatar}
+        <span className="min-w-0 flex-1 truncate text-left">{user.name}</span>
+        <svg
+          className="h-4 w-4 flex-shrink-0 opacity-50" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor" strokeWidth={2} aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </Link>
+    )
+  }
+
   return (
     <Link
       to="/perfil"
       onClick={() => onNavigate?.()}
-      className="inline-flex h-[26px] w-[26px] flex-shrink-0 items-center justify-center rounded-full font-sans text-[11px] font-semibold transition-colors lg:h-[30px] lg:w-[30px]"
-      style={{ backgroundColor: foroPalette.tealTint, color: colors.tealDeep }}
+      className="inline-flex flex-shrink-0 items-center justify-center transition-colors"
       aria-label={`Cuenta de ${user.name}`}
     >
-      {initialsOf(user.name)}
+      {avatar}
     </Link>
   )
 }

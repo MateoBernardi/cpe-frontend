@@ -65,6 +65,8 @@ export const colors = {
 
   // Misc UI
   whatsapp:         '#25D366',
+  /** Chip de "Borrador": ámbar sólido, deliberadamente fuera de la paleta de marca para que no se confunda con un estado normal. */
+  draftBadge:       '#b45309',
 
   // Secondary pages: alternating accent usage
   secondary: {
@@ -138,6 +140,15 @@ export const platformColors = {
   youtubeRed:         '#FF0000', // <YouTubeMark>'s badge fill
   youtubeDarkBg:      '#0f0f0f', // YouTube-labeled CTA buttons (raw literal — Tailwind `bg-[]`/`hover:bg-[]` pair)
   youtubeDarkBgHover: '#282828',
+
+  // Los cuatro colores de la "G" de Google, en el orden en que los usa el
+  // logo oficial. Van fijos (no `currentColor`) porque el mark es multicolor
+  // por definición: recolorearlo dejaría de ser el logo de Google, y las
+  // guidelines de "Sign in with Google" exigen usarlo tal cual.
+  googleYellow: '#FFC107',
+  googleRed:    '#FF3D00',
+  googleGreen:  '#4CAF50',
+  googleBlue:   '#1976D2',
 } as const
 
 // ─── Typography ─────────────────────────────────────────────────────────────

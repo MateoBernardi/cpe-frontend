@@ -1,11 +1,25 @@
 import type { PublicationImageDTO } from './ImageDTO'
+// `Category`'s wire shape is byte-identical to the model (see `dtos/index.ts`'s
+// note on collapsed identity pairs) — reused directly instead of a `CategoryDTO`.
+import type { Category } from '../models/Category'
 
 /** `interactions` summary embedded in publication DTOs (read-only, aggregated counts). */
 export interface InteractionCountsDTO {
   saves?: number
   visits?: number
-  likes?: number
+  favorites?: number
   comments?: number
+}
+
+/**
+ * The signed-in viewer's own state on this publication. Omitted entirely
+ * (not just `false`) when the request is anonymous — the backend only
+ * resolves it when there's a session, so `undefined` here means "unknown",
+ * never "not favorited".
+ */
+export interface PublicationViewerStateDTO {
+  favorited: boolean
+  saved: boolean
 }
 
 /** GET /publications/:id — full detail */
@@ -17,15 +31,18 @@ export interface PublicationDTO {
   content: string
   type_id?: number | null
   created_by: string
+  /** Resolved author display name. Optional until the backend JOIN lands; nullable for orphaned FKs. */
+  created_by_name?: string | null
   created_at: string
-  tags?: string[] | null
-  category_ids?: number[] | null
+  /** Replaces the old `tags`/`category_ids` pair — the single taxonomy now. */
+  categories?: Category[]
   interactions?: InteractionCountsDTO
   /** MAP on read: `{ [label]: url }` */
   external_links?: Record<string, string>
   images?: PublicationImageDTO[]
   /** Draft vs. published. Being added on the backend in parallel — optional until it lands. */
   status?: 'draft' | 'published'
+  viewer?: PublicationViewerStateDTO
 }
 
 /** GET /publications — list item (preview) */
@@ -36,7 +53,11 @@ export interface PublicationPreviewDTO {
   image_url?: string | null
   type_id?: number | null
   created_by: string
+  /** Same as the detail DTO's field — see there. */
+  created_by_name?: string | null
   created_at: string
+  /** Replaces the old `tags` — same shape as the detail DTO's `categories`. */
+  categories?: Category[]
   interactions?: InteractionCountsDTO
   /**
    * MAP on read: `{ [label]: url }` — mirrors the detail DTO. Optional: the
@@ -46,6 +67,7 @@ export interface PublicationPreviewDTO {
   external_links?: Record<string, string>
   /** Draft vs. published. Being added on the backend in parallel — optional until it lands. */
   status?: 'draft' | 'published'
+  viewer?: PublicationViewerStateDTO
 }
 
 /** Query params for GET /publications (all optional; numeric coercion done server-side) */
@@ -70,7 +92,6 @@ export interface PublicationWriteDTO {
   front_image_url?: string
   content: string
   type_id?: number
-  tag_ids?: number[]
   category_ids?: number[]
   external_links?: ExternalLinkWriteDTO[]
   image_ids?: number[]

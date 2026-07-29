@@ -28,9 +28,11 @@ export { SpotifyLink } from './SpotifyLink'
 export { TagList } from './TagList'
 export { Prose } from './Prose'
 export { ComposePreviewPane } from './ComposePreviewPane'
-export { TYPE_OPTIONS, TYPE_CONFIG, MAX_NOVEDAD_IMAGES } from './composeConfig'
-export type { CoverMode, TypeFieldConfig } from './composeConfig'
+export { TYPE_OPTIONS, TYPE_CONFIG, MAX_NOVEDAD_IMAGES, PUBLICATION_CONTENT_MAX, EMPTY_FORM } from './composeConfig'
+export type { CoverMode, TypeFieldConfig, FormState, GalleryImage } from './composeConfig'
 export { PublicationComposer } from './PublicationComposer'
+export { ActionButton } from './ActionButton'
+export type { ActionButtonStatus } from './ActionButton'
 
 export {
   typeAccent,
@@ -38,7 +40,6 @@ export {
   isSafeHttpUrl,
   formatForoDate,
   initialsOf,
-  displayByline,
   GENERIC_BYLINE,
   bylineFor,
   heroMetaValue,
@@ -46,11 +47,15 @@ export {
   latestListHeading,
   shareCardTitle,
   publicationUrl,
+  publicationShareUrl,
   getYouTubeEmbedUrl,
   hoverBgSwap,
   heroCtaVerb,
   interactionRows,
 } from './foroHelpers'
+
+export { ExternalLinkGuardProvider, SafeExternalLink } from './externalLinkGuard'
+export { isTrustedExternalHost, displayHost } from './externalLinkAllowlist'
 
 export * from './ForoIcons'
 

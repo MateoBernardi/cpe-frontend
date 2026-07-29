@@ -3,6 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Content Security Policy -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com http://localhost:*;
+        media-src 'self' blob: https://api.clinicaparaempresas.com http://localhost:*;
+        connect-src 'self' https://imagedelivery.net http://localhost:* https://api.clinicaparaempresas.com;
+        frame-src 'self';
+        font-src 'self' data:;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+      "
+    />
+
     <link rel="icon" type="image/png" href="/cpeTAB.jpeg" />
     <meta name="robots" content="noindex, nofollow" />
     <title>CPE Admin</title>

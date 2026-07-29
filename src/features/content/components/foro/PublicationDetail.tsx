@@ -13,6 +13,8 @@ interface PublicationDetailProps {
   type: PublicationType | undefined
   slug: Exclude<KnownPublicationTypeSlug, 'discusion'>
   related: PublicationPreview[]
+  /** Forwarded to `<DetailShell>` — full-width, single-column, no sidebar (composer preview). */
+  embedded?: boolean
 }
 
 /**
@@ -35,17 +37,16 @@ function NovedadVideo({ embedUrl, title }: { embedUrl: string; title: string }) 
 }
 
 /**
- * Promotional image collage for a novedad with no embeddable video:
- * `imageUrl` (front cover) + `images[]` (gallery) combined into a single
- * ordered list. Layout adapts to the count (1 = full-bleed, 2 = even split,
- * 3+ = one large + supporting stack), capped at 3 visible tiles with a "+N"
- * badge on the last one when there's more.
+ * Promotional image collage for a novedad with no embeddable video: the
+ * gallery `images[]` only. `imageUrl` (front cover) is deliberately excluded
+ * — `<ArticleHero>` (rendered by `<DetailShell>`, which wraps this body)
+ * already shows it full-bleed above, so including it here would duplicate
+ * the cover as the first tile. Layout adapts to the count (1 = full-bleed,
+ * 2 = even split, 3+ = one large + supporting stack), capped at 3 visible
+ * tiles with a "+N" badge on the last one when there's more.
  */
-function NovedadCollage({ imageUrl, images }: { imageUrl: string | null; images: Publication['images'] }) {
-  const combined = [
-    ...(imageUrl ? [{ id: -1, url: imageUrl, altText: null as string | null }] : []),
-    ...(images ?? []),
-  ]
+function NovedadCollage({ images }: { images: Publication['images'] }) {
+  const combined = images ?? []
   if (combined.length === 0) return null
 
   const visible = combined.slice(0, 3)
@@ -104,13 +105,14 @@ function InteractionsRow({ rows }: { rows: { label: string; value: number }[] })
  *   links are the point — then prose + the same flat footer.
  * - Novedad: media-first/promotional — not a long-form article. A
  *   YouTube-recognizable external link (see `getYouTubeEmbedUrl`) renders as
- *   an embedded 16:9 player right after the tags; otherwise `imageUrl` +
- *   `images[]` combine into a promotional collage (`<NovedadCollage>`). The
- *   `content` field renders below as short promotional copy, not article
- *   prose. Any non-YouTube external links still render via
- *   `<ExternalLinksCTA>`.
+ *   an embedded 16:9 player right after the tags; otherwise `images[]`
+ *   (gallery only — `imageUrl` is excluded since `<ArticleHero>` already
+ *   shows it as the hero) renders as a promotional collage
+ *   (`<NovedadCollage>`). The `content` field renders below as short
+ *   promotional copy, not article prose. Any non-YouTube external links
+ *   still render via `<ExternalLinksCTA>`.
  */
-export function PublicationDetail({ publication, type, slug, related }: PublicationDetailProps) {
+export function PublicationDetail({ publication, type, slug, related, embedded = false }: PublicationDetailProps) {
   const rows = interactionRows(publication.interactions, slug)
   const typeName = type?.name ?? ''
   const ctaLabel = `${typeName} · ${formatForoDate(publication.createdAt)}`
@@ -158,7 +160,7 @@ export function PublicationDetail({ publication, type, slug, related }: Publicat
         <div className="mb-5"><TagList tags={publication.tags} /></div>
         {embedUrl
           ? <NovedadVideo embedUrl={embedUrl} title={publication.title} />
-          : <NovedadCollage imageUrl={publication.imageUrl} images={publication.images} />}
+          : <NovedadCollage images={publication.images} />}
         <Prose content={publication.content} size="lg" />
         {otherLinks.length > 0 && (
           <div className="mt-7 max-w-md">
@@ -173,7 +175,7 @@ export function PublicationDetail({ publication, type, slug, related }: Publicat
   }
 
   return (
-    <DetailShell publication={publication} slug={slug} typeName={typeName} related={related}>
+    <DetailShell publication={publication} slug={slug} typeName={typeName} related={related} embedded={embedded}>
       {body}
     </DetailShell>
   )

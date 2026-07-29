@@ -3,6 +3,12 @@ import { ShareIcon, LinkedInIcon, XIcon, WhatsAppIcon, EmailIcon, CopyIcon, Chec
 import { hexToRgba } from './foroHelpers'
 import { colors } from '../../../../theme'
 
+/**
+ * `url` acá es la URL de share del backend (`publicationShareUrl`), no la del
+ * SPA: es la única que los crawlers de las redes pueden leer para armar el
+ * preview con Open Graph. El botón de copiar enlace usa la otra — ver
+ * `copyUrl` en `<ShareIconRow>`.
+ */
 function buildShareTargets(url: string, title: string) {
   const encodedUrl = encodeURIComponent(url)
   const encodedTitle = encodeURIComponent(title)
@@ -51,19 +57,25 @@ function useHoverAccent(accent: string) {
 }
 
 interface ShareIconRowProps {
+  /** URL que reciben las redes — la que sirve Open Graph (`publicationShareUrl`). */
   url: string
+  /**
+   * URL "linda" del SPA para el botón de copiar. Si no se pasa se copia `url`,
+   * que es lo correcto para llamadores que no tienen dos URLs distintas.
+   */
+  copyUrl?: string
   title: string
   accent?: string
 }
 
 /** Row of circular icon buttons: LinkedIn, X, WhatsApp, email, copy-link. Used inside the "Compartir esta <formato>" card. */
-export function ShareIconRow({ url, title, accent = colors.tealDeep }: ShareIconRowProps) {
+export function ShareIconRow({ url, copyUrl, title, accent = colors.tealDeep }: ShareIconRowProps) {
   const [copied, setCopied] = useState(false)
   const hoverProps = useHoverAccent(accent)
   const targets = buildShareTargets(url, title)
 
   const handleCopy = async () => {
-    const ok = await copyToClipboard(url)
+    const ok = await copyToClipboard(copyUrl ?? url)
     if (ok) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)

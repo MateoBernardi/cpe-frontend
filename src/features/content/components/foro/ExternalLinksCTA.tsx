@@ -3,6 +3,7 @@ import { SpotifyLink } from './SpotifyLink'
 import { YouTubeMark } from './PlatformMarks'
 import { ChevronRight } from './ForoIcons'
 import { hoverBgSwap, isSafeHttpUrl } from './foroHelpers'
+import { SafeExternalLink } from './externalLinkGuard'
 import { colors, platformColors } from '../../../../theme'
 
 interface ExternalLinksCTAProps {
@@ -47,12 +48,10 @@ export function ExternalLinksCTA({ label, title, links }: ExternalLinksCTAProps)
 
       {primary && (
         isSafeHttpUrl(primary.url) ? (
-          <a
+          <SafeExternalLink
             className="flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5"
             style={{ backgroundColor: isYouTube ? platformColors.youtubeDarkBg : colors.ctaPrimary }}
             href={primary.url}
-            target="_blank"
-            rel="noopener noreferrer"
             {...hoverBgSwap(
               isYouTube ? platformColors.youtubeDarkBg : colors.ctaPrimary,
               isYouTube ? platformColors.youtubeDarkBgHover : colors.ctaPrimaryHover,
@@ -63,7 +62,7 @@ export function ExternalLinksCTA({ label, title, links }: ExternalLinksCTAProps)
               Ver en {prettyLabel(primary.label)}
               <ChevronRight size={16} />
             </span>
-          </a>
+          </SafeExternalLink>
         ) : (
           // Unsafe scheme (javascript:/data:/etc — see `isSafeHttpUrl`): never
           // render this as a clickable anchor, only as inert text.
@@ -77,16 +76,14 @@ export function ExternalLinksCTA({ label, title, links }: ExternalLinksCTAProps)
         <div className="mt-3 flex flex-wrap gap-2">
           {rest.map((link) =>
             isSafeHttpUrl(link.url) ? (
-              <a
+              <SafeExternalLink
                 key={link.label}
                 href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ring-1 ring-slate-200 transition-colors hover:bg-gray-50"
                 style={{ color: colors.tealDeep }}
               >
                 {prettyLabel(link.label)}
-              </a>
+              </SafeExternalLink>
             ) : (
               // Unsafe scheme — inert text, no anchor.
               <span
