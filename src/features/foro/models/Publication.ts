@@ -7,6 +7,20 @@ export interface ExternalLink {
   url: string
 }
 
+/**
+ * Lifecycle state, mirroring the backend's `publicacion_status` enum. Only `published` is
+ * publicly readable — the rest are visible to the author (and admins) alone, so they can show
+ * up on `/perfil/publicaciones` but never on a public list.
+ */
+export type PublicationStatus = 'published' | 'draft' | 'archived' | 'pending'
+
+/**
+ * The subset a client may actually SET. `pending` (en moderación) and `archived` are
+ * server-assigned: the backend's Zod schema rejects them in a POST/PATCH body, so the composer
+ * must not be able to construct one.
+ */
+export type WritablePublicationStatus = Extract<PublicationStatus, 'draft' | 'published'>
+
 /** The signed-in viewer's own state on a publication. `null` for anonymous viewers
  *  (the backend omits `viewer` entirely when there's no session — see the mapper). */
 export interface PublicationViewerState {
@@ -32,8 +46,8 @@ export interface Publication {
   interactions: InteractionCounts | null
   externalLinks: ExternalLink[]
   images: ForoImage[]
-  /** Draft vs. published. Defaults to `'published'` if the backend omits it. */
-  status: 'draft' | 'published'
+  /** Defaults to `'published'` if the backend omits it. See `PublicationStatus`. */
+  status: PublicationStatus
   viewer: PublicationViewerState | null
 }
 
@@ -57,8 +71,8 @@ export interface PublicationPreview {
    * not include `external_links` — consumers render nothing in that case.
    */
   externalLinks?: ExternalLink[]
-  /** Draft vs. published. Defaults to `'published'` if the backend omits it. */
-  status: 'draft' | 'published'
+  /** Defaults to `'published'` if the backend omits it. See `PublicationStatus`. */
+  status: PublicationStatus
   viewer: PublicationViewerState | null
 }
 
@@ -84,5 +98,6 @@ export interface PublicationInput {
   categoryIds?: number[]
   externalLinks?: ExternalLink[]
   imageIds?: number[]
-  status?: 'draft' | 'published'
+  /** Only the writable subset — see `WritablePublicationStatus`. */
+  status?: WritablePublicationStatus
 }

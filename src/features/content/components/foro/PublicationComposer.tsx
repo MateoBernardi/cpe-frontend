@@ -13,6 +13,7 @@ import {
   type Publication,
   type PublicationType,
   type KnownPublicationTypeSlug,
+  type WritablePublicationStatus,
 } from '@features/foro'
 import { LoadingSpinner, ErrorMessage } from '@shared/components'
 import { colors, foroHairline } from '../../../../theme'
@@ -177,7 +178,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [mobilePane, setMobilePane] = useState<'form' | 'preview'>('form')
-  const [pendingStatus, setPendingStatus] = useState<'draft' | 'published' | null>(null)
+  const [pendingStatus, setPendingStatus] = useState<WritablePublicationStatus | null>(null)
   /** Which external-link row is expanded. A row with a URL already loaded stays open regardless. */
   const [openLinkKind, setOpenLinkKind] = useState<LinkLabel | null>(null)
 
@@ -367,7 +368,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const mutationError = create.error ?? update.error
   const canSubmit = isEdit ? publicationId != null : matchedType != null
 
-  const handleSave = (status: 'draft' | 'published') => {
+  const handleSave = (status: WritablePublicationStatus) => {
     // Synchronous re-entrancy guard: `disabled={mutationInProgress}` only
     // takes effect after React commits, so a fast double-click on "Guardar
     // borrador"/"Publicar" can fire the mutation twice before that render lands.

@@ -57,6 +57,11 @@ interface CommentNodeProps extends Omit<CommentListProps, 'comments'> {
   comment: Interaction
 }
 
+/** Descendientes totales de un nodo, no sólo sus hijos directos — ver `handleDelete`. */
+function countDescendants(comment: Interaction): number {
+  return comment.replies.reduce((total, reply) => total + 1 + countDescendants(reply), 0)
+}
+
 function CommentNode({
   comment,
   publicationId,
@@ -82,9 +87,31 @@ function CommentNode({
   // usuario borrado, no al caso normal.
   const author = comment.authorName?.trim() || 'Miembro del foro'
   const isOwner = comment.userId === user?.id
-  const canManage = !preview && (isOwner || role === 'admin')
+  // Un publisher modera: edita y borra cualquier comentario, no sólo el propio. Editar y borrar
+  // comparten gate a propósito — el backend permite ambas sobre comentarios ajenos (mismo
+  // `assertOwnerOrModerator`), así que la UI no se queda más angosta que la API.
+  const isModerator = role === 'publisher'
+  const canManage = !preview && (isOwner || isModerator)
   const canReply = !preview && onReply != null && comment.depth < MAX_COMMENT_DEPTH
   const edited = comment.updatedAt != null && comment.updatedAt.getTime() !== comment.createdAt.getTime()
+
+  // Confirmación antes de borrar: antes el click borraba directo, lo cual era tolerable cuando
+  // sólo el propio autor veía el botón. Ahora un moderador ve "Eliminar" en TODOS los comentarios
+  // del hilo, y el borrado cascadea a toda la subrama de respuestas (`parent_id` ON DELETE CASCADE
+  // en el backend), así que hace falta avisar qué se pierde antes de confirmar.
+  const handleDelete = () => {
+    const whose = isOwner ? 'tu comentario' : `el comentario de ${author}`
+    // `repliesCount` cuenta SÓLO las respuestas directas (backend: `replies_count: children.length`),
+    // pero el CASCADE se lleva toda la subrama, así que para el aviso hay que contar los
+    // descendientes completos — si no, un comentario con 2 respuestas que a su vez tienen 3 cada
+    // una avisaría "2" y borraría 8.
+    const descendants = countDescendants(comment)
+    const repliesWarning = descendants > 0
+      ? ` También se van a borrar sus ${descendants} ${descendants === 1 ? 'respuesta' : 'respuestas'}.`
+      : ''
+    if (!window.confirm(`¿Eliminar ${whose}?${repliesWarning} No vas a poder deshacerlo.`)) return
+    onDelete?.(comment.id)
+  }
 
   const handleSaveEdit = async () => {
     const trimmed = draft.trim()
@@ -192,10 +219,13 @@ function CommentNode({
               {canManage && onDelete && (
                 <button
                   type="button"
-                  onClick={() => onDelete(comment.id)}
+                  onClick={handleDelete}
                   className="text-xs font-medium text-gray-400 transition-colors hover:text-red-500"
                 >
-                  Eliminar
+                  {/* Un moderador ve este control en comentarios ajenos en cada nodo del hilo; el
+                      sufijo distingue esa acción de un simple "Eliminar" sobre el propio comentario,
+                      aunque visualmente sean el mismo link gris. */}
+                  {isOwner ? 'Eliminar' : 'Eliminar comentario'}
                 </button>
               )}
             </div>

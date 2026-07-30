@@ -2,6 +2,9 @@ import type { PublicationImageDTO } from './ImageDTO'
 // `Category`'s wire shape is byte-identical to the model (see `dtos/index.ts`'s
 // note on collapsed identity pairs) — reused directly instead of a `CategoryDTO`.
 import type { Category } from '../models/Category'
+// Same collapsed-identity call as `Category`: the status unions are shared with the models
+// verbatim, so re-declaring them here would only let the two drift.
+import type { PublicationStatus, WritablePublicationStatus } from '../models/Publication'
 
 /** `interactions` summary embedded in publication DTOs (read-only, aggregated counts). */
 export interface InteractionCountsDTO {
@@ -40,8 +43,8 @@ export interface PublicationDTO {
   /** MAP on read: `{ [label]: url }` */
   external_links?: Record<string, string>
   images?: PublicationImageDTO[]
-  /** Draft vs. published. Being added on the backend in parallel — optional until it lands. */
-  status?: 'draft' | 'published'
+  /** Absent only on responses predating the column; the mapper defaults it to `'published'`. */
+  status?: PublicationStatus
   viewer?: PublicationViewerStateDTO
 }
 
@@ -65,8 +68,8 @@ export interface PublicationPreviewDTO {
    * render nothing (never crash). Surfaced for podcast channel chips.
    */
   external_links?: Record<string, string>
-  /** Draft vs. published. Being added on the backend in parallel — optional until it lands. */
-  status?: 'draft' | 'published'
+  /** Absent only on responses predating the column; the mapper defaults it to `'published'`. */
+  status?: PublicationStatus
   viewer?: PublicationViewerStateDTO
 }
 
@@ -95,7 +98,8 @@ export interface PublicationWriteDTO {
   category_ids?: number[]
   external_links?: ExternalLinkWriteDTO[]
   image_ids?: number[]
-  status?: 'draft' | 'published'
+  /** Server-assigned values (`pending`/`archived`) are rejected by the backend on write. */
+  status?: WritablePublicationStatus
 }
 
 /**

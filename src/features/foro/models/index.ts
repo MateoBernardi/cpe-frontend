@@ -16,4 +16,6 @@ export type {
   PublicationPreview,
   ListPublicationsParams,
   PublicationInput,
+  PublicationStatus,
+  WritablePublicationStatus,
 } from './Publication'

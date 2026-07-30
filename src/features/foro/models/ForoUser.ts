@@ -1,4 +1,4 @@
-export type ForoRole = 'visitor' | 'publisher' | 'admin'
+export type ForoRole = 'visitor' | 'publisher'
 
 export interface ForoUser {
   id: string
@@ -8,5 +8,5 @@ export interface ForoUser {
 }
 
 export function canPublish(role: ForoRole | null | undefined): boolean {
-  return role === 'publisher' || role === 'admin'
+  return role === 'publisher'
 }
