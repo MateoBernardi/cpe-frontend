@@ -30,6 +30,8 @@ export function mapPublicationDTO(dto: PublicationDTO): Publication {
     images: (dto.images ?? []).map((img) => ({ id: img.id, url: img.url, altText: img.alt_text ?? null })),
     status: dto.status ?? 'published',
     viewer: mapViewerDTO(dto.viewer),
+    revisionOf: dto.revision_of ?? null,
+    revisionId: dto.revision_id ?? null,
   }
 }
 
@@ -47,6 +49,7 @@ export function mapPublicationPreviewDTO(dto: PublicationPreviewDTO): Publicatio
     interactions: mapInteractionCountsDTO(dto.interactions),
     status: dto.status ?? 'published',
     viewer: mapViewerDTO(dto.viewer),
+    revisionOf: dto.revision_of ?? null,
   }
   // Only surface `externalLinks` when the backend actually sent the map — kept
   // undefined otherwise so consumers can cleanly render nothing (never crash).
@@ -92,6 +95,7 @@ export function mapPublicationInputToWriteDTO(input: PublicationInput): Publicat
   }
   if (input.imageIds !== undefined) dto.image_ids = input.imageIds
   if (input.status !== undefined) dto.status = input.status
+  if (input.revisionOf !== undefined) dto.revision_of = input.revisionOf
   return dto
 }
 
@@ -116,5 +120,7 @@ export function mapPublicationInputToPatchDTO(input: Partial<PublicationInput>):
   }
   if (input.imageIds !== undefined) dto.image_ids = input.imageIds
   if (input.status !== undefined) dto.status = input.status
+  // `revisionOf` is deliberately NOT mapped here — it's create-only (see `PublicationPatchDTO`'s
+  // `Omit<>`); a PATCH can never mint or re-target a revision.
   return dto
 }

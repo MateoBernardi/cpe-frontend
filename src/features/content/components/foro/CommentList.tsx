@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Interaction } from '@features/foro'
-import { useForoAuth } from '@features/foro'
+import { useForoAuth, isOptimisticInteraction } from '@features/foro'
 import { FavoriteButton } from './FavoriteButton'
 import { CommentComposer } from './CommentComposer'
 import { formatForoDate, initialsOf } from './foroHelpers'
@@ -29,7 +29,15 @@ interface CommentListProps {
   publicationId: number
   onDelete?: (id: number) => void
   onEdit?: (id: number, content: string) => Promise<unknown>
-  onReply?: (parentId: number, content: string) => Promise<unknown>
+  onReply?: (parentId: number, content: string, idempotencyKey: string) => Promise<unknown>
+  /**
+   * Estado `isPending` de la mutación que crea comentarios (`useCommentMutations().create`), dueña
+   * de todos los composers de respuesta de este árbol. Vive arriba (en `CommentThread`) por la misma
+   * razón que `replyingToId`: hay una sola mutación de creación compartida por todo el hilo, así que
+   * cada `CommentComposer` de respuesta necesita ESTE flag — no uno local — para que su guard
+   * síncrono de doble-submit no quede inerte (antes se renderizaba sin `isSubmitting` en absoluto).
+   */
+  replyPending?: boolean
   /**
    * Id del comentario que tiene la caja de respuesta abierta, o `null` si ninguno. Vive arriba, en
    * `<CommentThread>`, y no como estado local de cada nodo, por dos razones: sólo puede haber una
@@ -68,6 +76,7 @@ function CommentNode({
   onDelete,
   onEdit,
   onReply,
+  replyPending = false,
   replyingToId = null,
   onReplyingToChange,
   expandedIds,
@@ -79,6 +88,10 @@ function CommentNode({
   const [draft, setDraft] = useState(comment.content ?? '')
   const [isSaving, setIsSaving] = useState(false)
   const isReplying = replyingToId === comment.id
+  // Fila optimista: el POST sigue en vuelo y el comentario todavía no existe en el backend. Se
+  // muestra igual (con su texto) pero atenuado y sin acciones — favoritear, responder, editar o
+  // borrar apuntarían a un id sintético negativo.
+  const isPending = isOptimisticInteraction(comment.id)
   // Colapsadas por default: un hilo con varias ramas largas empujaba los comentarios raíz fuera de
   // pantalla y no se podía ver de qué se estaba hablando sin scrollear mucho.
   const repliesExpanded = expandedIds?.has(comment.id) ?? false
@@ -91,8 +104,8 @@ function CommentNode({
   // comparten gate a propósito — el backend permite ambas sobre comentarios ajenos (mismo
   // `assertOwnerOrModerator`), así que la UI no se queda más angosta que la API.
   const isModerator = role === 'publisher'
-  const canManage = !preview && (isOwner || isModerator)
-  const canReply = !preview && onReply != null && comment.depth < MAX_COMMENT_DEPTH
+  const canManage = !preview && !isPending && (isOwner || isModerator)
+  const canReply = !preview && !isPending && onReply != null && comment.depth < MAX_COMMENT_DEPTH
   const edited = comment.updatedAt != null && comment.updatedAt.getTime() !== comment.createdAt.getTime()
 
   // Confirmación antes de borrar: antes el click borraba directo, lo cual era tolerable cuando
@@ -126,7 +139,7 @@ function CommentNode({
   }
 
   return (
-    <div className="py-5">
+    <div className={`py-5 ${isPending ? 'opacity-60' : ''}`} aria-busy={isPending || undefined}>
       <div className="flex gap-3">
         <span
           className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
@@ -137,8 +150,16 @@ function CommentNode({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
             <span className="text-sm font-semibold" style={{ color: colors.blueDark }}>{author}</span>
-            <span className="text-xs text-gray-400">{formatForoDate(comment.createdAt)}</span>
-            {edited && <span className="text-xs text-gray-400">· editado</span>}
+            {isPending ? (
+              // La fecha de una fila optimista es local y todavía no significa nada (el servidor
+              // pone la suya al insertar), así que en su lugar va el estado del envío.
+              <span className="text-xs font-semibold animate-pulse motion-reduce:animate-none" style={{ color: colors.tealDeep }}>
+                Posteando…
+              </span>
+            ) : (
+              <span className="text-xs text-gray-400">{formatForoDate(comment.createdAt)}</span>
+            )}
+            {edited && !isPending && <span className="text-xs text-gray-400">· editado</span>}
           </div>
 
           {isEditing ? (
@@ -172,7 +193,9 @@ function CommentNode({
             <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{comment.content}</p>
           )}
 
-          {!isEditing && (
+          {/* Nada de acciones mientras el POST está en vuelo: `FavoriteButton` no mira `canManage`
+              ni `canReply`, así que sin este gate mandaría un `parent_id` negativo al backend. */}
+          {!isEditing && !isPending && (
             <div className="mt-2 flex flex-wrap items-center gap-4">
               {/* Se renderiza también para el anónimo: el click abre el diálogo de login. */}
               {!preview && (
@@ -235,8 +258,9 @@ function CommentNode({
             <CommentComposer
               placeholder={`Respondele a ${author}…`}
               submitLabel="Responder"
-              onSubmit={async (content) => {
-                await onReply(comment.id, content)
+              isSubmitting={replyPending}
+              onSubmit={async (content, idempotencyKey) => {
+                await onReply(comment.id, content, idempotencyKey)
                 onReplyingToChange?.(null)
               }}
             />
@@ -278,6 +302,7 @@ function CommentNode({
                   onDelete={onDelete}
                   onEdit={onEdit}
                   onReply={onReply}
+                  replyPending={replyPending}
                   replyingToId={replyingToId}
                   onReplyingToChange={onReplyingToChange}
                   expandedIds={expandedIds}
@@ -308,6 +333,7 @@ export function CommentList({
   onDelete,
   onEdit,
   onReply,
+  replyPending = false,
   replyingToId = null,
   onReplyingToChange,
   expandedIds,
@@ -334,6 +360,7 @@ export function CommentList({
             onDelete={onDelete}
             onEdit={onEdit}
             onReply={onReply}
+            replyPending={replyPending}
             replyingToId={replyingToId}
             onReplyingToChange={onReplyingToChange}
             expandedIds={expandedIds}

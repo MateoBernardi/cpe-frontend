@@ -2,8 +2,10 @@ import type { Publication, PublicationPreview } from '@features/foro'
 import { DetailShell } from './DetailShell'
 import { CommentThread } from './CommentThread'
 import { CategoryList } from './CategoryList'
+import { ExternalLinksCTA } from './ExternalLinksCTA'
 import { Prose } from './Prose'
 import { Gallery } from './Gallery'
+import { formatForoDate } from './foroHelpers'
 
 interface DiscussionDetailProps {
   publication: Publication
@@ -28,14 +30,17 @@ interface DiscussionDetailProps {
  *
  * `<DetailShell>` supplies the hero (title/meta/share/save), reading-progress
  * bar and the share/related sidebar — this only renders the OP body + the
- * comment thread. Discusiones can have a cover image and a gallery like the
- * other formats: `<ArticleHero>` renders `imageUrl` when present (falling
- * back to an accent gradient otherwise), and `<Gallery>` renders `images[]`
- * below the body. Their "share" card/related list work exactly like the
- * other three formats — the save and sharing affordances are the same
- * everywhere.
+ * comment thread. Discusiones can have a cover image, a gallery and external
+ * links like the other formats: `<ArticleHero>` renders `imageUrl` when
+ * present (falling back to an accent gradient otherwise), `<Gallery>` renders
+ * `images[]` below the body, and `<ExternalLinksCTA>` renders
+ * `publication.externalLinks` (hidden entirely when the list is empty). Their
+ * "share" card/related list work exactly like the other three formats — the
+ * save and sharing affordances are the same everywhere.
  */
 export function DiscussionDetail({ publication, typeName, related, preview = false, embedded = false }: DiscussionDetailProps) {
+  const ctaLabel = `${typeName} · ${formatForoDate(publication.createdAt)}`
+
   return (
     <DetailShell publication={publication} slug="discusion" typeName={typeName} related={related} embedded={embedded}>
       <article>
@@ -44,6 +49,9 @@ export function DiscussionDetail({ publication, typeName, related, preview = fal
         )}
         <Prose content={publication.content} />
         <Gallery images={publication.images} />
+        {publication.externalLinks.length > 0 && (
+          <div className="mt-6 max-w-md"><ExternalLinksCTA label={ctaLabel} title={publication.title} links={publication.externalLinks} /></div>
+        )}
 
         <CommentThread
           publicationId={publication.id}

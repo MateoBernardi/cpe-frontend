@@ -10,5 +10,12 @@ export * from './viewmodels'
 export * from './auth'
 export * from './components'
 
-export { ForoApiError, getForoApiErrorMessage } from './api/foroApiRequest'
+export {
+  ForoApiError,
+  getForoApiErrorMessage,
+  isContentRejected,
+  isEmailNotVerified,
+} from './api/foroApiRequest'
+export { getAuthErrorMessage } from './api/authErrorMessages'
 export { foroAuthClient, toForoApiError } from './api/foroAuthClient'
+export { newIdempotencyKey, useIdempotencyKey } from './api/idempotency'

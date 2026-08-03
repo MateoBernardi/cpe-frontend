@@ -15,6 +15,7 @@ export {
   useComments,
   useCommentMutations,
   useInteractionToggle,
+  isOptimisticInteraction,
 } from './useCommentsViewModel'
 export {
   useMyInteractions,

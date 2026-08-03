@@ -49,6 +49,12 @@ export interface Publication {
   /** Defaults to `'published'` if the backend omits it. See `PublicationStatus`. */
   status: PublicationStatus
   viewer: PublicationViewerState | null
+  /** Id of the published publication this row is a revision draft of, `null` in the normal case
+   *  (`revision_of` on the wire). */
+  revisionOf: number | null
+  /** Id of THIS publication's own open revision draft, `null` when there is none or the viewer is
+   *  anonymous (`revision_id` on the wire). */
+  revisionId: number | null
 }
 
 /** List item — GET /publications */
@@ -74,6 +80,8 @@ export interface PublicationPreview {
   /** Defaults to `'published'` if the backend omits it. See `PublicationStatus`. */
   status: PublicationStatus
   viewer: PublicationViewerState | null
+  /** Same as `Publication.revisionOf` — see there. */
+  revisionOf: number | null
 }
 
 export interface ListPublicationsParams {
@@ -100,4 +108,7 @@ export interface PublicationInput {
   imageIds?: number[]
   /** Only the writable subset — see `WritablePublicationStatus`. */
   status?: WritablePublicationStatus
+  /** Write-only, CREATE only — mints a separate revision draft of the published publication with
+   *  this id instead of a standalone publication. See `Publication.revisionOf`. */
+  revisionOf?: number
 }

@@ -17,9 +17,9 @@ import type { ExternalLink, KnownPublicationTypeSlug } from '@features/foro'
  *   - Gallery (`images[]`): paper (`<Gallery>`), novedad (`<NovedadCollage>`),
  *     discusión (`<Gallery>`) — NOT podcast. Nothing in the podcast branch of
  *     `PublicationDetail` ever touches `images`.
- *   - External links: paper / podcast (`<ExternalLinksCTA>`), novedad (YouTube
- *     link embeds, the rest go through `<ExternalLinksCTA>`) — NOT discusión.
- *     `DiscussionDetail` never renders `externalLinks`.
+ *   - External links: paper / podcast / discusión (`<ExternalLinksCTA>`), novedad
+ *     (YouTube link embeds, the rest go through `<ExternalLinksCTA>`) — all four
+ *     now render `externalLinks`.
  *   - Categories: all four (`<CategoryList>`) — la taxonomía es una sola y aplica a todos los
  *     formatos, así que no tiene eje propio en esta tabla.
  *
@@ -146,15 +146,14 @@ export const TYPE_CONFIG: Record<KnownPublicationTypeSlug, TypeFieldConfig> = {
   discusion: {
     name: 'Discusión',
     bodyLabel: 'Descripción',
-    // `<ArticleHero>` (cover + subtitle) and `<CategoryList>` are shared by every
-    // format including discusión — verified by reading `DiscussionDetail.tsx`,
-    // which renders categories and a gallery like the other three. Only external
-    // links are genuinely unsupported: `DiscussionDetail` never touches
-    // `publication.externalLinks`.
+    // `<ArticleHero>` (cover + subtitle), `<CategoryList>` and `<ExternalLinksCTA>`
+    // are shared by every format including discusión — verified by reading
+    // `DiscussionDetail.tsx`, which renders categories, a gallery and external
+    // links like the other three formats.
     showSubtitle: true,
     coverMode: 'single',
     showGallery: true,
-    showLinks: false,
+    showLinks: true,
     channelLabel: 'Comunidad',
   },
 }

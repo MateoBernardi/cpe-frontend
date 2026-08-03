@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { useForoAuth, useInteractionToggle, getForoApiErrorMessage } from '@features/foro'
+import { useForoAuth, useInteractionToggle, useIdempotencyKey, getForoApiErrorMessage } from '@features/foro'
 import { hexToRgba } from './foroHelpers'
 import { colors } from '../../../../theme'
 
@@ -49,23 +49,35 @@ export function InteractionToggleButton({
   accent = colors.ctaPrimary,
 }: InteractionToggleButtonProps) {
   const { isAuthenticated, openAuthDialog } = useForoAuth()
-  const { add, remove } = useInteractionToggle(publicationId, typeId, parentId)
-  const pending = add.isPending || remove.isPending
+  const { add, remove, isRemovingRow } = useInteractionToggle(publicationId, typeId, parentId)
+  const { keyFor, reset: resetIdempotencyKey } = useIdempotencyKey()
+  // `isRemovingRow` sigue prendido un rato después de que `remove` termina: cubre la ventana en que
+  // `useInteractionToggle` diferió sacar la fila de los paneles de perfil (`GET /interactions/me`)
+  // para no cortar la animación de este mismo botón — ver `removeFromMyInteractions` ahí. Sin
+  // sumarla, un segundo click justo en ese hueco dispararía un DELETE contra un target que el
+  // servidor ya borró.
+  const pending = add.isPending || remove.isPending || isRemovingRow
   /**
-   * Sólo para no animar en el montaje: un botón que ya viene marcado del servidor haría "pop" solo
-   * en cada navegación. Se prende en el handler del click (no en un efecto) y no se vuelve a apagar.
+   * Contador de clicks iniciados por el usuario (nunca se toca en un efecto). Arranca en 0 así un
+   * botón que ya viene marcado del servidor no anima en el montaje — recién anima a partir del
+   * primer click. De ahí en más el VALOR no importa: se usa como `key` del `<span>` animado (ver
+   * `animatedIcon` más abajo) para forzar un remount en CADA click, sin importar si la clase de
+   * animación resultante (`pop`/`drop`) es la misma que la vez anterior.
    *
-   * Con esto puesto, la animación la dispara el propio cambio de `active`: las clases de encendido y
-   * apagado tienen `animation-name` distinto, así que al cambiar la clase el navegador reinicia la
-   * animación sola — no hace falta ni estado ni `key` para forzar el reinicio.
+   * Antes el reinicio dependía únicamente de que `animation-name` cambiara entre pop y drop, así que
+   * una secuencia que aterrizaba dos veces en la misma clase — optimista `true` → rollback `false` →
+   * refetch `true`, o dos clicks rápidos donde la guarda de reentrada de abajo se come el segundo —
+   * no reiniciaba ninguna animación. Mismo criterio que `AnimatedCheckbox.tsx`, que resuelve lo mismo
+   * con `key={checked ? 'on' : 'off'}`; acá no alcanza una key derivada del estado porque el estado
+   * puede repetirse, así que hace falta algo monótono.
    */
-  const [hasToggled, setHasToggled] = useState(false)
+  const [clickCount, setClickCount] = useState(0)
 
   // `active` llega ya invertido de forma optimista (`onMutate` de `useInteractionToggle` parchea la
   // caché antes de que salga el request), así que el flip y la animación ocurren en el frame del
   // click, no cuando contesta el servidor. Si la mutación falla, el rollback revierte `active` y la
   // animación corre en el sentido contrario — que es exactamente la señal de que no quedó.
-  const animationClass = !hasToggled
+  const animationClass = clickCount === 0
     ? ''
     : active
       ? 'interaction-toggle-pop'
@@ -74,19 +86,26 @@ export function InteractionToggleButton({
   const error = add.error ?? remove.error
 
   const handleClick = () => {
-    // Guarda de reentrada síncrona: `disabled={pending}` recién aplica después del commit de React,
-    // así que un doble click rápido dispara la mutación y su deshacer con estado todavía viejo.
+    // Guarda de reentrada síncrona: ya no hay `disabled` que lea `pending` (ver más abajo por qué),
+    // y aunque lo hubiera recién aplicaría después del commit de React — así que sin esto un doble
+    // click rápido dispara la mutación y su deshacer con estado todavía viejo.
     if (pending) return
     if (!isAuthenticated) {
       // Sin sesión no hay cambio de estado que animar: el click abre el diálogo de login.
       openAuthDialog('sign-in')
       return
     }
-    setHasToggled(true)
+    setClickCount((c) => c + 1)
     if (active) {
+      // Sólo el alta (POST /interactions) lleva idempotency key — la baja es un DELETE, fuera del
+      // alcance de este esquema. La deduplicación de un doble-click acá ya la cubre, en la práctica,
+      // el índice único parcial de la base (`interacciones_unique_single_per_user`).
       remove.mutate()
     } else {
-      add.mutate()
+      // Cinturón y tiradores: favorito/guardado ya dedupean por el índice único de la base, pero una
+      // key hace que el replay devuelva el 201 original en vez de correr contra el re-read de
+      // `onConflictDoNothing` en `interaction.repo.ts`.
+      add.mutate(keyFor({ typeId, publicationId, parentId }), { onSettled: resetIdempotencyKey })
     }
   }
 
@@ -95,24 +114,35 @@ export function InteractionToggleButton({
   const title = errorMessage ?? label
 
   // `inline-flex` para que el `transform` de la animación tenga caja propia y no arrastre al texto.
+  // `key={clickCount}` fuerza el remount del `<span>` en cada click (ver comentario de `clickCount`
+  // más arriba) — es lo que garantiza el reinicio de la animación, no la clase en sí.
   const animatedIcon = (size?: number) => (
-    <span className={`inline-flex ${animationClass}`}>
+    <span key={clickCount} className={`inline-flex ${animationClass}`}>
       {icon({ size, filled: active })}
     </span>
   )
 
+  // Ya no se usa el atributo `disabled` para expresar "mutación en vuelo": los navegadores cortan
+  // `:active` en un elemento disabled apenas React comitea `disabled=true` (que pasa en el mismo
+  // tick del click, porque la mutación arranca sync dentro de `handleClick`), así que
+  // `active:scale-[...]` se revertía a mitad de la presión y el pop/drop nunca llegaba a jugar — el
+  // bug "aleatorio" de las animaciones que no disparan. La protección real contra doble-fire ya está
+  // en la guarda síncrona de `handleClick`; acá sólo queda comunicar el estado ocupado de forma que
+  // no mate `:active` (`aria-busy` + una atenuación visual en vez de bloquear el elemento).
+  const busyClass = pending ? 'opacity-60 cursor-wait' : ''
+
   if (variant === 'icon') {
     const base =
-      'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 active:scale-[0.88] motion-reduce:active:scale-100 disabled:cursor-not-allowed'
+      'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 active:scale-[0.88] motion-reduce:active:scale-100'
     return (
       <button
         type="button"
         onClick={handleClick}
-        disabled={pending}
+        aria-busy={pending}
         aria-label={label}
         aria-pressed={active}
         title={title}
-        className={active ? `${base} text-white` : `${base} text-gray-400 hover:text-white`}
+        className={`${active ? `${base} text-white` : `${base} text-gray-400 hover:text-white`} ${busyClass}`}
         style={{ backgroundColor: active ? accent : undefined }}
         onMouseEnter={(e) => { if (!active) e.currentTarget.style.backgroundColor = accent }}
         onMouseLeave={(e) => { if (!active) e.currentTarget.style.backgroundColor = '' }}
@@ -128,10 +158,10 @@ export function InteractionToggleButton({
       <button
         type="button"
         onClick={handleClick}
-        disabled={pending}
+        aria-busy={pending}
         aria-pressed={active}
         title={title}
-        className="inline-flex items-center gap-1 text-xs font-medium transition-all duration-150 active:scale-[0.92] motion-reduce:active:scale-100 disabled:cursor-not-allowed"
+        className={`inline-flex items-center gap-1 text-xs font-medium transition-all duration-150 active:scale-[0.92] motion-reduce:active:scale-100 ${busyClass}`}
         style={{ color: active ? accent : undefined }}
       >
         <span className={active ? '' : 'text-gray-400'}>{animatedIcon(14)}</span>
@@ -148,10 +178,10 @@ export function InteractionToggleButton({
       <button
         type="button"
         onClick={handleClick}
-        disabled={pending}
+        aria-busy={pending}
         aria-pressed={active}
         title={title}
-        className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:brightness-125 active:scale-[0.95] motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed"
+        className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:brightness-125 active:scale-[0.95] motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${busyClass}`}
         style={
           active
             ? { backgroundColor: hexToRgba(accent, 0.9), border: '1px solid transparent' }

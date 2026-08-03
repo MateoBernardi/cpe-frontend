@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useComments, useCommentMutations, getForoApiErrorMessage } from '@features/foro'
+import { useComments, useCommentMutations, getForoApiErrorMessage, isContentRejected } from '@features/foro'
 import { CommentList } from './CommentList'
 import { CommentComposer } from './CommentComposer'
 import { colors, foroPalette } from '../../../../theme'
@@ -70,10 +70,13 @@ export function CommentThread({ publicationId, commentCount, noun = 'comentarios
    * `ROOT_PREVIEW_COUNT`, así que un comentario nuevo entra al final — es decir, escondido detrás del
    * botón "mostrar más". Sin esto, publicar no producía ningún cambio visible.
    */
-  const handleRootSubmit = async (content: string) => {
+  const handleRootSubmit = async (content: string, idempotencyKey: string) => {
     if (preview) return
-    await create.mutateAsync({ content })
+    // Antes del await, no después: la fila optimista se inserta al final de las raíces, así que en
+    // un hilo con más de `ROOT_PREVIEW_COUNT` comentarios quedaba escondida detrás de "mostrar más"
+    // durante todo el vuelo del POST — justo la ventana en la que hay que ver el "Posteando…".
     setShowAllRoots(true)
+    await create.mutateAsync({ content, idempotencyKey })
   }
 
   // Mientras carga se muestra el contador agregado que ya vino con la publicación; una vez que llega
@@ -115,11 +118,15 @@ export function CommentThread({ publicationId, commentCount, noun = 'comentarios
           onShowAllRoots={() => setShowAllRoots(true)}
           onDelete={(id) => remove.mutate(id)}
           onEdit={(id, content) => update.mutateAsync({ id, content })}
-          onReply={(parentId, content) => create.mutateAsync({ content, parentId })}
+          onReply={(parentId, content, idempotencyKey) => create.mutateAsync({ content, parentId, idempotencyKey })}
+          // El composer de respuesta vive dentro de `CommentNode` (adentro de `CommentList`), no
+          // acá — sin este flag su guard `isSubmitting` quedaba siempre en `false` y un doble Enter
+          // rápido sí llegaba a disparar dos POST /interactions.
+          replyPending={create.isPending}
         />
       )}
 
-      {writeError && (
+      {writeError && !isContentRejected(writeError) && (
         <p role="alert" className="mt-3 text-sm" style={{ color: foroPalette.errorText }}>
           {getForoApiErrorMessage(writeError)}
         </p>

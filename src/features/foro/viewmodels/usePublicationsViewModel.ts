@@ -144,7 +144,11 @@ export function usePublicationMutations() {
    * server-assigned id) arrives via the invalidation either way.
    */
   const create = useMutation({
-    mutationFn: (input: PublicationInput) => foroService.createPublication(mapPublicationInputToWriteDTO(input)),
+    // `idempotencyKey` viaja en las variables de la mutación pero se destructura ACÁ, antes de
+    // llegar al mapper — `onMutate`/`onError` de abajo siguen viendo el `PublicationInput` de
+    // siempre (la key es una propiedad extra que nunca leen). Ver `useIdempotencyKey`.
+    mutationFn: ({ idempotencyKey, ...input }: PublicationInput & { idempotencyKey?: string }) =>
+      foroService.createPublication(mapPublicationInputToWriteDTO(input), idempotencyKey),
     onMutate: async (input) => {
       await qc.cancelQueries({ queryKey: foroKeys.publicationsPrefix() })
       const previousLists = qc.getQueriesData<PublicationPreviewDTO[]>({ queryKey: foroKeys.publicationsPrefix() })
@@ -163,6 +167,7 @@ export function usePublicationMutations() {
         interactions: { saves: 0, visits: 0, favorites: 0, comments: 0 },
         external_links: externalLinksToMap(input.externalLinks),
         status: input.status ?? 'published',
+        revision_of: input.revisionOf ?? null,
       }
       qc.setQueriesData<PublicationPreviewDTO[] | undefined>(
         { queryKey: foroKeys.publicationsPrefix() },
@@ -184,17 +189,35 @@ export function usePublicationMutations() {
    * only exist on the detail DTO so they're skipped on list rows;
    * `categories` is best-effort resolved from the categories cache (see
    * `resolveCategories`) since the input only carries ids.
+   *
+   * `promotesRevision` marks the special PATCH that publishes an open
+   * revision draft (`{status:'published'}` on a row whose `revisionOf !=
+   * null`): the backend copies this row's content onto the ORIGINAL
+   * publication and soft-deletes this one, so the row is about to
+   * *disappear*, not become published — the response's `id` won't match
+   * `variables.id` either (see `onSettled`).
    */
   const update = useMutation({
-    mutationFn: ({ id, input }: { id: number; input: Partial<PublicationInput> }) =>
+    mutationFn: ({ id, input }: { id: number; input: Partial<PublicationInput>; promotesRevision?: boolean }) =>
       foroService.updatePublication(id, mapPublicationInputToPatchDTO(input)),
-    onMutate: async ({ id, input }) => {
+    onMutate: async ({ id, input, promotesRevision }) => {
       await qc.cancelQueries({ queryKey: foroKeys.publication(id) })
       await qc.cancelQueries({ queryKey: foroKeys.publicationsPrefix() })
 
       const previousDetail = qc.getQueryData<PublicationDTO>(foroKeys.publication(id))
       const previousLists = qc.getQueriesData<PublicationPreviewDTO[]>({ queryKey: foroKeys.publicationsPrefix() })
       const categoriesCache = qc.getQueryData<Category[]>(foroKeys.categories())
+
+      if (promotesRevision) {
+        // Same optimistic-removal idiom as `remove.onMutate` — this row is about to be
+        // soft-deleted server-side, so patching `status:'published'` onto it here would briefly
+        // render two identical published rows (this one and the original it just promoted).
+        qc.setQueriesData<PublicationPreviewDTO[] | undefined>(
+          { queryKey: foroKeys.publicationsPrefix() },
+          (old) => old?.filter((p) => p.id !== id),
+        )
+        return { previousDetail, previousLists }
+      }
 
       const detailPatch = buildDetailPatch(input, categoriesCache)
       const previewPatch = buildPreviewPatch(input, categoriesCache)
@@ -215,7 +238,17 @@ export function usePublicationMutations() {
       if (ctx?.previousDetail !== undefined) qc.setQueryData(foroKeys.publication(variables.id), ctx.previousDetail)
       ctx?.previousLists?.forEach(([key, data]) => qc.setQueryData(key, data))
     },
-    onSettled: (_data, _err, variables) => invalidatePublicationScope(qc, variables.id),
+    onSettled: (data, _err, variables) => {
+      invalidatePublicationScope(qc, variables.id)
+      // A promotion answers with the ORIGINAL's DTO, not the revision's — `data.id` disagrees with
+      // `variables.id`. The revision's own detail cache is now stale forever (the row is gone), same
+      // `removeQueries` idiom `remove.onSettled` uses; the original's detail cache needs a fresh
+      // invalidation of its own since `invalidatePublicationScope` above only targeted `variables.id`.
+      if (data != null && data.id !== variables.id) {
+        void qc.invalidateQueries({ queryKey: foroKeys.publication(data.id) })
+        qc.removeQueries({ queryKey: foroKeys.publication(variables.id) })
+      }
+    },
   })
 
   /**

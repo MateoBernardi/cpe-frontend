@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Publication, PublicationPreview, PublicationType, KnownPublicationTypeSlug } from '@features/foro'
 import { DetailShell } from './DetailShell'
 import { CategoryList } from './CategoryList'
 import { ExternalLinksCTA } from './ExternalLinksCTA'
 import { Prose } from './Prose'
 import { Gallery } from './Gallery'
+import { ImageLightbox } from './ImageLightbox'
 import { CommentThread } from './CommentThread'
 import { formatForoDate, interactionRows, getYouTubeEmbedUrl } from './foroHelpers'
 import { colors } from '../../../../theme'
@@ -48,10 +49,15 @@ function NovedadVideo({ embedUrl, title }: { embedUrl: string; title: string }) 
  */
 function NovedadCollage({ images }: { images: Publication['images'] }) {
   const combined = images ?? []
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
+
   if (combined.length === 0) return null
 
   const visible = combined.slice(0, 3)
   const extra = combined.length - visible.length
+  // The "+N" badge tile opens the lightbox at the first image it hides, not tile index —
+  // otherwise images 4+ would still be unreachable even with the viewer wired up.
+  const firstHiddenIndex = visible.length
 
   const gridClass =
     visible.length === 1 ? 'grid-cols-1'
@@ -59,25 +65,35 @@ function NovedadCollage({ images }: { images: Publication['images'] }) {
         : 'grid-cols-1 sm:grid-cols-[1.5fr_1fr] sm:grid-rows-2'
 
   return (
-    <div className={`my-7 grid gap-3 ${gridClass}`}>
-      {visible.map((img, i) => (
-        <div
-          key={img.id}
-          className={[
-            'relative overflow-hidden rounded-2xl shadow-sm ring-1 ring-slate-200/60',
-            visible.length === 3 && i === 0 ? 'aspect-[16/10] sm:aspect-auto sm:row-span-2' : 'aspect-[4/3]',
-            visible.length === 1 ? 'aspect-[16/8]' : '',
-          ].join(' ')}
-        >
-          <img src={img.url} alt={img.altText ?? ''} className="h-full w-full object-cover" />
-          {extra > 0 && i === visible.length - 1 && (
-            <span className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-1 text-xs font-semibold text-white">
-              +{extra}
-            </span>
-          )}
-        </div>
-      ))}
-    </div>
+    <>
+      <div className={`my-7 grid gap-3 ${gridClass}`}>
+        {visible.map((img, i) => (
+          <button
+            key={img.id}
+            type="button"
+            className={[
+              'group relative overflow-hidden rounded-2xl border-none p-0 shadow-sm ring-1 ring-slate-200/60',
+              visible.length === 3 && i === 0 ? 'aspect-[16/10] sm:aspect-auto sm:row-span-2' : 'aspect-[4/3]',
+              visible.length === 1 ? 'aspect-[16/8]' : '',
+            ].join(' ')}
+            onClick={() => setOpenIndex(extra > 0 && i === visible.length - 1 ? firstHiddenIndex : i)}
+            aria-label={`Ampliar imagen ${(extra > 0 && i === visible.length - 1 ? firstHiddenIndex : i) + 1} de ${combined.length}`}
+          >
+            <img
+              src={img.url}
+              alt={img.altText ?? ''}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 group-focus-visible:scale-105"
+            />
+            {extra > 0 && i === visible.length - 1 && (
+              <span className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-1 text-xs font-semibold text-white">
+                +{extra}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+      <ImageLightbox images={combined} index={openIndex} onClose={() => setOpenIndex(null)} onIndexChange={setOpenIndex} />
+    </>
   )
 }
 

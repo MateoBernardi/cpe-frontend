@@ -1,4 +1,5 @@
 import FORO_ENV from './foroApiConfig'
+import { getAuthErrorMessage } from './authErrorMessages'
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -7,6 +8,8 @@ interface ForoApiRequestOptions<TBody = unknown> {
   endpoint: string
   body?: TBody
   signal?: AbortSignal
+  /** `Idempotency-Key` header — sólo se manda cuando está definida. Ver `api/idempotency.ts`. */
+  idempotencyKey?: string
 }
 
 /**
@@ -74,6 +77,32 @@ export function notifyForoUnauthenticated(): void {
   window.dispatchEvent(new CustomEvent(FORO_UNAUTHENTICATED_EVENT))
 }
 
+/**
+ * Fired whenever a foro write request comes back 422 with `code: 'CONTENT_REJECTED'`
+ * (comments, publications, images — the automatic-moderation surface). `ModerationNoticeDialog`
+ * listens and explains why. Same plain-`window`-CustomEvent idiom as `FORO_UNAUTHENTICATED_EVENT`
+ * above and for the same reason: this module must never import `QueryClient`.
+ */
+export const FORO_CONTENT_REJECTED_EVENT = 'foro:content-rejected'
+
+function notifyForoContentRejected(error: ForoApiError): void {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(FORO_CONTENT_REJECTED_EVENT, { detail: error }))
+}
+
+/** True for a 422 moderation rejection. Used to suppress the redundant inline error text next to a
+ *  write (the modal already explains it) without touching how any other status renders. */
+export function isContentRejected(error: unknown): boolean {
+  return error instanceof ForoApiError && error.status === 422 && error.code === 'CONTENT_REJECTED'
+}
+
+/** True for a 403 unverified-email rejection from Better Auth. `ForoAuthDialog` uses this to
+ *  route the user to the `check-email` screen (with its resend button) instead of showing an
+ *  inline error they can't act on. */
+export function isEmailNotVerified(error: unknown): boolean {
+  return error instanceof ForoApiError && error.status === 403 && error.code === 'EMAIL_NOT_VERIFIED'
+}
+
 const inflightGetRequests = new Map<string, Promise<unknown>>()
 
 function readRetryAfterMs(response: Response): number | null {
@@ -86,12 +115,41 @@ function readRetryAfterMs(response: Response): number | null {
 
 export function getForoApiErrorMessage(error: unknown): string {
   if (!(error instanceof ForoApiError)) {
+    // A raw `TypeError: Failed to fetch` (or the Safari/Firefox equivalents, `Load failed` /
+    // `NetworkError when attempting to fetch resource`) escapes `foroAuthClient` BEFORE
+    // `toForoApiError` runs — better-auth does not set better-fetch's `catchAllError` option — so
+    // this is the only place a network failure on an auth call can be caught. `AbortError` (React
+    // Query cancelling an in-flight request) is a `DOMException`, not a `TypeError`, so it falls
+    // through to the generic branch below untouched, as it should.
+    if (
+      error instanceof TypeError ||
+      (error instanceof Error && /Failed to fetch|NetworkError|Load failed/.test(error.message))
+    ) {
+      return 'No pudimos conectarnos con el servidor. Revisá tu conexión e intentá de nuevo.'
+    }
     return error instanceof Error ? error.message : 'Error inesperado. Intenta nuevamente.'
   }
 
+  // Code lookup first: Better Auth / Turnstile codes (e.g. `EMAIL_NOT_VERIFIED`) need their own
+  // sentence, not the generic per-status line below — a straight status ladder would flatten
+  // `EMAIL_NOT_VERIFIED` into the same "no tenés permisos" text as any other 403.
+  const codeMessage = getAuthErrorMessage(error.code)
+  if (codeMessage) return codeMessage
+
   const message = error.data.error ?? error.data.message
 
-  if (error.status === 429) return 'Demasiadas solicitudes. Espera unos segundos e intenta nuevamente.'
+  if (error.status === 429) {
+    const base = 'Demasiadas solicitudes. Espera unos segundos e intenta nuevamente.'
+    // `retryAfterMs` is only ever populated for `foroApiRequest` calls (it reads the standard
+    // `Retry-After` response header) — the auth SDK's `toForoApiError` hardcodes it to `null`
+    // because Better Auth sends the non-standard `X-Retry-After` and better-fetch doesn't expose
+    // response headers to the caller. So this branch only fires extra guidance for our own API.
+    if (error.retryAfterMs) {
+      const seconds = Math.ceil(error.retryAfterMs / 1000)
+      return `${base} Podés reintentar en ${seconds} segundos.`
+    }
+    return base
+  }
   if (error.status === 401) return message || 'Iniciá sesión para continuar.'
   if (error.status === 403) return message || 'No tenés permisos para esta acción.'
   if (error.status === 404) return 'El recurso solicitado no existe.'
@@ -112,13 +170,14 @@ function getCoalescingKey(url: string, method: HttpMethod): string {
 export async function foroApiRequest<TResponse, TBody = unknown>(
   options: ForoApiRequestOptions<TBody>,
 ): Promise<TResponse> {
-  const { method, endpoint, body, signal } = options
+  const { method, endpoint, body, signal, idempotencyKey } = options
 
   const url = `${FORO_ENV.API_BASE_URL}${endpoint}`
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    ...(idempotencyKey !== undefined ? { 'Idempotency-Key': idempotencyKey } : {}),
   }
 
   const config: RequestInit = {
@@ -149,11 +208,13 @@ export async function foroApiRequest<TResponse, TBody = unknown>(
 
       if (response.status === 401) notifyForoUnauthenticated()
 
-      throw new ForoApiError(response.status, response.statusText, errorData, {
+      const apiError = new ForoApiError(response.status, response.statusText, errorData, {
         endpoint,
         method,
         retryAfterMs: readRetryAfterMs(response),
       })
+      if (isContentRejected(apiError)) notifyForoContentRejected(apiError)
+      throw apiError
     }
 
     return (await response.json()) as TResponse

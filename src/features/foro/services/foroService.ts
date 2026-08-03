@@ -135,12 +135,13 @@ export const foroService = {
     })
   },
 
-  /** POST /publications — role publisher|admin. */
-  createPublication(data: PublicationWriteDTO) {
+  /** POST /publications — role publisher|admin. `idempotencyKey` opcional — ver `api/idempotency.ts`. */
+  createPublication(data: PublicationWriteDTO, idempotencyKey?: string) {
     return foroApiRequest<PublicationDTO, PublicationWriteDTO>({
       method: 'POST',
       endpoint: '/publications',
       body: data,
+      idempotencyKey,
     })
   },
 
@@ -214,12 +215,13 @@ export const foroService = {
 
   // ── Interactions (auth required) ──
 
-  /** POST /interactions — `content` required for comments (type_id=2). */
-  createInteraction(data: CreateInteractionDTO) {
+  /** POST /interactions — `content` required for comments (type_id=2). `idempotencyKey` opcional — ver `api/idempotency.ts`. */
+  createInteraction(data: CreateInteractionDTO, idempotencyKey?: string) {
     return foroApiRequest<InteractionDTO, CreateInteractionDTO>({
       method: 'POST',
       endpoint: '/interactions',
       body: data,
+      idempotencyKey,
     })
   },
 

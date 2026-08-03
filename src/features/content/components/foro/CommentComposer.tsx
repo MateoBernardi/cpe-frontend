@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
-import { useForoAuth } from '@features/foro'
+import { useForoAuth, useIdempotencyKey } from '@features/foro'
 import { hoverBgSwap } from './foroHelpers'
 import { colors } from '../../../../theme'
 
 interface CommentComposerProps {
-  onSubmit: (content: string) => Promise<unknown>
+  /** `idempotencyKey` es una por intención de submit — ver `keyFor` en `handleSubmit` abajo. */
+  onSubmit: (content: string, idempotencyKey: string) => Promise<unknown>
   isSubmitting?: boolean
   placeholder?: string
   submitLabel?: string
@@ -27,14 +28,18 @@ export function CommentComposer({
 }: CommentComposerProps) {
   const { isAuthenticated, openAuthDialog } = useForoAuth()
   const [content, setContent] = useState('')
+  const { keyFor, reset: resetIdempotencyKey } = useIdempotencyKey()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (preview) return
-    // `disabled` en el botón no alcanza: sólo aplica después del commit de React,
-    // así que un doble Enter rápido dispara `onSubmit` dos veces. Los comentarios
-    // están excluidos del índice único del backend (`interacciones_unique_single_per_user`
-    // filtra `type_id <> 2`), con lo cual el duplicado se persiste de verdad.
+    // `disabled` en el botón no alcanza: sólo aplica después del commit de React, así
+    // que un doble Enter rápido puede alcanzar a disparar `onSubmit` dos veces antes de
+    // que este guard tome efecto. Antes eso persistía un comentario duplicado de
+    // verdad: los comentarios están excluidos del índice único del backend
+    // (`interacciones_unique_single_per_user` filtra `type_id <> 2`). Ese agujero
+    // ahora lo tapa la `Idempotency-Key` que arma `keyFor` más abajo — el backend
+    // deduplica por (scope, key) aunque este guard síncrono llegue tarde.
     if (isSubmitting) return
     if (!isAuthenticated) {
       openAuthDialog('sign-in')
@@ -42,8 +47,25 @@ export function CommentComposer({
     }
     const trimmed = content.trim()
     if (!trimmed) return
-    await onSubmit(trimmed)
+    const idempotencyKey = keyFor({ content: trimmed })
+    // Se vacía ANTES del await: `useCommentMutations().create` ya inserta la fila optimista en el
+    // hilo desde su `onMutate`, así que dejar el texto acá mientras el POST está en vuelo mostraba
+    // el mismo comentario dos veces (en la caja y en la lista, esta última como "Posteando…").
     setContent('')
+    try {
+      await onSubmit(trimmed, idempotencyKey)
+    } catch {
+      // El POST falló (típicamente el 422 de moderación) y `onError` ya podó la fila optimista del
+      // hilo: se devuelve el texto a la caja para que se pueda corregir y reintentar en vez de
+      // perderlo. La key NO se resetea — un reintento con el mismo contenido debe reusarla.
+      // El error en sí no se propaga: lo muestra `CommentThread` leyendo `create.error`, y dejarlo
+      // escapar de un handler de submit sólo generaba un unhandled rejection en consola.
+      setContent(trimmed)
+      return
+    }
+    // Recién al resolver: un reintento con el mismo contenido reutiliza la key (el
+    // fingerprint no cambió); un éxito libera la próxima key para el siguiente comentario.
+    resetIdempotencyKey()
   }
 
   return (

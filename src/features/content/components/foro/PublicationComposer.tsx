@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import {
   usePublication,
   usePublicationTypes,
@@ -7,9 +7,11 @@ import {
   useCategoryMutations,
   usePublicationMutations,
   useForoAuth,
+  useIdempotencyKey,
   foroService,
   resolveKnownSlug,
   getForoApiErrorMessage,
+  isContentRejected,
   type Publication,
   type PublicationType,
   type KnownPublicationTypeSlug,
@@ -159,10 +161,15 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
 
   const isEdit = mode === 'edit'
   const { data: existing, isLoading: loadingExisting, error: loadError } = usePublication(isEdit ? publicationId : undefined)
+  // `existing.status`/`existing.revisionOf` decide which of the four save cases below applies —
+  // see `handleSave`.
+  const editsPublished = isEdit && existing?.status === 'published'
+  const isRevisionDraft = isEdit && existing?.revisionOf != null
   const { data: types, isLoading: loadingTypes } = usePublicationTypes()
   const { data: categories, isLoading: loadingCategories } = useCategories()
   const { create: createCategory, remove: removeCategory } = useCategoryMutations()
   const { create, update } = usePublicationMutations()
+  const { keyFor, reset: resetIdempotencyKey } = useIdempotencyKey()
 
   // Controlled from above in create mode, internal in edit mode. The internal
   // copy is always declared (hooks can't be conditional); it simply goes unused
@@ -181,6 +188,19 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const [pendingStatus, setPendingStatus] = useState<WritablePublicationStatus | null>(null)
   /** Which external-link row is expanded. A row with a URL already loaded stays open regardless. */
   const [openLinkKind, setOpenLinkKind] = useState<LinkLabel | null>(null)
+
+  // Self-healing redirect: a published publication with an open revision is never edited
+  // directly — the URL for #42 (published) bounces to #99 (its open revision) so a second
+  // `POST .../revisionOf` can never be minted, including from a hand-typed/bookmarked URL. Once
+  // the redirect lands, `publicationId` (from the route) becomes 99, `existing` refetches as the
+  // revision row, `existing.status` is no longer `'published'`, and this effect's condition goes
+  // false — so it settles in one hop, it doesn't loop. `navigate` (not `setState`) is what this
+  // effect calls, so it isn't the state-in-effect pattern the lint rule flags.
+  useEffect(() => {
+    if (isEdit && existing?.status === 'published' && existing.revisionId != null) {
+      navigate(`/perfil/publicaciones/${existing.revisionId}/editar`, { replace: true })
+    }
+  }, [isEdit, existing, navigate])
 
   // Prefill on edit once the publication loads.
   // Antes acá había que re-resolver nombres→ids porque la lectura devolvía nombres de tag y la
@@ -266,7 +286,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
       setForm((f) => ({ ...f, frontImageUrl: img.url }))
       setFrontImagePreviewName(file.name)
     } catch (err) {
-      setUploadError(getForoApiErrorMessage(err))
+      if (!isContentRejected(err)) setUploadError(getForoApiErrorMessage(err))
     } finally {
       setUploadingFront(false)
       e.target.value = ''
@@ -308,7 +328,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
         ],
       }))
     } catch (err) {
-      setUploadError(getForoApiErrorMessage(err))
+      if (!isContentRejected(err)) setUploadError(getForoApiErrorMessage(err))
     } finally {
       setUploadingGallery(false)
       e.target.value = ''
@@ -368,6 +388,13 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const mutationError = create.error ?? update.error
   const canSubmit = isEdit ? publicationId != null : matchedType != null
 
+  // Button copy per save case (see `handleSave`'s branches for the matching requests):
+  // editing a published publication never says "borrador"/"publicar" outright — the live post
+  // stays untouched either way, only the wording changes to reflect that a separate draft is
+  // involved.
+  const draftButtonLabel = editsPublished ? 'Guardar cambios sin publicar' : 'Guardar borrador'
+  const publishButtonLabel = editsPublished || isRevisionDraft ? 'Publicar cambios' : 'Publicar'
+
   const handleSave = (status: WritablePublicationStatus) => {
     // Synchronous re-entrancy guard: `disabled={mutationInProgress}` only
     // takes effect after React commits, so a fast double-click on "Guardar
@@ -407,15 +434,55 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
       status,
     }
 
-    if (isEdit && publicationId != null) {
+    if (isEdit && editsPublished && status === 'draft' && publicationId != null) {
+      // Editing a PUBLISHED publication and saving as draft must never PATCH the live row in
+      // place — that would flip it published→draft and 404 it for readers mid-edit. Instead this
+      // mints a SEPARATE staging row via `revisionOf`, exactly like the create path below, so #42
+      // stays published and untouched. `typeId` falls back to `existing` first: unlike a plain
+      // edit PATCH (which simply omits the key when unchanged), this is a POST, where `type_id` is
+      // required — and `matchedType` here is resolved by searching the type list for `existing`'s
+      // own type, which can come back `undefined` for an unrecognized type and would otherwise
+      // leave the revision typeless.
+      const revisionInput = { ...baseInput, typeId: existing?.typeId ?? matchedType?.id, revisionOf: publicationId }
+      const idempotencyKey = keyFor(revisionInput)
+      create.mutate(
+        { ...revisionInput, idempotencyKey },
+        {
+          onSuccess: () => {
+            resetIdempotencyKey()
+            navigate('/perfil/publicaciones')
+          },
+        },
+      )
+    } else if (isEdit && publicationId != null) {
+      // Every other edit case is a plain PATCH on `publicationId` — plain draft, published-in-
+      // place republish, or editing an open revision draft (either saving it as draft again or
+      // publishing it). `promotesRevision` tells the mutation this specific PATCH is the one that
+      // publishes an open revision: the backend promotes it onto the original and soft-deletes
+      // this row, so the optimistic update must REMOVE this row, not mark it published.
+      const promotesRevision = isRevisionDraft && status === 'published'
       update.mutate(
-        { id: publicationId, input: baseInput },
+        { id: publicationId, input: baseInput, promotesRevision },
         { onSuccess: () => navigate('/perfil/publicaciones') },
       )
     } else {
+      // Una key por intención de submit, fingerprintenada sobre TODO lo que viaja en el body
+      // (incluye `status`, así que "Guardar borrador" y después "Publicar" tras un fallo acuñan
+      // keys DISTINTAS en vez de colisionar como un mismatch). `typeId` va sí o sí en el
+      // fingerprint: `matchedType` sale del prop `slug`, que el padre puede cambiar vía
+      // `onChangeType` con el composer todavía montado y el borrador intacto — sin él, cambiar de
+      // tipo tras un submit fallido reusaría la key con otro body y el backend contestaría un 409
+      // `IDEMPOTENCY_KEY_REUSED` espurio. `reset()` recién al tener éxito: un reintento con el
+      // mismo payload reutiliza la key, un submit exitoso libera la próxima. Ver `useIdempotencyKey`.
+      const idempotencyKey = keyFor({ ...baseInput, typeId: matchedType?.id })
       create.mutate(
-        { ...baseInput, typeId: matchedType?.id },
-        { onSuccess: () => navigate('/perfil/publicaciones') },
+        { ...baseInput, typeId: matchedType?.id, idempotencyKey },
+        {
+          onSuccess: () => {
+            resetIdempotencyKey()
+            navigate('/perfil/publicaciones')
+          },
+        },
       )
     }
   }
@@ -453,6 +520,8 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
       externalLinks: form.externalLinks.filter((l) => l.label.trim() && l.url.trim()),
       images: form.galleryImages.map((img) => ({ id: img.id, url: img.url, altText: null })),
       status: existing?.status ?? 'draft',
+      revisionOf: existing?.revisionOf ?? null,
+      revisionId: null,
     }),
     [form, existing, previewCategories, matchedType, user],
   )
@@ -465,7 +534,11 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* `flex-col` on mobile so "Cambiar tipo" sits as a compact link under the title instead of
+          wrapping onto its own line and reflowing the whole header (see `flex-wrap`'s old
+          behaviour at narrow widths); back to a single row with the action on the right from `sm`
+          up, same as before. */}
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           {resolvedSlug && <TypePill slug={resolvedSlug} label={config?.name ?? ''} />}
           <div>
@@ -481,6 +554,20 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
           </button>
         )}
       </div>
+
+      {isRevisionDraft && existing?.revisionOf != null && (
+        // Ámbar, mismo acento que el chip de "Cambios sin publicar" — para que se lea como el
+        // mismo estado en dos lugares distintos de la app.
+        <div
+          className="rounded-xl px-4 py-3 text-sm"
+          style={{ backgroundColor: `${colors.draftBadge}14`, color: colors.draftBadge }}
+        >
+          Estás editando cambios sin publicar de una publicación que ya está online.{' '}
+          <Link to={`/publicaciones/${existing.revisionOf}`} className="font-semibold underline">
+            Ver la publicación actual
+          </Link>
+        </div>
+      )}
 
       {isLoadingRefData ? (
         <LoadingSpinner className="py-12" />
@@ -748,7 +835,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
               </div>
               )}
 
-              {mutationError && <ErrorMessage message={getForoApiErrorMessage(mutationError)} />}
+              {mutationError && !isContentRejected(mutationError) && <ErrorMessage message={getForoApiErrorMessage(mutationError)} />}
 
               <div className="flex flex-wrap justify-end gap-2 border-t pt-4" style={{ borderColor: colors.lightGray }}>
                 <button
@@ -765,7 +852,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
                   disabled={!canSubmit || mutationInProgress || uploadingFront || uploadingGallery}
                   pendingLabel="Guardando…"
                 >
-                  Guardar borrador
+                  {draftButtonLabel}
                 </ActionButton>
                 <ActionButton
                   status={mutationInProgress && pendingStatus === 'published' ? 'pending' : 'idle'}
@@ -773,9 +860,15 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
                   disabled={!canSubmit || mutationInProgress || uploadingFront || uploadingGallery}
                   pendingLabel="Publicando…"
                 >
-                  Publicar
+                  {publishButtonLabel}
                 </ActionButton>
               </div>
+
+              {editsPublished && (
+                <p className="text-right text-xs text-gray-400">
+                  Se guarda aparte como borrador; la publicación actual sigue online hasta que publiques los cambios.
+                </p>
+              )}
             </div>
 
             <div className={`${mobilePane === 'preview' ? 'block' : 'hidden'} lg:block`}>

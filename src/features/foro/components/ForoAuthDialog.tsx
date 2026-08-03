@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 
 import { createPortal } from 'react-dom'
 import { useForoAuth, type ForoAuthDialogMode } from '../auth'
 import { foroAuthClient, toForoApiError } from '../api/foroAuthClient'
-import { getForoApiErrorMessage } from '../api/foroApiRequest'
+import { getForoApiErrorMessage, isEmailNotVerified } from '../api/foroApiRequest'
 import { TurnstileWidget, type TurnstileWidgetHandle } from './TurnstileWidget'
 import { colors, fonts, foroPalette, platformColors } from '../../../theme'
 
@@ -211,8 +211,19 @@ export function ForoAuthDialog() {
         handleClose()
       }
     } catch (err) {
-      setError(getForoApiErrorMessage(err))
-      resetCaptcha()
+      if (isEmailNotVerified(err)) {
+        // Sign-in doesn't resend anything (we don't set `emailVerification.sendOnSignIn` on the
+        // backend), so route the user to the same check-email screen a fresh signup lands on —
+        // it already hosts the resend button, which a returning unverified user would otherwise
+        // never reach.
+        setPassword('')
+        setConfirmPassword('')
+        resetCaptcha()
+        setMode('check-email')
+      } else {
+        setError(getForoApiErrorMessage(err))
+        resetCaptcha()
+      }
     } finally {
       setSubmitting(false)
     }
@@ -498,7 +509,8 @@ export function ForoAuthDialog() {
         {mode === 'check-email' && (
           <div className="flex flex-col gap-4">
             <p className="text-[14px]" style={{ color: foroPalette.ink }}>
-              Revisá tu email <strong>{email}</strong> y hacé clic en el enlace de verificación para activar tu cuenta.
+              Te enviamos un correo a <strong>{email}</strong>. Abrilo y hacé clic en el enlace para
+              confirmar tu cuenta. Si no lo ves, revisá la carpeta de spam.
             </p>
 
             {resendError && (

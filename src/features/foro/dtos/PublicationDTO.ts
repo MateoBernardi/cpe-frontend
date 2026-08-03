@@ -46,6 +46,11 @@ export interface PublicationDTO {
   /** Absent only on responses predating the column; the mapper defaults it to `'published'`. */
   status?: PublicationStatus
   viewer?: PublicationViewerStateDTO
+  /** Id of the published publication this row is a revision draft of, or `null` in the normal case. */
+  revision_of?: number | null
+  /** Id of THIS publication's own open revision draft, resolved only when there's a session
+   *  (`null` for anonymous readers, or when there is none open). */
+  revision_id?: number | null
 }
 
 /** GET /publications — list item (preview) */
@@ -71,6 +76,8 @@ export interface PublicationPreviewDTO {
   /** Absent only on responses predating the column; the mapper defaults it to `'published'`. */
   status?: PublicationStatus
   viewer?: PublicationViewerStateDTO
+  /** Same as the detail DTO's field — see there. */
+  revision_of?: number | null
 }
 
 /** Query params for GET /publications (all optional; numeric coercion done server-side) */
@@ -100,6 +107,9 @@ export interface PublicationWriteDTO {
   image_ids?: number[]
   /** Server-assigned values (`pending`/`archived`) are rejected by the backend on write. */
   status?: WritablePublicationStatus
+  /** CREATE only — mints a separate staging row for a revision of the published publication with
+   *  this id. Stripped from `PublicationPatchDTO` below; the backend rejects it on PATCH too. */
+  revision_of?: number
 }
 
 /**
@@ -108,7 +118,7 @@ export interface PublicationWriteDTO {
  * previously-set value can be cleared — distinct from the key being omitted
  * entirely, which leaves the field unchanged.
  */
-export type PublicationPatchDTO = Partial<Omit<PublicationWriteDTO, 'subtitle' | 'front_image_url' | 'type_id'>> & {
+export type PublicationPatchDTO = Partial<Omit<PublicationWriteDTO, 'subtitle' | 'front_image_url' | 'type_id' | 'revision_of'>> & {
   subtitle?: string | null
   front_image_url?: string | null
   type_id?: number | null

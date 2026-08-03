@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { foroService } from '../services'
 import { mapInteractionDTO } from '../mappers'
@@ -6,11 +7,31 @@ import type { InteractionDTO, InteractionCountsDTO, MyInteractionDTO, Publicatio
 import { useForoAuth } from '../auth/foroAuthContext'
 import { foroKeys } from './foroKeys'
 
+/**
+ * Cuánto esperar antes de sacar una fila de `GET /interactions/me` cuando se hace `remove` sobre un
+ * favorito/guardado de PUBLICACIÓN (ver `removeFromMyInteractions` en `useInteractionToggle`). En
+ * `GuardadosPanel`/`InteraccionesPanel` esa fila ES la interacción y trae el propio botón adentro,
+ * así que sacarla en el mismo tick del click desmontaba el botón antes de que su animación
+ * (`interaction-toggle-pop`/`-drop`, `index.css`) llegara a jugar. 300ms cubre la más larga de las
+ * dos (`pop`, 280ms) con margen.
+ */
+const MY_INTERACTIONS_REMOVE_DELAY_MS = 300
+
 // ── Comment-tree helpers (pure, recursive) ──
 // The cache stores the RAW `InteractionDTO[]` tree (pre-`mapInteractionDTO`,
 // same convention as every other viewmodel here) with nesting capped at
 // `MAX_COMMENT_DEPTH` (2) server-side — these never need to recurse deeper
 // than the data actually is.
+
+/**
+ * Una fila optimista todavía no tiene id del servidor: `onMutate` le pone `-Date.now()` (ver
+ * `create` abajo, donde ese id sintético es además todo lo que hace falta para deshacerla). Los ids
+ * reales son `serial` de Postgres, siempre positivos, así que el signo alcanza para distinguirlas.
+ * Se exporta porque la UI necesita saberlo para pintar el comentario como "Posteando…" y para no
+ * ofrecer acciones (favorito/responder/editar/borrar) sobre una fila que el backend todavía no
+ * conoce.
+ */
+export const isOptimisticInteraction = (id: number): boolean => id < 0
 
 /** Appends `newNode` as a top-level comment (`parentId` undefined) or as a reply under the
  *  node with id `parentId`, wherever it lives in the tree. */
@@ -83,16 +104,21 @@ export function useCommentMutations(publicationId: number) {
   /** `parentId` makes this a reply instead of a root comment; the backend re-parents
    *  (flattens) anything past `MAX_COMMENT_DEPTH` rather than rejecting it. */
   const create = useMutation({
-    mutationFn: ({ content, parentId }: { content: string; parentId?: number }) =>
-      foroService.createInteraction({
-        publication_id: publicationId,
-        type_id: INTERACTION_TYPE_IDS.comentario,
-        content,
-        parent_id: parentId,
-      }),
+    // `idempotencyKey` se destructura ACÁ y no llega a `foroService.createInteraction` embebido en
+    // el body — viaja aparte como header. `onMutate` de abajo sigue destructurando sólo
+    // `{content, parentId}`, así que la key nunca llega al optimistic row. Ver `useIdempotencyKey`.
+    mutationFn: ({ content, parentId, idempotencyKey }: { content: string; parentId?: number; idempotencyKey?: string }) =>
+      foroService.createInteraction(
+        {
+          publication_id: publicationId,
+          type_id: INTERACTION_TYPE_IDS.comentario,
+          content,
+          parent_id: parentId,
+        },
+        idempotencyKey,
+      ),
     onMutate: async ({ content, parentId }) => {
       await qc.cancelQueries({ queryKey: commentsKey() })
-      const previous = qc.getQueryData<InteractionDTO[]>(commentsKey())
       // Echoes the CURRENT user's own name/id locally so `CommentList` renders
       // the real byline immediately instead of a placeholder — the server
       // value (same value, just round-tripped) wins once `onSettled` refetches.
@@ -115,9 +141,21 @@ export function useCommentMutations(publicationId: number) {
         replies: [],
       }
       qc.setQueryData<InteractionDTO[]>(commentsKey(), (old) => insertReply(old ?? [], parentId, optimisticRow))
-      return { previous }
+      // El id sintético es todo lo que hace falta para deshacer: no se guarda snapshot (ver abajo).
+      return { optimisticId: optimisticRow.id }
     },
-    onError: (_err, _vars, ctx) => qc.setQueryData(commentsKey(), ctx?.previous),
+    // No restauramos el snapshot: en React Query v5 `setQueryData(key, undefined)` hace bail-out y
+    // no toca la caché. `ctx.previous` es `undefined` cada vez que la entrada de caché no existía al
+    // momento del submit (hilo recién cargado / cancelado por el `cancelQueries` de arriba) — y sin
+    // embargo `onMutate` SÍ crea la entrada desde cero vía `insertReply(old ?? [], …)`. Resultado:
+    // el rollback por snapshot era un no-op y la fila optimista quedaba. Tampoco alcanza con el
+    // `invalidateQueries` de `onSettled`: con `refetchOnMount: false` + `staleTime: 30min`
+    // (`App.tsx`), si la query ya no está activa cuando llega el 422 la invalidación no refetchea
+    // nada. Podar por id evita depender de ninguna de las dos cosas.
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.optimisticId === undefined) return
+      qc.setQueryData<InteractionDTO[]>(commentsKey(), (old) => (old ? removeCommentNode(old, ctx.optimisticId) : old))
+    },
     onSettled: invalidate,
   })
 
@@ -225,6 +263,16 @@ export function useInteractionToggle(publicationId: number, typeId: number, pare
   const { user } = useForoAuth()
   const pubKey = foroKeys.publication(publicationId)
   const commentsKey = foroKeys.comments(user?.id ?? null, publicationId)
+  // Handle del `setTimeout` que difiere `removeFromMyInteractions` (ver más abajo). Vive en un ref
+  // porque sólo lo lee/cancela código imperativo (`onMutate`/`onError`), nunca el render.
+  const removeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Cubre la ventana entre que el DELETE de `remove` termina y el `setTimeout` de arriba dispara:
+  // sin esto, un segundo click en ese hueco (poco probable pero posible con una respuesta rápida del
+  // servidor) volvería a llamar `remove.mutate()` — `active` en estos botones viene fijo en `true`
+  // desde los paneles del perfil, así que un segundo DELETE sobre un target ya borrado sólo
+  // conseguiría un 404 (`deleteInteractionByTargetService` en el backend). `InteractionToggleButton`
+  // la suma a `add.isPending || remove.isPending` para extender la guarda de reentrada.
+  const [isRemovingRow, setIsRemovingRow] = useState(false)
 
   const field = INTERACTION_COUNT_FIELD[typeId]
   const viewerField: 'favorited' | 'saved' | null =
@@ -249,6 +297,12 @@ export function useInteractionToggle(publicationId: number, typeId: number, pare
    * invalidación — el botón se veía igual y la fila seguía en su lugar.
    *
    * Sólo aplica al target-publicación: un favorito sobre un comentario no aparece en estos paneles.
+   *
+   * Se llama diferida (ver `remove` más abajo), nunca sincrónicamente desde `onMutate`: en
+   * `GuardadosPanel`/`InteraccionesPanel` la fila de `<InteractionCard>` ES la interacción, con el
+   * propio botón adentro — filtrarla en el mismo tick del click desmontaba la fila (y el botón) antes
+   * de que `active:scale-[...]`/el pop-drop de `InteractionToggleButton` llegaran a pintar un solo
+   * frame.
    */
   const removeFromMyInteractions = () => {
     if (parentId !== undefined) return
@@ -256,6 +310,7 @@ export function useInteractionToggle(publicationId: number, typeId: number, pare
       { queryKey: foroKeys.myInteractionsPrefix() },
       (old) => old?.filter((row) => !(row.publication.id === publicationId && row.type_id === typeId)),
     )
+    setIsRemovingRow(false)
   }
 
   const applyToComment = (delta: 1 | -1, viewerValue: boolean) => {
@@ -282,7 +337,11 @@ export function useInteractionToggle(publicationId: number, typeId: number, pare
   }
 
   const add = useMutation({
-    mutationFn: () => foroService.createInteraction({ publication_id: publicationId, type_id: typeId, parent_id: parentId }),
+    // Variables = la idempotency key sola (o `undefined`), no un objeto — `add.mutate(keyFor(...))`
+    // en `InteractionToggleButton`. Sólo el POST (`add`) lleva key; `remove` es un DELETE, fuera del
+    // alcance de este esquema (ver `ancient-churning-pony.md`).
+    mutationFn: (idempotencyKey: string | undefined) =>
+      foroService.createInteraction({ publication_id: publicationId, type_id: typeId, parent_id: parentId }, idempotencyKey),
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: pubKey })
       await qc.cancelQueries({ queryKey: foroKeys.publicationsPrefix() })
@@ -323,10 +382,24 @@ export function useInteractionToggle(publicationId: number, typeId: number, pare
       } else {
         applyToPublication(-1, false)
       }
-      removeFromMyInteractions()
+      // Diferido `MY_INTERACTIONS_REMOVE_DELAY_MS` (> la más larga de `interaction-toggle-pop`/`-drop`
+      // en `index.css`) en vez de correr en el mismo tick — ver el comentario de
+      // `removeFromMyInteractions`. `isRemovingRow` queda prendido durante la espera para que
+      // `InteractionToggleButton` siga tratando al botón como ocupado y la guarda de reentrada de su
+      // `handleClick` no deje pasar un segundo click contra un target que el servidor ya borró.
+      if (removeTimeoutRef.current) clearTimeout(removeTimeoutRef.current)
+      if (parentId === undefined) setIsRemovingRow(true)
+      removeTimeoutRef.current = setTimeout(removeFromMyInteractions, MY_INTERACTIONS_REMOVE_DELAY_MS)
       return { previousPublication, previousLists, previousMyInteractions, previousComments }
     },
     onError: (_err, _vars, ctx) => {
+      // La mutación falló: cancelamos la baja diferida para no volver a sacar (ni intentarlo sobre
+      // datos que estamos a punto de restaurar) una fila que en definitiva sigue existiendo.
+      if (removeTimeoutRef.current) {
+        clearTimeout(removeTimeoutRef.current)
+        removeTimeoutRef.current = null
+      }
+      setIsRemovingRow(false)
       if (ctx?.previousPublication !== undefined) qc.setQueryData(pubKey, ctx.previousPublication)
       ctx?.previousLists?.forEach(([key, data]) => qc.setQueryData(key, data))
       ctx?.previousMyInteractions?.forEach(([key, data]) => qc.setQueryData(key, data))
@@ -335,5 +408,5 @@ export function useInteractionToggle(publicationId: number, typeId: number, pare
     onSettled: invalidate,
   })
 
-  return { add, remove, error: add.error ?? remove.error ?? null }
+  return { add, remove, error: add.error ?? remove.error ?? null, isRemovingRow }
 }

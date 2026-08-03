@@ -29,7 +29,7 @@ restrictivo gana), asi que agregar el header es un refuerzo, no un duplicado inu
 ## 2. nginx
 
 ```nginx
-add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://imagedelivery.net https://api.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://imagedelivery.net https://upload.imagedelivery.net https://api.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" always;
 add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
 add_header X-Content-Type-Options "nosniff" always;
 add_header Referrer-Policy "strict-origin-when-cross-origin" always;
@@ -40,11 +40,20 @@ Si `admin.html` se sirve bajo una location/vhost distinta, usar ahi la version s
 ni YouTube (ver `admin.html` en este repo para el contenido exacto — `script-src 'self'`,
 sin `frame-src` externo) mas `frame-ancestors 'none'` agregado igual.
 
+Nota sobre `connect-src` y Cloudflare Images: hacen falta LOS DOS hosts, `imagedelivery.net` y
+`upload.imagedelivery.net` — no son intercambiables ni uno implica el otro (CSP no tiene
+wildcard implicito de subdominio). `upload.imagedelivery.net` es el endpoint de direct-creator-
+upload (`src/features/foro/services/foroService.ts` hace `fetch(uploadUrl, {method:'POST',
+body: FormData})` contra una URL que el backend devuelve en ese host); `imagedelivery.net` (sin
+`upload.`) es el host de entrega publica de las imagenes ya subidas, usado en `img-src` para
+mostrarlas. Sacar cualquiera de los dos de `connect-src` rompe la subida de imagenes sin tocar
+la visualizacion (por eso el bug pudo pasar desapercibido).
+
 ## 3. Caddy
 
 ```caddyfile
 header {
-    Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://imagedelivery.net https://api.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+    Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://imagedelivery.net https://upload.imagedelivery.net https://api.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
     Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
     X-Content-Type-Options "nosniff"
     Referrer-Policy "strict-origin-when-cross-origin"

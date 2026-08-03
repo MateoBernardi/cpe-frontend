@@ -19,6 +19,7 @@ import SeleccionPersonalPage from './pages/SeleccionPersonalPage'
 import AcompanamientoPage from './pages/AcompanamientoPage'
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import RestablecerPasswordPage from './pages/RestablecerPasswordPage'
+import VerificarEmailPage from './pages/VerificarEmailPage'
 import InteraccionSeccionPage from './pages/foro/InteraccionSeccionPage'
 import PublicacionPage from './pages/foro/PublicacionPage'
 import ProfileGate from './pages/perfil/ProfileGate'
@@ -38,6 +39,7 @@ export default function MainRouter() {
           <Route path="/servicios/acompanamiento" element={<AcompanamientoPage />} />
           <Route path="/politica-de-privacidad" element={<PrivacyPolicyPage />} />
           <Route path="/restablecer-password" element={<RestablecerPasswordPage />} />
+          <Route path="/verificar-email" element={<VerificarEmailPage />} />
           {/* No hay vista "todas las publicaciones": se navega por tipo. La ruta
               base solo redirige para que los enlaces viejos no queden muertos. */}
           <Route path="/interacciones" element={<Navigate to={DEFAULT_INTERACCION_ROUTE} replace />} />

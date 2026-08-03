@@ -17,12 +17,14 @@ interface PublicationListItemProps {
   /** Whether to render the trailing bookmark/save button. Off in the sidebar's compact "También te puede interesar" list to keep it light. */
   showSave?: boolean
   /**
-   * Renders a status chip inside the row, next to the format pill. Only
-   * `'draft'` today. It lives here rather than above the row (where
-   * `MisPublicacionesPanel` used to put it) so it reads as a property of the
-   * publication instead of a floating label between rows.
+   * Renders a status chip inside the row, next to the format pill. It lives
+   * here rather than above the row (where `MisPublicacionesPanel` used to put
+   * it) so it reads as a property of the publication instead of a floating
+   * label between rows. `'revision'` is the open-revision-draft case (a
+   * separate staging row for an already-published publication) — same amber
+   * chip style as `'draft'`, different copy so the two aren't confused.
    */
-  statusBadge?: 'draft'
+  statusBadge?: 'draft' | 'revision'
 }
 
 /** Generic image glyph shown when a publication has no cover image (papers/novedades/podcast without a set `imageUrl`). */
@@ -89,15 +91,17 @@ export function PublicationListItem({ publication, typeSlug, typeName, size = 'd
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
           <TypePill slug={typeSlug} label={typeName} />
-          {statusBadge === 'draft' && (
-            // Ámbar sólido, no el azul tenue de antes: un borrador es un estado
+          {(statusBadge === 'draft' || statusBadge === 'revision') && (
+            // Ámbar sólido, no el azul tenue de antes: un estado sin publicar es un estado
             // que hay que poder distinguir de un vistazo entre publicaciones ya
-            // publicadas, y el azul se confundía con el resto de la fila.
+            // publicadas, y el azul se confundía con el resto de la fila. Mismo chip para
+            // 'revision' (cambios sin publicar de una publicación ya online) — sólo cambia el
+            // texto, no el color, porque ambos son variantes del mismo "todavía no es público".
             <span
               className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
               style={{ backgroundColor: colors.draftBadge }}
             >
-              Borrador
+              {statusBadge === 'revision' ? 'Cambios sin publicar' : 'Borrador'}
             </span>
           )}
           <span className="text-gray-300" aria-hidden="true">·</span>
