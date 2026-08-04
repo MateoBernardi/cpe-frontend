@@ -4,12 +4,11 @@ import { useForoAuth, canPublish } from '@features/foro'
 import { hexToRgba } from '@features/content/components/foro'
 import { colors, layout } from '@/theme'
 import CuentaPanel from './panels/CuentaPanel'
-import PreferenciasPanel from './panels/PreferenciasPanel'
 import GuardadosPanel from './panels/GuardadosPanel'
 import InteraccionesPanel from './panels/InteraccionesPanel'
 import MisPublicacionesPanel from './panels/MisPublicacionesPanel'
 
-type PanelSlug = 'cuenta' | 'preferencias' | 'guardados' | 'interacciones' | 'publicaciones'
+type PanelSlug = 'cuenta' | 'guardados' | 'interacciones' | 'publicaciones'
 
 interface PanelDef {
   slug: PanelSlug
@@ -20,7 +19,6 @@ const DEFAULT_PANEL: PanelSlug = 'cuenta'
 
 const BASE_PANELS: PanelDef[] = [
   { slug: 'cuenta', label: 'Cuenta' },
-  { slug: 'preferencias', label: 'Preferencias' },
   { slug: 'guardados', label: 'Guardados' },
   { slug: 'interacciones', label: 'Interacciones' },
 ]
@@ -209,7 +207,6 @@ export default function ProfilePage() {
           className="mt-8"
         >
           {active.slug === 'cuenta' && <CuentaPanel />}
-          {active.slug === 'preferencias' && <PreferenciasPanel />}
           {active.slug === 'guardados' && <GuardadosPanel />}
           {active.slug === 'interacciones' && <InteraccionesPanel />}
           {active.slug === 'publicaciones' && <MisPublicacionesPanel />}
