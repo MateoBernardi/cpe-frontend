@@ -78,6 +78,10 @@ export interface PublicationPreviewDTO {
   viewer?: PublicationViewerStateDTO
   /** Same as the detail DTO's field — see there. */
   revision_of?: number | null
+  /** Same as the detail DTO's field — see there. Sólo viaja en el listado propio (`created_by`
+   *  del usuario logueado): el backend nunca lo calcula para el feed público, así que ni siquiera
+   *  llega la key ahí. */
+  revision_id?: number | null
 }
 
 /** Query params for GET /publications (all optional; numeric coercion done server-side) */

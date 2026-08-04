@@ -167,6 +167,20 @@ export const foroService = {
     })
   },
 
+  /**
+   * DELETE /publications/:id/revision — role publisher|admin. `id` es el de la publicación
+   * ORIGINAL (publicada), NO el de la revisión — es un endpoint dedicado (no reusa
+   * `deletePublication` sobre el id de la revisión) justamente para que un id equivocado no
+   * pueda soft-deletear una publicación viva. Descarta el borrador de cambios sin publicar y
+   * deja la publicación publicada intacta. 204 sin body.
+   */
+  discardRevision(originalId: number) {
+    return foroApiRequest<void>({
+      method: 'DELETE',
+      endpoint: `/publications/${originalId}/revision`,
+    })
+  },
+
   // ── Publication types ──
 
   /** GET /publication-types — public. */

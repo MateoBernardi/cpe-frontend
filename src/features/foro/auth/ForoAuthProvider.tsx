@@ -68,7 +68,10 @@ export function ForoAuthProvider({ children }: { children: ReactNode }) {
     // es obligatorio: sin él el callback de Better Auth falla con
     // `no_callback_url` y deja al usuario en la página de error del backend.
     const callbackURL = typeof window !== 'undefined' ? window.location.href : '/'
-    const res = await foroService.signInSocial({ provider, callbackURL })
+    // Mismo destino para el fallo: un `account_not_linked` (cuenta local sin verificar) tiene que
+    // devolver a esta misma página con `?error=`, que `ForoAuthDialog` lee al montar. Sin esto el
+    // redirect de error cae en `onAPIError.errorURL` del backend, que apunta a la home.
+    const res = await foroService.signInSocial({ provider, callbackURL, errorCallbackURL: callbackURL })
     // Nada de limpiar cache acá: navegamos fuera de la app y el volver es un
     // page load completo, así que la cache arranca vacía igual. Resetearla
     // antes del redirect sólo dispara un refetch de sesión que se tira a la basura.

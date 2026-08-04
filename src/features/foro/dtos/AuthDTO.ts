@@ -44,6 +44,13 @@ export interface SignInSocialDTO {
    * Better Auth lo valida contra `trustedOrigins` (= ALLOWED_ORIGINS).
    */
   callbackURL: string
+  /**
+   * A dónde vuelve el usuario si el callback FALLA (p. ej. `account_not_linked`).
+   * Better Auth lo guarda en el `state` y lo prefiere sobre `onAPIError.errorURL`
+   * del backend, así que mandarlo es lo que hace que un fallo devuelva a la página
+   * exacta donde estaba en vez de a la home. Llega con `?error=<code>` en la query.
+   */
+  errorCallbackURL?: string
 }
 
 export interface SignInSocialResponseDTO {

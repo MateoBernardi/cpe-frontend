@@ -82,6 +82,9 @@ export interface PublicationPreview {
   viewer: PublicationViewerState | null
   /** Same as `Publication.revisionOf` — see there. */
   revisionOf: number | null
+  /** Id of THIS publication's own open revision draft, `null` when there is none or the viewer is
+   *  anonymous (`revision_id` on the wire). */
+  revisionId: number | null
 }
 
 export interface ListPublicationsParams {

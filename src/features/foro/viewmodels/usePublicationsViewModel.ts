@@ -154,6 +154,23 @@ export function usePublicationMutations() {
       const previousLists = qc.getQueriesData<PublicationPreviewDTO[]>({ queryKey: foroKeys.publicationsPrefix() })
       const categoriesCache = qc.getQueryData<Category[]>(foroKeys.categories())
 
+      // Una revisión (`revisionOf != null`) es un artefacto de edición: el backend nunca la lista
+      // (`isNull(publications.revision_of)` en el repo), así que insertar acá una fila optimista
+      // para ella crearía una fila fantasma que la invalidación de `onSuccess` jamás limpiaría
+      // (el refetch simplemente no la va a traer de vuelta). En su lugar, se parchea la fila del
+      // ORIGINAL para que el chip de "cambios sin publicar" aparezca al instante.
+      if (input.revisionOf != null) {
+        // Id placeholder negativo, misma convención que la fila optimista de más abajo — el valor
+        // real (el id que el backend le asignó a la revisión) llega con la invalidación de
+        // `onSuccess`, que pisa este placeholder.
+        const placeholderRevisionId = -Date.now()
+        qc.setQueriesData<PublicationPreviewDTO[] | undefined>(
+          { queryKey: foroKeys.publicationsPrefix() },
+          (old) => old?.map((p) => (p.id === input.revisionOf ? { ...p, revision_id: placeholderRevisionId } : p)),
+        )
+        return { previousLists }
+      }
+
       const optimisticRow: PublicationPreviewDTO = {
         id: -Date.now(),
         title: input.title,
@@ -179,7 +196,19 @@ export function usePublicationMutations() {
     onError: (_err, _input, ctx) => {
       ctx?.previousLists?.forEach(([key, data]) => qc.setQueryData(key, data))
     },
-    onSuccess: (data) => invalidatePublicationScope(qc, data.id),
+    onSuccess: (data, input) => {
+      invalidatePublicationScope(qc, data.id)
+      // Al acuñar un borrador de revisión también cambió la ORIGINAL para el cliente: su
+      // `revision_id` pasó de `null` al id recién creado. `invalidatePublicationScope` sólo
+      // alcanza a la fila nueva (`data.id`), así que sin esto el detalle de la original queda
+      // cacheado con `revisionId: null` por 30 minutos (staleTime global + `refetchOnMount:
+      // false`) y el redirect autocurativo del composer deja de dispararse: se termina editando
+      // la fila publicada en el lugar, o pidiendo una segunda revisión que el backend rechaza
+      // con 409.
+      if (input.revisionOf != null) {
+        void qc.invalidateQueries({ queryKey: foroKeys.publication(input.revisionOf) })
+      }
+    },
   })
 
   /**
@@ -290,5 +319,40 @@ export function usePublicationMutations() {
     },
   })
 
-  return { create, update, remove, error: create.error ?? update.error ?? remove.error ?? null }
+  /**
+   * DELETE /publications/:originalId/revision — descarta el borrador de cambios sin publicar de
+   * `originalId` y deja la publicación publicada intacta. `revisionId` viaja en las variables
+   * (no en la respuesta: el endpoint contesta 204 sin body) sólo para poder limpiar la cache de
+   * detalle de esa fila en `onSettled` — la revisión deja de existir, así que mantenerla
+   * invalidada (en vez de removida) dejaría un refetch fallando en 404 para nada.
+   */
+  const discardRevision = useMutation({
+    mutationFn: ({ originalId }: { originalId: number; revisionId: number }) => foroService.discardRevision(originalId),
+    onMutate: async ({ originalId }) => {
+      await qc.cancelQueries({ queryKey: foroKeys.publicationsPrefix() })
+      const previousLists = qc.getQueriesData<PublicationPreviewDTO[]>({ queryKey: foroKeys.publicationsPrefix() })
+
+      qc.setQueriesData<PublicationPreviewDTO[] | undefined>(
+        { queryKey: foroKeys.publicationsPrefix() },
+        (old) => old?.map((p) => (p.id === originalId ? { ...p, revision_id: null } : p)),
+      )
+
+      return { previousLists }
+    },
+    onError: (_err, _variables, ctx) => {
+      ctx?.previousLists?.forEach(([key, data]) => qc.setQueryData(key, data))
+    },
+    onSettled: (_data, _err, { originalId, revisionId }) => {
+      invalidatePublicationScope(qc, originalId)
+      qc.removeQueries({ queryKey: foroKeys.publication(revisionId) })
+    },
+  })
+
+  return {
+    create,
+    update,
+    remove,
+    discardRevision,
+    error: create.error ?? update.error ?? remove.error ?? discardRevision.error ?? null,
+  }
 }

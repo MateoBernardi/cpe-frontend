@@ -15,6 +15,12 @@ interface ActionButtonProps {
   /** `solid` (filled, brand color) for the primary action ("Publicar" /
    * "Guardar cambios"); `outline` for the secondary one ("Guardar borrador"). */
   variant?: 'solid' | 'outline'
+  /** Overrides the brand `ctaPrimary` accent — usado por acciones destructivas
+   * (p.ej. "Descartar cambios" con `foroPalette.errorText`) que igual quieren
+   * el spinner/check/pending plumbing de este botón en vez de un `<button>`
+   * suelto. Sólo cambia el color; no toca el hover del `solid` (pensado hoy
+   * sólo para `outline`, que no tiene hover propio). */
+  accentColor?: string
   /** Forwarded to the underlying `<button>` — `'submit'` lets this sit inside
    * a `<form onSubmit>` (CuentaPanel) instead of requiring a manual `onClick`
    * that re-triggers the submit. */
@@ -84,16 +90,18 @@ export function ActionButton({
   pendingLabel,
   successLabel,
   variant = 'solid',
+  accentColor,
   type = 'button',
   className = '',
 }: ActionButtonProps) {
   const isPending = status === 'pending'
   const isSuccess = status === 'success'
+  const accent = accentColor ?? colors.ctaPrimary
 
   const variantStyle =
     variant === 'solid'
-      ? { backgroundColor: colors.ctaPrimary, color: colors.white }
-      : { backgroundColor: 'transparent', color: colors.ctaPrimary, border: `1px solid ${colors.ctaPrimary}` }
+      ? { backgroundColor: accent, color: colors.white }
+      : { backgroundColor: 'transparent', color: accent, border: `1px solid ${accent}` }
 
   return (
     <button

@@ -29,7 +29,7 @@ restrictivo gana), asi que agregar el header es un refuerzo, no un duplicado inu
 ## 2. nginx
 
 ```nginx
-add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://imagedelivery.net https://upload.imagedelivery.net https://api.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://imagedelivery.net https://upload.imagedelivery.net https://api.clinicaparaempresas.com https://foro.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" always;
 add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
 add_header X-Content-Type-Options "nosniff" always;
 add_header Referrer-Policy "strict-origin-when-cross-origin" always;
@@ -49,11 +49,20 @@ body: FormData})` contra una URL que el backend devuelve en ese host); `imagedel
 mostrarlas. Sacar cualquiera de los dos de `connect-src` rompe la subida de imagenes sin tocar
 la visualizacion (por eso el bug pudo pasar desapercibido).
 
+Nota sobre `foro.clinicaparaempresas.com`: es el backend del foro (`VITE_FORO_API_BASE_URL`,
+`src/features/foro/api/foroApiConfig.ts`), origen distinto de `api.clinicaparaempresas.com`.
+CSP no tiene wildcard implicito de subdominio, asi que necesita su propia entrada aunque el
+host padre ya este listado. Va en `connect-src` porque todo el trafico del foro es `fetch`:
+las llamadas de `foroApiRequest.ts` y tambien las de better-auth (`/auth/get-session` y demas,
+via el SDK en `foroAuthClient.ts`). Solo aplica al CSP de `index.html` — `/admin` no consume
+el foro. Las imagenes del foro NO necesitan nada nuevo en `img-src`: se sirven desde
+`imagedelivery.net` (Cloudflare Images), no desde este host.
+
 ## 3. Caddy
 
 ```caddyfile
 header {
-    Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://imagedelivery.net https://upload.imagedelivery.net https://api.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+    Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://imagedelivery.net https://upload.imagedelivery.net https://api.clinicaparaempresas.com https://foro.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
     Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
     X-Content-Type-Options "nosniff"
     Referrer-Policy "strict-origin-when-cross-origin"
@@ -85,6 +94,12 @@ Misma nota que en nginx: swap del valor de `Content-Security-Policy` por la vari
 
 ## 5. Notas / deuda conocida
 
+- **`worker-src 'self' blob:` solo en los meta tags**: el cliente HMR de Vite crea un Worker
+  desde una `blob:` URL; sin la directiva el fallback es `script-src` (que no lista `blob:`) y
+  el dev server llena la consola de errores. Deliberadamente NO esta en los bloques de
+  nginx/Caddy: en produccion no se crea ningun worker, y al aplicarse la interseccion de
+  politicas el header sin `worker-src` lo bloquea igual (mismo mecanismo que `localhost` y
+  picsum).
 - **`http://localhost:*` en `connect-src`**: presente en ambos HTML entry points
   (`index.html` y `admin.html`) y no deberia llegar a produccion. Sacarlo requiere inyectar la
   CSP en build-time por entorno (dev vs prod), que es un cambio de pipeline mayor a este ajuste

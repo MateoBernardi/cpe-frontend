@@ -18,7 +18,7 @@ import {
   type WritablePublicationStatus,
 } from '@features/foro'
 import { LoadingSpinner, ErrorMessage } from '@shared/components'
-import { colors, foroHairline } from '../../../../theme'
+import { colors, foroHairline, foroPalette } from '../../../../theme'
 import { ComposePreviewPane } from './ComposePreviewPane'
 import { TYPE_CONFIG, PUBLICATION_CONTENT_MAX, MAX_NOVEDAD_IMAGES, EMPTY_FORM, type FormState, type TypeFieldConfig } from './composeConfig'
 import { TypePill } from './TypePill'
@@ -160,15 +160,22 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const { user } = useForoAuth()
 
   const isEdit = mode === 'edit'
-  const { data: existing, isLoading: loadingExisting, error: loadError } = usePublication(isEdit ? publicationId : undefined)
+  // Sin `isLoading`: el gate de más abajo (`refDataReady`) mira `existing != null`, que cubre
+  // también los estados en los que el flag miente (query cancelada al desmontar, o en error).
+  const { data: existing, error: loadError } = usePublication(isEdit ? publicationId : undefined)
   // `existing.status`/`existing.revisionOf` decide which of the four save cases below applies —
   // see `handleSave`.
   const editsPublished = isEdit && existing?.status === 'published'
   const isRevisionDraft = isEdit && existing?.revisionOf != null
-  const { data: types, isLoading: loadingTypes } = usePublicationTypes()
-  const { data: categories, isLoading: loadingCategories } = useCategories()
+  // `error`/`refetch` NO son opcionales acá: `retry` global es sólo-429 (ver `App.tsx`), así que
+  // un único fallo de red deja estas dos queries en `error` para siempre — y una query en `error`
+  // tiene `isLoading === false` con `data === undefined`. Sin mirar el error, ese estado se
+  // renderizaba como un editor degradado ("No se reconoce el tipo de esta publicación", sin
+  // TypePill y con la visibilidad de campos cayendo a los defaults) en vez de como una falla.
+  const { data: types, error: typesError, refetch: refetchTypes } = usePublicationTypes()
+  const { data: categories, error: categoriesError, refetch: refetchCategories } = useCategories()
   const { create: createCategory, remove: removeCategory } = useCategoryMutations()
-  const { create, update } = usePublicationMutations()
+  const { create, update, discardRevision } = usePublicationMutations()
   const { keyFor, reset: resetIdempotencyKey } = useIdempotencyKey()
 
   // Controlled from above in create mode, internal in edit mode. The internal
@@ -186,6 +193,9 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [mobilePane, setMobilePane] = useState<'form' | 'preview'>('form')
   const [pendingStatus, setPendingStatus] = useState<WritablePublicationStatus | null>(null)
+  /** Guardado bloqueado ANTES de salir a la red (no es un error de mutación): hoy sólo el caso de
+   *  la publicación sin tipo, ver `handleSave`. Se muestra junto a `mutationError`. */
+  const [saveError, setSaveError] = useState<string | null>(null)
   /** Which external-link row is expanded. A row with a URL already loaded stays open regardless. */
   const [openLinkKind, setOpenLinkKind] = useState<LinkLabel | null>(null)
 
@@ -247,7 +257,14 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const showGallery = config?.showGallery ?? true
   const showLinks = config?.showLinks ?? true
 
-  const isLoadingRefData = loadingTypes || loadingCategories || (isEdit && loadingExisting)
+  // "Listo" = HAY datos, no "no está cargando". `isLoading` (`isPending && isFetching`) es `false`
+  // tanto para una query que falló como para una que quedó cancelada e inactiva (React Query
+  // aborta el fetch cuando el último observer se desmonta — p.ej. al navegar rápido desde "Mis
+  // publicaciones" hasta acá), y en ambos casos `data` es `undefined`. Gatear por el flag dejaba
+  // pasar esos estados y el form se armaba sin tipos: de ahí el "no se reconoce el tipo"
+  // intermitente que sólo se arreglaba recargando. Gatear por presencia de datos los cubre a todos.
+  const refDataReady = types != null && categories != null && (!isEdit || existing != null)
+  const refDataError = typesError ?? categoriesError
 
   const toggleInArray = (arr: number[], value: number): number[] =>
     arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value]
@@ -384,8 +401,8 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
 
   const legacyLinks = form.externalLinks.filter((l) => !KNOWN_LINK_LABELS.includes(l.label))
 
-  const mutationInProgress = create.isPending || update.isPending
-  const mutationError = create.error ?? update.error
+  const mutationInProgress = create.isPending || update.isPending || discardRevision.isPending
+  const mutationError = create.error ?? update.error ?? discardRevision.error
   const canSubmit = isEdit ? publicationId != null : matchedType != null
 
   // Button copy per save case (see `handleSave`'s branches for the matching requests):
@@ -400,6 +417,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
     // takes effect after React commits, so a fast double-click on "Guardar
     // borrador"/"Publicar" can fire the mutation twice before that render lands.
     if (mutationInProgress) return
+    setSaveError(null)
     const nextErrors = validateForm(form, bodyLabel, config)
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
@@ -443,7 +461,20 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
       // required — and `matchedType` here is resolved by searching the type list for `existing`'s
       // own type, which can come back `undefined` for an unrecognized type and would otherwise
       // leave the revision typeless.
-      const revisionInput = { ...baseInput, typeId: existing?.typeId ?? matchedType?.id, revisionOf: publicationId }
+      //
+      // Y si aun así no hay tipo, se corta acá: `type_id` es `nullable().optional()` en el schema
+      // del backend (publication.schema.ts), así que un POST sin él NO falla — crea una fila con
+      // `type_id: NULL` que después no se puede editar bien nunca más (sin tipo no hay plantilla
+      // de detalle ni vista previa) y que ningún reload arregla, porque el dato malo ya quedó
+      // guardado. Sólo puede pasar con un original que ya venía sin tipo; mejor un error visible
+      // que propagarlo a una fila nueva.
+      const revisionTypeId = existing?.typeId ?? matchedType?.id
+      if (revisionTypeId == null) {
+        setPendingStatus(null)
+        setSaveError('Esta publicación no tiene un tipo asignado, así que no se pueden guardar cambios sin publicar. Avisale al equipo técnico.')
+        return
+      }
+      const revisionInput = { ...baseInput, typeId: revisionTypeId, revisionOf: publicationId }
       const idempotencyKey = keyFor(revisionInput)
       create.mutate(
         { ...revisionInput, idempotencyKey },
@@ -484,6 +515,31 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
           },
         },
       )
+    }
+  }
+
+  /**
+   * "Descartar cambios" — sólo existe cuando `isRevisionDraft` (esta fila ES el borrador de
+   * revisión de una publicación ya publicada). Pega contra `DELETE /publications/:originalId/
+   * revision`, un endpoint dedicado que nunca puede tocar la fila publicada aunque el id
+   * estuviera mal — acá `existing.revisionOf` es justamente el id de esa original. A diferencia
+   * de `handleSave`, no hay optimismo de UI que deshacer manualmente: el `mutateAsync` deja el
+   * error en `discardRevision.error`, ya cableado al mismo bloque de `mutationError` de abajo.
+   */
+  const handleDiscardRevision = async () => {
+    if (mutationInProgress) return
+    if (existing?.revisionOf == null || publicationId == null) return
+    if (!confirm('¿Descartar los cambios sin publicar? La publicación va a quedar como está publicada ahora.')) return
+    // `pendingStatus` puede haber quedado de un guardado anterior que falló; sin limpiarlo, el
+    // spinner de "Guardar borrador"/"Publicar" se prendería junto con el de este botón (ambos
+    // miran `mutationInProgress`).
+    setPendingStatus(null)
+    try {
+      await discardRevision.mutateAsync({ originalId: existing.revisionOf, revisionId: publicationId })
+      navigate('/perfil/publicaciones')
+    } catch {
+      // El error queda en `discardRevision.error` y se muestra más abajo, junto al resto de los
+      // errores de mutación del composer — nada más que hacer acá.
     }
   }
 
@@ -532,6 +588,22 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
     return <ErrorMessage message={getForoApiErrorMessage(loadError)} />
   }
 
+  // Sin tipos o sin categorías el editor no puede funcionar (ni resolver el tipo, ni mostrar la
+  // vista previa, ni decidir qué campos van): se corta acá con un reintento explícito en vez de
+  // renderizar un form a medias. El reintento es manual a propósito — `retry` global es sólo-429,
+  // así que nadie más va a reintentar por su cuenta.
+  if (refDataError) {
+    return (
+      <ErrorMessage
+        message={`${getForoApiErrorMessage(refDataError)} No se pudieron cargar los tipos y categorías del foro.`}
+        onRetry={() => {
+          if (typesError) void refetchTypes()
+          if (categoriesError) void refetchCategories()
+        }}
+      />
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* `flex-col` on mobile so "Cambiar tipo" sits as a compact link under the title instead of
@@ -569,7 +641,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
         </div>
       )}
 
-      {isLoadingRefData ? (
+      {!refDataReady ? (
         <LoadingSpinner className="py-12" />
       ) : (
         <>
@@ -835,6 +907,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
               </div>
               )}
 
+              {saveError && <ErrorMessage message={saveError} />}
               {mutationError && !isContentRejected(mutationError) && <ErrorMessage message={getForoApiErrorMessage(mutationError)} />}
 
               <div className="flex flex-wrap justify-end gap-2 border-t pt-4" style={{ borderColor: colors.lightGray }}>
@@ -845,6 +918,18 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
                 >
                   Cancelar
                 </button>
+                {isRevisionDraft && (
+                  <ActionButton
+                    variant="outline"
+                    accentColor={foroPalette.errorText}
+                    status={discardRevision.isPending ? 'pending' : 'idle'}
+                    onClick={() => void handleDiscardRevision()}
+                    disabled={mutationInProgress || uploadingFront || uploadingGallery}
+                    pendingLabel="Descartando…"
+                  >
+                    Descartar cambios
+                  </ActionButton>
+                )}
                 <ActionButton
                   variant="outline"
                   status={mutationInProgress && pendingStatus === 'draft' ? 'pending' : 'idle'}

@@ -50,6 +50,7 @@ export function mapPublicationPreviewDTO(dto: PublicationPreviewDTO): Publicatio
     status: dto.status ?? 'published',
     viewer: mapViewerDTO(dto.viewer),
     revisionOf: dto.revision_of ?? null,
+    revisionId: dto.revision_id ?? null,
   }
   // Only surface `externalLinks` when the backend actually sent the map — kept
   // undefined otherwise so consumers can cleanly render nothing (never crash).

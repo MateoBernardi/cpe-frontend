@@ -136,7 +136,12 @@ export function getForoApiErrorMessage(error: unknown): string {
   const codeMessage = getAuthErrorMessage(error.code)
   if (codeMessage) return codeMessage
 
-  const message = error.data.error ?? error.data.message
+  // SÓLO `data.error`, nunca `data.message`. Según el contrato de arriba, `error` es el texto en
+  // español de nuestro backend y `message` es el de Better Auth, que viene en inglés — mostrarlo
+  // como fallback filtraba cosas como "Invalid email address" al usuario. Un código de Better Auth
+  // que merezca texto propio se traduce arriba, en `getAuthErrorMessage`; el resto cae en los
+  // genéricos de abajo. El detalle en inglés sigue disponible en la pestaña de red y en `error.data`.
+  const message = error.data.error
 
   if (error.status === 429) {
     const base = 'Demasiadas solicitudes. Espera unos segundos e intenta nuevamente.'

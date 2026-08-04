@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useForoAuth, type ForoAuthDialogMode } from '../auth'
 import { foroAuthClient, toForoApiError } from '../api/foroAuthClient'
 import { getForoApiErrorMessage, isEmailNotVerified } from '../api/foroApiRequest'
+import { getAuthErrorMessage } from '../api/authErrorMessages'
 import { TurnstileWidget, type TurnstileWidgetHandle } from './TurnstileWidget'
 import { colors, fonts, foroPalette, platformColors } from '../../../theme'
 
@@ -92,6 +93,41 @@ function capitalizeName(value: string): string {
 }
 
 /**
+ * Lee — y CONSUME — el `?error=<code>` que deja un fallo del callback de OAuth.
+ *
+ * Better Auth no devuelve esos fallos como error de una respuesta: aborta el callback con un
+ * redirect del navegador (`redirectOnError`, `better-auth/dist/oauth2/errors.mjs`), así que el
+ * código viaja en la URL y ningún `catch` de `handleSocial` puede verlo.
+ *
+ * Corre a nivel de módulo, una sola vez por carga de página — que es justo la vida útil del dato,
+ * porque volver de Google ES una carga de página. La query se limpia en el acto para que un
+ * refresh, o compartir el link, no reabra un error ya visto.
+ */
+function consumeOAuthErrorFromUrl(): { code: string; message: string } | null {
+  if (typeof window === 'undefined') return null
+  const params = new URLSearchParams(window.location.search)
+  const code = params.get('error')
+  if (!code) return null
+  params.delete('error')
+  params.delete('error_description')
+  const query = params.toString()
+  window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`)
+  return { code, message: getAuthErrorMessage(code) ?? 'No pudimos completar el ingreso. Intentá de nuevo.' }
+}
+
+const initialOAuthError = consumeOAuthErrorFromUrl()
+
+/**
+ * `account_not_linked` no es un error que el usuario pueda corregir reintentando: significa que su
+ * cuenta local existe pero está sin confirmar. En vez de un cartel rojo va a la pantalla
+ * `check-email`, que es la única que ofrece reenviar el correo de verificación.
+ */
+const oauthNeedsVerification = initialOAuthError?.code === 'account_not_linked'
+
+/** Los tres caminos que desembocan en la pantalla 'check-email'. Sólo el primero acaba de enviar. */
+type CheckEmailReason = 'signup' | 'unverified-signin' | 'unverified-google'
+
+/**
  * Login/signup modal: email+password tabs (sign in / sign up) plus a
  * "Continuar con Google" social button. Also hosts the "forgot password"
  * request form and the post-signup "check your email" screen — both are
@@ -131,6 +167,19 @@ export function ForoAuthDialog() {
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [resendError, setResendError] = useState<string | null>(null)
 
+  // Por qué se está mostrando 'check-email'. Sólo el alta acaba de mandar un correo: decirle "te
+  // enviamos un correo" a quien viene de un login fallido sería mentira, porque en ese camino no se
+  // manda nada hasta que toque el botón de reenvío.
+  const [checkEmailReason, setCheckEmailReason] = useState<CheckEmailReason>(
+    oauthNeedsVerification ? 'unverified-google' : 'signup',
+  )
+
+  // Va aparte de `error` a propósito: el efecto de apertura hace `setError(null)`, que borraría
+  // este mensaje justo cuando el diálogo se abre para mostrarlo.
+  const [oauthError, setOauthError] = useState<string | null>(
+    oauthNeedsVerification ? null : (initialOAuthError?.message ?? null),
+  )
+
   const resetCaptcha = () => {
     setCaptchaToken(null)
     turnstileRef.current?.reset()
@@ -138,8 +187,8 @@ export function ForoAuthDialog() {
 
   const resetForm = () => {
     setFirstName(''); setLastName(''); setEmail(''); setPassword(''); setConfirmPassword('')
-    setShowPassword(false); setShowConfirmPassword(false); setError(null)
-    setForgotSent(false); setResendState('idle'); setResendError(null)
+    setShowPassword(false); setShowConfirmPassword(false); setError(null); setOauthError(null)
+    setForgotSent(false); setResendState('idle'); setResendError(null); setCheckEmailReason('signup')
     resetCaptcha()
   }
 
@@ -170,6 +219,15 @@ export function ForoAuthDialog() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
+  // El diálogo se monta en `App.tsx`, así que "montar" es "cargó la página" — exactamente cuando
+  // volvemos del callback de Google. `initialOAuthError` ya sembró el mensaje en el estado; acá
+  // sólo queda abrir el diálogo para que se vea.
+  useEffect(() => {
+    if (initialOAuthError) ctx.openAuthDialog(oauthNeedsVerification ? 'check-email' : 'sign-in')
+    // Sólo al montar: es un one-shot sobre la URL de entrada.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   if (!isOpen) return null
 
   // Switching tabs drops the confirmation and any stale mismatch error — otherwise a
@@ -180,6 +238,7 @@ export function ForoAuthDialog() {
     setMode(next)
     setConfirmPassword('')
     setError(null)
+    setOauthError(null)
     setForgotSent(false)
     resetCaptcha()
   }
@@ -191,6 +250,7 @@ export function ForoAuthDialog() {
     // the first `setSubmitting(true)` re-render lands.
     if (submitting) return
     setError(null)
+    setOauthError(null)
     if (mode === 'sign-up' && password !== confirmPassword) {
       setError('Las contraseñas no coinciden.')
       return
@@ -205,6 +265,7 @@ export function ForoAuthDialog() {
         // clicked. Keep the email around for the resend button, drop the passwords.
         setPassword(''); setConfirmPassword('')
         resetCaptcha()
+        setCheckEmailReason('signup')
         setMode('check-email')
       } else {
         await ctx.signInEmail(email, password, captchaToken)
@@ -219,6 +280,7 @@ export function ForoAuthDialog() {
         setPassword('')
         setConfirmPassword('')
         resetCaptcha()
+        setCheckEmailReason('unverified-signin')
         setMode('check-email')
       } else {
         setError(getForoApiErrorMessage(err))
@@ -232,6 +294,7 @@ export function ForoAuthDialog() {
   const handleSocial = async (provider: 'google') => {
     if (submitting) return
     setError(null)
+    setOauthError(null)
     setSubmitting(true)
     try {
       await ctx.signInSocial(provider)
@@ -268,7 +331,7 @@ export function ForoAuthDialog() {
     setResendState('sending')
     setResendError(null)
     try {
-      const { error: sdkError } = await foroAuthClient.sendVerificationEmail({ email })
+      const { error: sdkError } = await foroAuthClient.sendVerificationEmail({ email: email.trim() })
       if (sdkError) throw toForoApiError(sdkError, '/auth/send-verification-email')
       setResendState('sent')
     } catch (err) {
@@ -276,6 +339,11 @@ export function ForoAuthDialog() {
       setResendError(getForoApiErrorMessage(err))
     }
   }
+
+  // Corta el reenvío antes de que salga el request: con un email inválido Better Auth responde 400
+  // con el texto de Zod en inglés, y `getForoApiErrorMessage` lo muestra tal cual (cae al `message`
+  // del server cuando el `code` no está en la tabla de traducciones).
+  const canResendVerification = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 
   const dialogLabel =
     mode === 'sign-up' ? 'Crear cuenta'
@@ -420,9 +488,9 @@ export function ForoAuthDialog() {
                 </button>
               )}
 
-              {error && (
+              {(error ?? oauthError) && (
                 <p className="rounded-lg px-3 py-2 text-[13px]" style={{ backgroundColor: foroPalette.errorBg, color: foroPalette.errorText }} aria-live="polite">
-                  {error}
+                  {error ?? oauthError}
                 </p>
               )}
 
@@ -528,9 +596,44 @@ export function ForoAuthDialog() {
         {mode === 'check-email' && (
           <div className="flex flex-col gap-4">
             <p className="text-[14px]" style={{ color: foroPalette.ink }}>
-              Te enviamos un correo a <strong>{email}</strong>. Abrilo y hacé clic en el enlace para
-              confirmar tu cuenta. Si no lo ves, revisá la carpeta de spam.
+              {checkEmailReason === 'signup' ? (
+                <>
+                  Te enviamos un correo a <strong>{email}</strong>. Abrilo y hacé clic en el enlace para
+                  confirmar tu cuenta. Si no lo ves, revisá la carpeta de spam.
+                </>
+              ) : checkEmailReason === 'unverified-signin' ? (
+                <>
+                  Tu cuenta <strong>{email}</strong> todavía no está confirmada. Buscá el correo de
+                  verificación que te mandamos al registrarte (mirá también la carpeta de spam) o pedí
+                  uno nuevo acá abajo.
+                </>
+              ) : (
+                <>
+                  Tu cuenta todavía no está confirmada. Para entrar tenés que hacer clic en el enlace del
+                  correo de verificación que te mandamos al registrarte — revisá también la carpeta de
+                  spam. Si no lo encontrás, ingresá tu email acá abajo y te mandamos uno nuevo.
+                </>
+              )}
             </p>
+
+            {/* El camino de Google llega por un redirect que recarga la página, así que el estado
+                arranca vacío y no tenemos a dónde reenviar: se lo pedimos. En los otros dos caminos
+                `email` ya viene del formulario y este campo no aparece.
+
+                La condición mira `checkEmailReason`, NO `email`: montar el campo según el valor que
+                el propio campo escribe lo desmonta en la primera tecla. */}
+            {checkEmailReason === 'unverified-google' && (
+              <label className={labelClass} style={{ color: colors.blueDark }}>
+                Email
+                <input
+                  type="email"
+                  className={inputClass}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </label>
+            )}
 
             {resendError && (
               <p className="rounded-lg px-3 py-2 text-[13px]" style={{ backgroundColor: foroPalette.errorBg, color: foroPalette.errorText }} aria-live="polite">
@@ -543,7 +646,7 @@ export function ForoAuthDialog() {
               className="self-start px-[22px] py-3 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
               style={{ backgroundColor: colors.ctaPrimary }}
               onClick={handleResendVerification}
-              disabled={resendState === 'sending' || resendState === 'sent'}
+              disabled={!canResendVerification || resendState === 'sending' || resendState === 'sent'}
             >
               {resendState === 'sent' ? 'Correo reenviado' : resendState === 'sending' ? 'Reenviando…' : 'Reenviar correo de verificación'}
             </button>
