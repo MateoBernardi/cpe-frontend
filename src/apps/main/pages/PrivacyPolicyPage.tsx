@@ -41,7 +41,92 @@ export default function PrivacyPolicyPage() {
         {/* 2 */}
         <section className="mb-8">
           <h2 className="mb-3 text-xl font-semibold text-black">
-            2. ¿Para qué usamos tu información?
+            2. Si creás una cuenta en el Foro
+          </h2>
+          <p className="mb-3 text-sm leading-relaxed text-black">
+            Para participar del Foro hace falta una cuenta. Estos son{' '}
+            <strong>todos</strong> los datos que guardamos para que puedas
+            registrarte, iniciar sesión y mantenerte conectado:
+          </p>
+
+          <h3 className="mb-2 mt-4 text-base font-semibold text-black">
+            Datos de tu cuenta
+          </h3>
+          <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-black">
+            <li>Tu nombre y apellido, tal como los cargás al registrarte.</li>
+            <li>
+              Tu correo electrónico, y si ya lo verificaste o no.
+            </li>
+            <li>
+              Las fechas de creación y última modificación de la
+              cuenta.
+            </li>
+            <li>
+              <strong>Si te registrás </strong> tu
+              contraseña se guarda cifrada. Ni
+              nosotros ni nadie de nuestro equipo puede leerla ni recuperarla;
+              por eso, si la olvidás, la única vía es restablecerla.
+            </li>
+            <li>
+              <strong>Si entrás con Google:</strong> recibimos de Google tu
+              nombre, tu correo electrónico y tu foto de perfil, y guardamos los
+              datos para validar tu identidad.{' '}
+              <strong>Nunca recibimos tu contraseña de Google</strong>, y sólo
+              pedimos tu perfil básico y tu email: no accedemos a tu Gmail, tus
+              contactos, tu calendario ni tus archivos.
+            </li>
+          </ul>
+
+          <h3 className="mb-2 mt-4 text-base font-semibold text-black">
+            Datos de tu sesión
+          </h3>
+          <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-black">
+            <li>
+              Un identificador de sesión se guarda en una cookie de
+              tu navegador. Es lo que nos permite reconocerte entre página y
+              página sin pedirte la contraseña cada vez.
+            </li>
+            <li>
+              La dirección IP y el navegador/sistema operativo desde
+              donde iniciaste sesión, para poder detectar accesos indebidos a tu
+              cuenta.
+            </li>
+          </ul>
+
+          <h3 className="mb-2 mt-4 text-base font-semibold text-black">
+            Datos de seguridad y prevención de abusos
+          </h3>
+          <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-black">
+            <li>
+              Enlaces temporales de verificación de correo y de restablecimiento
+              de contraseña, que vencen solos y dejan de ser válidos una vez
+              usados.
+            </li>
+            <li>
+              Contadores de intentos asociados a tu dirección IP y a tu correo
+              electrónico.
+            </li>
+            <li>
+              Usamos <strong>Cloudflare Turnstile</strong> como verificación
+              antibot en el registro y el inicio de sesión, y{' '}
+              <strong>Resend</strong> para enviarte los correos de verificación y
+              recuperación de contraseña. Ambos reciben únicamente lo mínimo
+              necesario para prestar ese servicio.
+            </li>
+          </ul>
+
+          <p className="mt-4 text-sm leading-relaxed text-black">
+            No usamos cookies de publicidad, de analítica ni de seguimiento de
+            terceros: las únicas cookies que colocamos son las estrictamente
+            necesarias para mantener tu sesión abierta y para la verificación
+            de identidad.
+          </p>
+        </section>
+
+        {/* 3 */}
+        <section className="mb-8">
+          <h2 className="mb-3 text-xl font-semibold text-black">
+            3. ¿Para qué usamos tu información?
           </h2>
           <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-black">
             <li>
@@ -56,20 +141,19 @@ export default function PrivacyPolicyPage() {
               Para contactarte en caso de que tu perfil se ajuste a futuras vacantes
               (si decidís dejarnos tu CV en nuestra base de datos).
             </li>
+            <li>
+              Para crear tu cuenta del Foro, mantenerte con la sesión iniciada,
+              mostrar tu nombre junto a lo que publicás y moderar la comunidad.
+              Los datos de la cuenta y de la sesión se usan sólo con ese fin: no
+              alimentan campañas, perfiles publicitarios ni envíos comerciales.
+            </li>
           </ul>
-          <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <p className="text-sm font-medium text-black">
-              <strong>Aclaración importante:</strong> Jamás venderemos, alquilaremos
-              ni compartiremos tu información personal o tu CV con terceros ajenos a
-              nuestra empresa con fines comerciales.
-            </p>
-          </div>
         </section>
 
-        {/* 3 */}
+        {/* 4 */}
         <section className="mb-8">
           <h2 className="mb-3 text-xl font-semibold text-black">
-            3. ¿Cómo protegemos tus datos?
+            4. ¿Cómo protegemos tus datos?
           </h2>
           <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-black">
             <li>
@@ -87,10 +171,10 @@ export default function PrivacyPolicyPage() {
           </ul>
         </section>
 
-        {/* 4 */}
+        {/* 5 */}
         <section className="mb-8">
           <h2 className="mb-3 text-xl font-semibold text-black">
-            4. ¿Cuánto tiempo guardamos tus datos?
+            5. ¿Cuánto tiempo guardamos tus datos?
           </h2>
           <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-black">
             <li>
@@ -102,13 +186,19 @@ export default function PrivacyPolicyPage() {
               CV en nuestra base de datos para futuras
               oportunidades, a menos que nos solicites expresamente su eliminación.
             </li>
+            <li>
+              Los datos de tu cuenta del Foro se conservan mientras la cuenta
+              exista. Si pedís que la eliminemos, se borran también todas tus
+              sesiones y la vinculación con Google. Las sesiones vencidas y los
+              enlaces de verificación caducados se descartan solos.
+            </li>
           </ul>
         </section>
 
-        {/* 5 */}
+        {/* 6 */}
         <section className="mb-8">
           <h2 className="mb-3 text-xl font-semibold text-black">
-            5. Tus Derechos
+            6. Tus Derechos
           </h2>
           <p className="mb-3 text-sm leading-relaxed text-black">
             Vos sos el dueño de tus datos. En cualquier momento tenés derecho a
@@ -117,8 +207,9 @@ export default function PrivacyPolicyPage() {
             <strong>Oposición</strong> al uso de tus datos personales.
           </p>
           <p className="text-sm leading-relaxed text-black">
-            Para ejercer estos derechos, o si deseás que eliminemos tu CV de nuestros
-            registros de forma permanente, simplemente envianos un correo a:{' '}
+            Para ejercer estos derechos, o si deseás que eliminemos tu CV o tu
+            cuenta del Foro de nuestros registros de forma permanente, simplemente
+            envianos un correo a:{' '}
             <a
               href="mailto:contacto@clinicaparaempresas.com"
               className="font-medium text-blue-700 underline"

@@ -452,6 +452,25 @@ export function ForoAuthDialog() {
               <GoogleMark />
               Google
             </button>
+
+            {/* `<a>` y no `<Link>`: este diálogo se monta en `App.tsx` FUERA de
+                `<MainRouter>`, así que no hay Router context y los hooks de
+                react-router tirarían. `target="_blank"` además evita perder el
+                formulario a medio completar (y el token de Turnstile, que es de
+                un solo uso) por irse de la página. */}
+            <p className="mt-5 text-center text-[12px] leading-relaxed" style={{ color: foroPalette.mutedSoft }}>
+              {mode === 'sign-up' ? 'Al crear una cuenta aceptás nuestra ' : 'Al iniciar sesión aceptás nuestra '}
+              <a
+                href="/politica-de-privacidad"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline underline-offset-2"
+                style={{ color: colors.ctaPrimary }}
+              >
+                Política de privacidad
+              </a>
+              , donde detallamos qué datos guardamos de tu cuenta y de tu sesión.
+            </p>
           </>
         )}
 

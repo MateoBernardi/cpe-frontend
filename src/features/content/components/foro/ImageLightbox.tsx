@@ -178,7 +178,7 @@ export function ImageLightbox({ images, index, onClose, onIndexChange }: ImageLi
       >
         <button
           type="button"
-          className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full border-none bg-black/60 text-xl leading-none text-white transition-colors hover:bg-black/80 sm:right-0 sm:top-0"
+          className="absolute -right-2 -top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full border-none bg-black/60 text-xl leading-none text-white transition-colors hover:bg-black/80 sm:right-0 sm:top-0"
           onClick={onClose}
           aria-label="Cerrar"
         >
