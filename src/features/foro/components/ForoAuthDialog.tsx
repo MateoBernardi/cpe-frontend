@@ -358,17 +358,24 @@ export function ForoAuthDialog() {
       onClick={handleClose}
       role="presentation"
     >
+      {/* `max-h` + scroll interno, no altura libre: en 'sign-up' el formulario suma nombre,
+          apellido y repetir contraseña, y en pantallas bajas (o móviles con la barra del
+          navegador visible, de ahí `dvh` y no `vh`) el panel se pasaba del viewport y quedaba
+          recortado arriba y abajo, sin forma de llegar al botón de enviar.
+          El `2.5rem` es el `p-5` del overlay, arriba + abajo. */}
       <div
-        className="relative w-full max-w-[420px] bg-white px-5 pb-7 pt-8 shadow-2xl sm:px-7"
+        className="relative flex max-h-[calc(100dvh-2.5rem)] w-full max-w-[420px] flex-col bg-white shadow-2xl"
         style={{ color: foroPalette.ink }}
         role="dialog"
         aria-modal="true"
         aria-label={dialogLabel}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Fondo blanco (no transparente): queda fijo sobre el área que scrollea, así el
+            contenido no se ve pasar por detrás de la ×. */}
         <button
           type="button"
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border-none bg-transparent text-xl leading-none hover:[background-color:var(--foro-close-hover-bg)]"
+          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border-none bg-white text-xl leading-none hover:[background-color:var(--foro-close-hover-bg)]"
           style={{ color: foroPalette.muted, '--foro-close-hover-bg': foroPalette.tealTint } as CSSProperties}
           onClick={handleClose}
           aria-label="Cerrar"
@@ -376,286 +383,288 @@ export function ForoAuthDialog() {
           ×
         </button>
 
-        {(mode === 'sign-in' || mode === 'sign-up') && (
-          <>
-            <div className="mb-[22px] flex gap-1 rounded-xl p-1" style={{ backgroundColor: foroPalette.surfaceAlt }}>
-              <button type="button" className={tabButtonClass(mode === 'sign-in')} onClick={() => switchMode('sign-in')}>
-                Iniciar sesión
-              </button>
-              <button type="button" className={tabButtonClass(mode === 'sign-up')} onClick={() => switchMode('sign-up')}>
-                Crear cuenta
-              </button>
-            </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-7 pt-8 sm:px-7">
+          {(mode === 'sign-in' || mode === 'sign-up') && (
+            <>
+              <div className="mb-[22px] flex gap-1 rounded-xl p-1" style={{ backgroundColor: foroPalette.surfaceAlt }}>
+                <button type="button" className={tabButtonClass(mode === 'sign-in')} onClick={() => switchMode('sign-in')}>
+                  Iniciar sesión
+                </button>
+                <button type="button" className={tabButtonClass(mode === 'sign-up')} onClick={() => switchMode('sign-up')}>
+                  Crear cuenta
+                </button>
+              </div>
 
-            <form className="flex flex-col gap-3.5" onSubmit={handleSubmit} aria-busy={submitting}>
-              {mode === 'sign-up' && (
-                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-                  <label className={labelClass} style={{ color: colors.blueDark }}>
-                    Nombre
-                    <input
-                      type="text"
-                      className={inputClass}
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required
-                      autoComplete="given-name"
-                    />
-                  </label>
-                  <label className={labelClass} style={{ color: colors.blueDark }}>
-                    Apellido
-                    <input
-                      type="text"
-                      className={inputClass}
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required
-                      autoComplete="family-name"
-                    />
-                  </label>
-                </div>
-              )}
-              <label className={labelClass} style={{ color: colors.blueDark }}>
-                Email
-                <input
-                  type="email"
-                  className={inputClass}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </label>
-              <label className={labelClass} style={{ color: colors.blueDark }}>
-                Contraseña
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className={passwordInputClass}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
-                    autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 flex items-center px-3"
-                    style={{ color: foroPalette.muted }}
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                    aria-pressed={showPassword}
-                  >
-                    <EyeIcon crossed={showPassword} />
-                  </button>
-                </div>
-              </label>
-
-              {mode === 'sign-up' && (
+              <form className="flex flex-col gap-3.5" onSubmit={handleSubmit} aria-busy={submitting}>
+                {mode === 'sign-up' && (
+                  <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                    <label className={labelClass} style={{ color: colors.blueDark }}>
+                      Nombre
+                      <input
+                        type="text"
+                        className={inputClass}
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                        autoComplete="given-name"
+                      />
+                    </label>
+                    <label className={labelClass} style={{ color: colors.blueDark }}>
+                      Apellido
+                      <input
+                        type="text"
+                        className={inputClass}
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                        autoComplete="family-name"
+                      />
+                    </label>
+                  </div>
+                )}
                 <label className={labelClass} style={{ color: colors.blueDark }}>
-                  Repetir contraseña
-                  {/* Toggle propio, no compartido con el campo de arriba: revelar
-                      la confirmación mientras la primera queda oculta es
-                      justamente lo que permite comparar lo que se escribió. */}
+                  Email
+                  <input
+                    type="email"
+                    className={inputClass}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </label>
+                <label className={labelClass} style={{ color: colors.blueDark }}>
+                  Contraseña
                   <div className="relative">
                     <input
-                      type={showConfirmPassword ? 'text' : 'password'}
+                      type={showPassword ? 'text' : 'password'}
                       className={passwordInputClass}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={8}
-                      autoComplete="new-password"
+                      autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
                     />
                     <button
                       type="button"
                       className="absolute inset-y-0 right-0 flex items-center px-3"
                       style={{ color: foroPalette.muted }}
-                      onClick={() => setShowConfirmPassword((v) => !v)}
-                      aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                      aria-pressed={showConfirmPassword}
+                      onClick={() => setShowPassword((v) => !v)}
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      aria-pressed={showPassword}
                     >
-                      <EyeIcon crossed={showConfirmPassword} />
+                      <EyeIcon crossed={showPassword} />
                     </button>
                   </div>
                 </label>
-              )}
 
-              <TurnstileWidget ref={turnstileRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
+                {mode === 'sign-up' && (
+                  <label className={labelClass} style={{ color: colors.blueDark }}>
+                    Repetir contraseña
+                    {/* Toggle propio, no compartido con el campo de arriba: revelar
+                        la confirmación mientras la primera queda oculta es
+                        justamente lo que permite comparar lo que se escribió. */}
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        className={passwordInputClass}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        minLength={8}
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        className="absolute inset-y-0 right-0 flex items-center px-3"
+                        style={{ color: foroPalette.muted }}
+                        onClick={() => setShowConfirmPassword((v) => !v)}
+                        aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        aria-pressed={showConfirmPassword}
+                      >
+                        <EyeIcon crossed={showConfirmPassword} />
+                      </button>
+                    </div>
+                  </label>
+                )}
 
-              {mode === 'sign-in' && (
-                <button type="button" className={linkButtonClass} style={{ color: colors.ctaPrimary }} onClick={() => switchMode('forgot')}>
-                  ¿Olvidaste tu contraseña?
+                <TurnstileWidget ref={turnstileRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
+
+                {mode === 'sign-in' && (
+                  <button type="button" className={linkButtonClass} style={{ color: colors.ctaPrimary }} onClick={() => switchMode('forgot')}>
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                )}
+
+                {(error ?? oauthError) && (
+                  <p className="rounded-lg px-3 py-2 text-[13px]" style={{ backgroundColor: foroPalette.errorBg, color: foroPalette.errorText }} aria-live="polite">
+                    {error ?? oauthError}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="rounded-xl px-[22px] py-3 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ backgroundColor: colors.ctaPrimary }}
+                  disabled={submitting || !captchaToken}
+                >
+                  {mode === 'sign-up' ? 'Crear cuenta' : 'Iniciar sesión'}
                 </button>
-              )}
+              </form>
 
-              {(error ?? oauthError) && (
-                <p className="rounded-lg px-3 py-2 text-[13px]" style={{ backgroundColor: foroPalette.errorBg, color: foroPalette.errorText }} aria-live="polite">
-                  {error ?? oauthError}
-                </p>
-              )}
+              <div className="my-5 flex items-center gap-2.5 text-[11px] uppercase tracking-wide" style={{ color: foroPalette.mutedSoft }}>
+                <span className="h-px flex-1" style={{ backgroundColor: foroPalette.line }} />
+                <span>o continuar con</span>
+                <span className="h-px flex-1" style={{ backgroundColor: foroPalette.line }} />
+              </div>
 
               <button
-                type="submit"
-                className="rounded-xl px-[22px] py-3 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
-                style={{ backgroundColor: colors.ctaPrimary }}
-                disabled={submitting || !captchaToken}
+                type="button"
+                className="flex w-full items-center justify-center gap-2.5 rounded-xl border px-[22px] py-3 text-sm font-semibold hover:[background-color:var(--foro-social-hover-bg)] disabled:cursor-not-allowed disabled:opacity-60"
+                style={{ borderColor: colors.lightGray, color: colors.ctaPrimary, '--foro-social-hover-bg': foroPalette.tealTint } as CSSProperties}
+                onClick={() => handleSocial('google')}
+                disabled={submitting}
               >
-                {mode === 'sign-up' ? 'Crear cuenta' : 'Iniciar sesión'}
+                <GoogleMark />
+                Google
               </button>
-            </form>
 
-            <div className="my-5 flex items-center gap-2.5 text-[11px] uppercase tracking-wide" style={{ color: foroPalette.mutedSoft }}>
-              <span className="h-px flex-1" style={{ backgroundColor: foroPalette.line }} />
-              <span>o continuar con</span>
-              <span className="h-px flex-1" style={{ backgroundColor: foroPalette.line }} />
-            </div>
+              {/* `<a>` y no `<Link>`: este diálogo se monta en `App.tsx` FUERA de
+                  `<MainRouter>`, así que no hay Router context y los hooks de
+                  react-router tirarían. `target="_blank"` además evita perder el
+                  formulario a medio completar (y el token de Turnstile, que es de
+                  un solo uso) por irse de la página. */}
+              <p className="mt-5 text-center text-[12px] leading-relaxed" style={{ color: foroPalette.mutedSoft }}>
+                {mode === 'sign-up' ? 'Al crear una cuenta aceptás nuestra ' : 'Al iniciar sesión aceptás nuestra '}
+                <a
+                  href="/politica-de-privacidad"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold underline underline-offset-2"
+                  style={{ color: colors.ctaPrimary }}
+                >
+                  Política de privacidad
+                </a>
+                , donde detallamos qué datos guardamos de tu cuenta y de tu sesión.
+              </p>
+            </>
+          )}
 
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2.5 rounded-xl border px-[22px] py-3 text-sm font-semibold hover:[background-color:var(--foro-social-hover-bg)] disabled:cursor-not-allowed disabled:opacity-60"
-              style={{ borderColor: colors.lightGray, color: colors.ctaPrimary, '--foro-social-hover-bg': foroPalette.tealTint } as CSSProperties}
-              onClick={() => handleSocial('google')}
-              disabled={submitting}
-            >
-              <GoogleMark />
-              Google
-            </button>
+          {mode === 'forgot' && (
+            forgotSent ? (
+              <div className="flex flex-col gap-4">
+                <p className="text-[14px]" style={{ color: foroPalette.ink }}>
+                  Si el email está registrado, vas a recibir un enlace para restablecer tu contraseña.
+                </p>
+                <button type="button" className={linkButtonClass} style={{ color: colors.ctaPrimary }} onClick={() => switchMode('sign-in')}>
+                  Volver a iniciar sesión
+                </button>
+              </div>
+            ) : (
+              <form className="flex flex-col gap-3.5" onSubmit={handleForgotSubmit} aria-busy={submitting}>
+                <p className="text-[13.5px]" style={{ color: foroPalette.muted }}>
+                  Ingresá tu email y te mandamos un enlace para elegir una nueva contraseña.
+                </p>
+                <label className={labelClass} style={{ color: colors.blueDark }}>
+                  Email
+                  <input
+                    type="email"
+                    className={inputClass}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </label>
 
-            {/* `<a>` y no `<Link>`: este diálogo se monta en `App.tsx` FUERA de
-                `<MainRouter>`, así que no hay Router context y los hooks de
-                react-router tirarían. `target="_blank"` además evita perder el
-                formulario a medio completar (y el token de Turnstile, que es de
-                un solo uso) por irse de la página. */}
-            <p className="mt-5 text-center text-[12px] leading-relaxed" style={{ color: foroPalette.mutedSoft }}>
-              {mode === 'sign-up' ? 'Al crear una cuenta aceptás nuestra ' : 'Al iniciar sesión aceptás nuestra '}
-              <a
-                href="/politica-de-privacidad"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold underline underline-offset-2"
-                style={{ color: colors.ctaPrimary }}
-              >
-                Política de privacidad
-              </a>
-              , donde detallamos qué datos guardamos de tu cuenta y de tu sesión.
-            </p>
-          </>
-        )}
+                <TurnstileWidget ref={turnstileRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
 
-        {mode === 'forgot' && (
-          forgotSent ? (
+                {error && (
+                  <p className="rounded-lg px-3 py-2 text-[13px]" style={{ backgroundColor: foroPalette.errorBg, color: foroPalette.errorText }} aria-live="polite">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="rounded-xl px-[22px] py-3 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ backgroundColor: colors.ctaPrimary }}
+                  disabled={submitting || !captchaToken}
+                >
+                  Enviar instrucciones
+                </button>
+
+                <button type="button" className={linkButtonClass} style={{ color: foroPalette.muted }} onClick={() => switchMode('sign-in')}>
+                  Volver a iniciar sesión
+                </button>
+              </form>
+            )
+          )}
+
+          {mode === 'check-email' && (
             <div className="flex flex-col gap-4">
               <p className="text-[14px]" style={{ color: foroPalette.ink }}>
-                Si el email está registrado, vas a recibir un enlace para restablecer tu contraseña.
+                {checkEmailReason === 'signup' ? (
+                  <>
+                    Te enviamos un correo a <strong>{email}</strong>. Abrilo y hacé clic en el enlace para
+                    confirmar tu cuenta. Si no lo ves, revisá la carpeta de spam.
+                  </>
+                ) : checkEmailReason === 'unverified-signin' ? (
+                  <>
+                    Tu cuenta <strong>{email}</strong> todavía no está confirmada. Buscá el correo de
+                    verificación que te mandamos al registrarte (mirá también la carpeta de spam) o pedí
+                    uno nuevo acá abajo.
+                  </>
+                ) : (
+                  <>
+                    Tu cuenta todavía no está confirmada. Para entrar tenés que hacer clic en el enlace del
+                    correo de verificación que te mandamos al registrarte — revisá también la carpeta de
+                    spam. Si no lo encontrás, ingresá tu email acá abajo y te mandamos uno nuevo.
+                  </>
+                )}
               </p>
-              <button type="button" className={linkButtonClass} style={{ color: colors.ctaPrimary }} onClick={() => switchMode('sign-in')}>
-                Volver a iniciar sesión
-              </button>
-            </div>
-          ) : (
-            <form className="flex flex-col gap-3.5" onSubmit={handleForgotSubmit} aria-busy={submitting}>
-              <p className="text-[13.5px]" style={{ color: foroPalette.muted }}>
-                Ingresá tu email y te mandamos un enlace para elegir una nueva contraseña.
-              </p>
-              <label className={labelClass} style={{ color: colors.blueDark }}>
-                Email
-                <input
-                  type="email"
-                  className={inputClass}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </label>
 
-              <TurnstileWidget ref={turnstileRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
+              {/* El camino de Google llega por un redirect que recarga la página, así que el estado
+                  arranca vacío y no tenemos a dónde reenviar: se lo pedimos. En los otros dos caminos
+                  `email` ya viene del formulario y este campo no aparece.
 
-              {error && (
+                  La condición mira `checkEmailReason`, NO `email`: montar el campo según el valor que
+                  el propio campo escribe lo desmonta en la primera tecla. */}
+              {checkEmailReason === 'unverified-google' && (
+                <label className={labelClass} style={{ color: colors.blueDark }}>
+                  Email
+                  <input
+                    type="email"
+                    className={inputClass}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                  />
+                </label>
+              )}
+
+              {resendError && (
                 <p className="rounded-lg px-3 py-2 text-[13px]" style={{ backgroundColor: foroPalette.errorBg, color: foroPalette.errorText }} aria-live="polite">
-                  {error}
+                  {resendError}
                 </p>
               )}
 
               <button
-                type="submit"
-                className="rounded-xl px-[22px] py-3 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
+                type="button"
+                className="self-start px-[22px] py-3 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
                 style={{ backgroundColor: colors.ctaPrimary }}
-                disabled={submitting || !captchaToken}
+                onClick={handleResendVerification}
+                disabled={!canResendVerification || resendState === 'sending' || resendState === 'sent'}
               >
-                Enviar instrucciones
+                {resendState === 'sent' ? 'Correo reenviado' : resendState === 'sending' ? 'Reenviando…' : 'Reenviar correo de verificación'}
               </button>
 
               <button type="button" className={linkButtonClass} style={{ color: foroPalette.muted }} onClick={() => switchMode('sign-in')}>
                 Volver a iniciar sesión
               </button>
-            </form>
-          )
-        )}
-
-        {mode === 'check-email' && (
-          <div className="flex flex-col gap-4">
-            <p className="text-[14px]" style={{ color: foroPalette.ink }}>
-              {checkEmailReason === 'signup' ? (
-                <>
-                  Te enviamos un correo a <strong>{email}</strong>. Abrilo y hacé clic en el enlace para
-                  confirmar tu cuenta. Si no lo ves, revisá la carpeta de spam.
-                </>
-              ) : checkEmailReason === 'unverified-signin' ? (
-                <>
-                  Tu cuenta <strong>{email}</strong> todavía no está confirmada. Buscá el correo de
-                  verificación que te mandamos al registrarte (mirá también la carpeta de spam) o pedí
-                  uno nuevo acá abajo.
-                </>
-              ) : (
-                <>
-                  Tu cuenta todavía no está confirmada. Para entrar tenés que hacer clic en el enlace del
-                  correo de verificación que te mandamos al registrarte — revisá también la carpeta de
-                  spam. Si no lo encontrás, ingresá tu email acá abajo y te mandamos uno nuevo.
-                </>
-              )}
-            </p>
-
-            {/* El camino de Google llega por un redirect que recarga la página, así que el estado
-                arranca vacío y no tenemos a dónde reenviar: se lo pedimos. En los otros dos caminos
-                `email` ya viene del formulario y este campo no aparece.
-
-                La condición mira `checkEmailReason`, NO `email`: montar el campo según el valor que
-                el propio campo escribe lo desmonta en la primera tecla. */}
-            {checkEmailReason === 'unverified-google' && (
-              <label className={labelClass} style={{ color: colors.blueDark }}>
-                Email
-                <input
-                  type="email"
-                  className={inputClass}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                />
-              </label>
-            )}
-
-            {resendError && (
-              <p className="rounded-lg px-3 py-2 text-[13px]" style={{ backgroundColor: foroPalette.errorBg, color: foroPalette.errorText }} aria-live="polite">
-                {resendError}
-              </p>
-            )}
-
-            <button
-              type="button"
-              className="self-start px-[22px] py-3 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
-              style={{ backgroundColor: colors.ctaPrimary }}
-              onClick={handleResendVerification}
-              disabled={!canResendVerification || resendState === 'sending' || resendState === 'sent'}
-            >
-              {resendState === 'sent' ? 'Correo reenviado' : resendState === 'sending' ? 'Reenviando…' : 'Reenviar correo de verificación'}
-            </button>
-
-            <button type="button" className={linkButtonClass} style={{ color: foroPalette.muted }} onClick={() => switchMode('sign-in')}>
-              Volver a iniciar sesión
-            </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>,
     document.body,
