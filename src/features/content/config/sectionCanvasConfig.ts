@@ -182,65 +182,18 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
     ],
   },
 
-  // ── NEWS ──
-  news: {
-    displayName: 'Novedades',
-    guide: {
-      description: 'Lista vertical de novedades. Cada novedad tiene una imagen opcional, un título y un párrafo descriptivo, separadas por líneas divisorias.',
-      tips: [
-        'Cada texto (párrafo) crea una nueva novedad en la lista.',
-        'Cada miniatura se asocia a su novedad por orden: la 1ra imagen va con el 1er texto, etc.',
-        'El encabezado se muestra centrado arriba de la lista.',
-        'Podés agregar tantas novedades como quieras — se apilan verticalmente.',
-        'Si un párrafo tiene título (campo Title), se muestra como encabezado de la novedad.',
-      ],
-      imageTip: 'Resolución recomendada: 1200×675 px (16:9). Las imágenes se muestran a ancho completo con bordes redondeados.',
-      colorTip: 'Fondo gris claro (#eeeeee). Texto sobre fondo directo, sin tarjetas.',
-    },
-    textSlots: [
-      { id: 'nw-heading', role: 'heading', slotIndex: 0, label: 'Título de sección', placeholder: 'Ej: Novedades', display: 'heading' },
-      { id: 'nw-paragraph', role: 'paragraph', slotIndex: 0, label: 'Texto de novedad', placeholder: 'Escribí el contenido de la novedad...', display: 'body', multiple: true },
-    ],
-    mediaSlots: [
-      { id: 'nw-thumbnail', role: 'thumbnail', slotIndex: 0, label: 'Imagen de novedad', placeholder: 'Imagen para la tarjeta', multiple: true, aspect: '16/10', recommendedSize: '800×500' },
-    ],
-  },
-
-  // ── INFO PRIMARY ──
-  info_primary: {
-    displayName: 'Información Principal',
-    guide: {
-      description: 'Sección de 2 columnas: diagrama/imagen a la izquierda y lista de puntos clave a la derecha.',
-      tips: [
-        'La imagen o diagrama se muestra en la columna izquierda.',
-        'Cada viñeta se lista con un punto.',
-      ],
-      imageTip: 'Diagrama: hasta 600×600 px. Íconos: 40×40 px (SVG o PNG transparente recomendado).',
-      colorTip: 'Fondo slate-100. Puntos de viñeta teal-800.',
-    },
-    textSlots: [
-      { id: 'ip-heading', role: 'heading', slotIndex: 0, label: 'Título de sección', placeholder: 'Ej: Nuestros servicios', display: 'heading' },
-      { id: 'ip-bullet', role: 'bullet', slotIndex: 0, label: 'Viñeta', placeholder: 'Descripción del punto clave', display: 'bullet', multiple: true },
-    ],
-    mediaSlots: [
-      { id: 'ip-diagram', role: 'diagram', slotIndex: 0, label: 'Diagrama / Imagen principal', placeholder: 'Imagen o diagrama de la sección', aspect: '1/1', recommendedSize: '600×600', maxItems: 1 },
-      { id: 'ip-icon', role: 'icon', slotIndex: 0, label: 'Íconos (uno por viñeta)', placeholder: 'Ícono para viñeta', multiple: true, recommendedSize: '40×40' },
-    ],
-  },
-
   // ── INFO SECONDARY ──
   info_secondary: {
     displayName: 'Información Secundaria',
     guide: {
-      description: 'Sección con acordeones (colapsables) a la izquierda y un gráfico dona interactivo a la derecha. Cada porción de la dona representa un párrafo.',
+      description: 'Sección con acordeones (colapsables) a la izquierda y el diagrama del circuito de intervención a la derecha.',
       tips: [
-        'Cada "párrafo" crea una porción en la dona y un ítem colapsable.',
-        'Cada "cita" es la descripción que se despliega al hacer clic en el colapsable.',
+        'Cada "párrafo" crea un ítem colapsable a la izquierda.',
+        'Cada "cita" es la descripción que se despliega al hacer clic en su colapsable correspondiente.',
         'Las citas se emparejan con los párrafos por orden (1ra cita → 1er párrafo, etc.).',
-        'La dona se genera automáticamente — no se necesitan imágenes.',
-        'Máximo recomendado: 5 secciones para que la dona sea legible.',
+        'El diagrama del circuito es una imagen fija — no varía según la cantidad de párrafos y no se sube desde el panel.',
       ],
-      colorTip: 'La dona usa colores de la paleta: teal, cyan, indigo. Fondo blanco.',
+      colorTip: 'Los acordeones usan colores de la paleta: teal, cyan, indigo. Fondo blanco.',
     },
     textSlots: [
       { id: 'is-heading', role: 'heading', slotIndex: 0, label: 'Título de sección', placeholder: 'Ej: ¿Qué hacemos?', display: 'heading' },
@@ -344,111 +297,6 @@ export const CANVAS_CONFIGS: Record<string, SectionCanvasConfig> = {
     ],
   },
 
-  // ── TRASPASO GENERACIONAL ──
-  traspaso_generacional: {
-    displayName: 'Servicio: Traspaso Generacional',
-    guide: {
-      description: 'Página de servicio con el mismo layout que los demás servicios: tarjeta de texto a la izquierda + imagen a la derecha.',
-      tips: [
-        'El subtítulo se muestra como "Objetivo" en una caja teal.',
-        'Los párrafos y viñetas listan los ejes de trabajo.',
-        'La imagen se muestra a la derecha con fondo decorativo.',
-      ],
-      imageTip: 'Resolución recomendada: 800×600 px (4:3).',
-    },
-    textSlots: [
-      { id: 'tg-heading', role: 'heading', slotIndex: 0, label: 'Título del servicio', placeholder: 'Ej: Traspaso Generacional', display: 'heading' },
-      { id: 'tg-subtitle', role: 'subtitle', slotIndex: 0, label: 'Objetivo', placeholder: 'Descripción del objetivo del servicio', display: 'subheading' },
-      { id: 'tg-paragraph', role: 'paragraph', slotIndex: 0, label: 'Párrafo', placeholder: 'Párrafo descriptivo del servicio...', display: 'body', multiple: true },
-      { id: 'tg-bullet', role: 'bullet', slotIndex: 0, label: 'Eje de trabajo', placeholder: 'Ej: Planificación sucesoria', display: 'bullet', multiple: true },
-      { id: 'tg-cta-heading', role: 'cta_heading', slotIndex: 0, label: 'Título CTA', placeholder: 'Ej: ¿Querés saber más?', display: 'heading', maxLength: 80 },
-      { id: 'tg-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón CTA', placeholder: 'Ej: Contactanos', display: 'cta', maxLength: 40 },
-    ],
-    mediaSlots: [
-      { id: 'tg-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },
-    ],
-  },
-
-  // ── SERVICE: CLÍNICA PARA EMPRESARIOS ──
-  service_clinica_empresarios: {
-    displayName: 'Servicio: Clínica para Empresarios',
-    guide: {
-      description: 'Página de servicio con el mismo layout: tarjeta de texto (título, objetivo, párrafos, viñetas) a la izquierda + imagen a la derecha.',
-      tips: [
-        'El subtítulo se muestra como "Objetivo" en una caja teal.',
-        'Los párrafos y viñetas listan los detalles del servicio.',
-        'La imagen se muestra a la derecha con fondo decorativo.',
-      ],
-      imageTip: 'Resolución recomendada: 800×600 px (4:3).',
-    },
-    textSlots: [
-      { id: 'sce-heading', role: 'heading', slotIndex: 0, label: 'Título del servicio', placeholder: 'Ej: Clínica para Empresarios', display: 'heading' },
-      { id: 'sce-subtitle', role: 'subtitle', slotIndex: 0, label: 'Objetivo', placeholder: 'Descripción del objetivo del servicio', display: 'subheading' },
-      { id: 'sce-paragraph', role: 'paragraph', slotIndex: 0, label: 'Párrafo', placeholder: 'Párrafo descriptivo del servicio...', display: 'body', multiple: true },
-      { id: 'sce-bullet', role: 'bullet', slotIndex: 0, label: 'Eje de trabajo', placeholder: 'Ej: Diagnóstico integral', display: 'bullet', multiple: true },
-      { id: 'sce-cta-heading', role: 'cta_heading', slotIndex: 0, label: 'Título CTA', placeholder: 'Ej: ¿Querés saber más?', display: 'heading', maxLength: 80 },
-      { id: 'sce-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón CTA', placeholder: 'Ej: Contactanos', display: 'cta', maxLength: 40 },
-    ],
-    mediaSlots: [
-      { id: 'sce-photo', role: 'photo', slotIndex: 0, label: 'Foto del servicio', placeholder: 'Imagen ilustrativa', aspect: '4/3', recommendedSize: '800×600', maxItems: 1 },
-    ],
-  },
-
-  // ── TEASER: CIRCUITO INTEGRADO ──
-  teaser_circuit: {
-    displayName: 'Teaser: Circuito Integrado',
-    guide: {
-      description: 'Sección del Venn diagram interactivo en la página principal. Solo se edita el título — la visualización animada se genera automáticamente.',
-      tips: [
-        'El encabezado se muestra debajo de la animación del circuito.',
-        'La animación de círculos no es editable — es un componente visual fijo.',
-      ],
-    },
-    textSlots: [
-      { id: 'tc-heading', role: 'heading', slotIndex: 0, label: 'Título del circuito', placeholder: 'Ej: Circuito integrado de acción.', display: 'heading', maxLength: 60 },
-    ],
-    mediaSlots: [],
-  },
-
-  // ── TEASER: CONSULTORÍA PARA EMPRESARIOS ──
-  teaser_clinica: {
-    displayName: 'Teaser: Consultoría para Empresarios',
-    guide: {
-      description: 'Sección teaser en la página principal para el servicio Consultoría para Empresarios. Ícono a la izquierda, información a la derecha.',
-      tips: [
-        'El encabezado es el título grande del teaser.',
-        'El subtítulo es una frase corta descriptiva.',
-        'El CTA es el texto del botón que lleva a la página del servicio.',
-        'La ilustración/ícono se genera automáticamente.',
-      ],
-    },
-    textSlots: [
-      { id: 'tcl-heading', role: 'heading', slotIndex: 0, label: 'Título', placeholder: 'Ej: Clínica para Empresarios.', display: 'heading', maxLength: 60 },
-      { id: 'tcl-subtitle', role: 'subtitle', slotIndex: 0, label: 'Subtítulo', placeholder: 'Ej: Atención integral para quienes lideran empresas.', display: 'subheading', maxLength: 120 },
-      { id: 'tcl-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón', placeholder: 'Ej: Conocé más', display: 'cta', maxLength: 40 },
-    ],
-    mediaSlots: [],
-  },
-
-  // ── TEASER: TRASPASO GENERACIONAL ──
-  teaser_traspaso: {
-    displayName: 'Teaser: Traspaso Generacional',
-    guide: {
-      description: 'Sección teaser en la página principal para el servicio Traspaso Generacional. Información a la izquierda, ícono a la derecha.',
-      tips: [
-        'El encabezado es el título grande del teaser.',
-        'El subtítulo es una frase corta descriptiva.',
-        'El CTA es el texto del botón que lleva a la página del servicio.',
-        'La ilustración/ícono se genera automáticamente.',
-      ],
-    },
-    textSlots: [
-      { id: 'tt-heading', role: 'heading', slotIndex: 0, label: 'Título', placeholder: 'Ej: Traspaso Generacional.', display: 'heading', maxLength: 60 },
-      { id: 'tt-subtitle', role: 'subtitle', slotIndex: 0, label: 'Subtítulo', placeholder: 'Ej: Acompañamos la transición entre generaciones.', display: 'subheading', maxLength: 120 },
-      { id: 'tt-cta', role: 'cta', slotIndex: 0, label: 'Texto del botón', placeholder: 'Ej: Conocé más', display: 'cta', maxLength: 40 },
-    ],
-    mediaSlots: [],
-  },
 }
 
 /** Obtiene la config del canvas, o undefined si la sección no tiene config */

@@ -1,229 +1,203 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { Section } from '../../models'
 import { textByRole, textsByRole } from './sectionHelpers'
-import { useInView } from '@shared/hooks'
+import { useInView, useScrollProgress } from '@shared/hooks'
 import { colors, layout } from '../../../../theme'
 
 interface Props { section: Section }
 
-// ── Donut SVG constants ──
-const CENTER = 150
-const OUTER_R = 120
-const INNER_R = 65
-const GAP_DEG = 3
-
-const COLORS = colors.donut
-const HOVER_COLORS = colors.donutHover
-
-const deg2rad = (d: number) => (d * Math.PI) / 180
-
-function polarToCart(cx: number, cy: number, r: number, angleDeg: number) {
-  const rad = deg2rad(angleDeg)
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
-}
-
-function arcSectorPath(
-  cx: number, cy: number,
-  outerR: number, innerR: number,
-  startDeg: number, endDeg: number,
-): string {
-  const sweep = endDeg - startDeg
-  const largeArc = sweep > 180 ? 1 : 0
-  const os = polarToCart(cx, cy, outerR, startDeg)
-  const oe = polarToCart(cx, cy, outerR, endDeg)
-  const is_ = polarToCart(cx, cy, innerR, endDeg)
-  const ie = polarToCart(cx, cy, innerR, startDeg)
-  return [
-    `M ${os.x} ${os.y}`,
-    `A ${outerR} ${outerR} 0 ${largeArc} 1 ${oe.x} ${oe.y}`,
-    `L ${is_.x} ${is_.y}`,
-    `A ${innerR} ${innerR} 0 ${largeArc} 0 ${ie.x} ${ie.y}`,
-    'Z',
-  ].join(' ')
-}
-
-function midAngle(index: number, numSegments: number): number {
-  const segDeg = 360 / numSegments
-  return -90 + index * segDeg + segDeg / 2
-}
-
-function wrapText(text: string, max: number): string[] {
-  const words = text.split(' ')
-  const lines: string[] = []
-  let current = ''
-  for (const w of words) {
-    if (current && (current + ' ' + w).length > max) {
-      lines.push(current)
-      current = w
-    } else {
-      current = current ? current + ' ' + w : w
-    }
-  }
-  if (current) lines.push(current)
-  return lines
-}
+// ── Accent palette for the accordion list (brand degradé) ──
+const SEGMENT_COLORS = colors.donut
 
 export default function InfoSecondarySection({ section }: Props) {
   const heading = textByRole(section.texts, 'heading')
   const paragraphs = textsByRole(section.texts, 'paragraph')
   const quotes = textsByRole(section.texts, 'quote')
-  const numSegments = paragraphs.length || 1
 
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [hoveredSeg, setHoveredSeg] = useState<number | null>(null)
   const { ref: viewRef, isInView } = useInView<HTMLElement>({ threshold: 0.1 })
+  // Progreso de scroll del diagrama del circuito (reemplaza a la dona) — anima
+  // opacidad/escala igual que en el antiguo CircuitSection.
+  const { ref: diagramRef, progress } = useScrollProgress<HTMLDivElement>()
+  const navigate = useNavigate()
 
-  const segDeg = 360 / numSegments
-  const segments = paragraphs.map((paragraph, i) => {
-    const startDeg = -90 + i * segDeg + GAP_DEG / 2
-    const endDeg = -90 + (i + 1) * segDeg - GAP_DEG / 2
-    const d = arcSectorPath(CENTER, CENTER, OUTER_R, INNER_R, startDeg, endDeg)
-    const mid = midAngle(i, numSegments)
-    const labelR = (OUTER_R + INNER_R) / 2
-    const lp = polarToCart(CENTER, CENTER, labelR, mid)
-    const title = (paragraph.body ?? `Servicio ${i + 1}`).toUpperCase()
-    const lines = wrapText(title, 14)
-    const quote = quotes[i]
-    return { d, lp, lines, paragraph, quote }
-  })
+  const t = Math.min(1, Math.max(0, (progress - 0.15) / 0.28))
+  const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
+
+  const handleNavigate = (route: string) => () => navigate({ pathname: route, hash: '' })
+
+  const segments = paragraphs.map((paragraph, i) => ({ paragraph, quote: quotes[i] }))
 
   return (
-    <>
-      <section
-        ref={(el) => {
-          (viewRef as React.RefObject<HTMLElement | null>).current = el
-        }}
-        className={layout.sectionPadY}
-        style={{ backgroundColor: colors.infoSecondaryBg }}
-      >
-        <div className={layout.container}>
-          {heading && (
-            <h2
-              className={`${layout.headingMb} text-center text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl transition-all duration-700 font-primary ${
-                isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
-              }`}
-              style={{ color: colors.blueDark }}
-            >
-              {heading.body}
-            </h2>
-          )}
+    <section
+      ref={viewRef}
+      // Sin `min-h-screen`: la sección la mide su contenido. Forzar el alto del
+      // viewport dejaba una franja gris muerta debajo del par
+      // collapsibles-circuito cuando la lista era más corta que la pantalla.
+      className="overflow-hidden lg:flex lg:flex-col pt-[4vh] sm:pt-[5vh] md:pt-[6vh] lg:pt-[6vh] pb-[4vh] sm:pb-[5vh] md:pb-[6vh]"
+      style={{ backgroundColor: colors.infoSecondaryBg }}
+    >
+      <div className={`${layout.container} lg:flex lg:flex-col`}>
+        {heading && (
+          <h2
+            className={`mb-[5vh] sm:mb-[7vh] md:mb-[9vh] lg:mb-[6vh] lg:flex-shrink-0 text-center text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl transition-all duration-700 font-primary ${
+              isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
+            }`}
+            style={{ color: colors.blueDark }}
+          >
+            {heading.body}
+          </h2>
+        )}
 
-          <div className="grid gap-[4vh] sm:gap-[5vh] lg:gap-[6vh] lg:grid-cols-2 lg:items-center">
-            {/* Collapsibles (left) */}
-            <div
-              className={`space-y-3 transition-all duration-700 delay-200 ${
-                isInView ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'
-              }`}
-            >
-              {segments.map(({ paragraph, quote }, i) => (
-                <div
-                  key={i}
-                  className={`rounded-xl overflow-hidden transition-colors duration-300 border-l-4 shadow-sm`}
-                  style={{
-                    borderLeftColor: COLORS[i % COLORS.length],
-                    backgroundColor: hoveredSeg === i ? colors.offWhite : colors.white,
-                  }}
-                  onMouseEnter={() => setHoveredSeg(i)}
-                  onMouseLeave={() => setHoveredSeg(null)}
+        {/* La altura de esta fila la dicta la columna de collapsibles: el
+            circuito se posiciona absoluto dentro de la suya (ver abajo), así
+            que no aporta altura y termina midiendo exactamente lo mismo que la
+            lista de la izquierda. Antes la sección era `h-screen` y la lista
+            scrolleaba internamente, con lo cual las dos columnas medían el
+            viewport y no tenían relación entre sí. */}
+        <div className="grid gap-[4vh] sm:gap-[5vh] lg:gap-[6vh] lg:grid-cols-2 lg:items-stretch">
+          {/* Collapsibles (left) */}
+          <div
+            className={`space-y-3 transition-all duration-700 delay-200 ${
+              isInView ? 'translate-x-0 opacity-100' : '-translate-x-10 opacity-0'
+            }`}
+          >
+            {segments.map(({ paragraph, quote }, i) => (
+              <div
+                key={i}
+                className={`rounded-xl overflow-hidden transition-colors duration-300 border-l-4 shadow-sm`}
+                style={{
+                  borderLeftColor: SEGMENT_COLORS[i % SEGMENT_COLORS.length],
+                  backgroundColor: hoveredSeg === i ? colors.offWhite : colors.white,
+                }}
+                onMouseEnter={() => setHoveredSeg(i)}
+                onMouseLeave={() => setHoveredSeg(null)}
+              >
+                <button
+                  onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                  className="flex w-full items-center justify-between px-3 py-3 sm:px-5 sm:py-4 text-left transition-colors hover:bg-black/5"
                 >
-                  <button
-                    onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                    className="flex w-full items-center justify-between px-3 py-3 sm:px-5 sm:py-4 text-left transition-colors hover:bg-black/5"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className="flex h-3 w-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: COLORS[i % COLORS.length] }}
-                      />
-                      <span className="font-semibold text-sm sm:text-base" style={{ color: colors.blueDark }}>
-                        {paragraph?.body ?? `Servicio ${i + 1}`}
-                      </span>
-                    </div>
-                    {quote && (
-                      <svg
-                        className={`h-5 w-5 transition-transform duration-300 ${openIndex === i ? 'rotate-180' : ''}`}
-                        style={{ color: colors.blueMid }}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    )}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="flex h-3 w-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: SEGMENT_COLORS[i % SEGMENT_COLORS.length] }}
+                    />
+                    <span className="font-semibold text-sm sm:text-base" style={{ color: colors.blueDark }}>
+                      {paragraph?.body ?? `Servicio ${i + 1}`}
+                    </span>
+                  </div>
                   {quote && (
-                    <div className={`accordion-body ${openIndex === i ? 'open' : ''}`}>
-                      <div className="px-5 pb-4 pt-0">
-                        <p className="text-sm leading-relaxed" style={{ color: colors.blueMid }}>{quote.body}</p>
-                      </div>
-                    </div>
+                    <svg
+                      className={`h-5 w-5 transition-transform duration-300 ${openIndex === i ? 'rotate-180' : ''}`}
+                      style={{ color: colors.blueMid }}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   )}
-                </div>
-              ))}
+                </button>
+                {quote && (
+                  <div className={`accordion-body ${openIndex === i ? 'open' : ''}`}>
+                    <div className="px-5 pb-4 pt-0">
+                      <p className="text-sm leading-relaxed" style={{ color: colors.blueMid }}>{quote.body}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Circuito de intervención (right) — reemplaza a la dona.
+              En desktop la columna es `relative` y el diagrama va absoluto
+              adentro: al salir del flujo no aporta altura, así que la fila la
+              sigue midiendo la lista de la izquierda y el circuito se escala
+              (`object-contain`) a ese alto exacto. En mobile nada de esto
+              aplica — el diagrama conserva su `aspect-[596/720]` y sus
+              `max-w-*`, y sigue apareciendo debajo de los collapsibles. */}
+          <div className="flex flex-col items-center lg:relative lg:justify-start">
+            {/* Wrapper absoluto sólo en desktop. El diagrama de adentro CONSERVA
+                su `aspect-[596/720]` y pasa a estar limitado por alto
+                (`h-full w-auto`): los hotspots están posicionados en % sobre
+                esa caja recortada, así que cambiarle el aspecto los
+                desalinearía. Limitar por alto es lo que hace que mida lo mismo
+                que la lista sin tocar la geometría del dibujo. */}
+            <div className="contents lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-8 lg:flex lg:items-start lg:justify-center">
+            <div
+              ref={diagramRef}
+              className="relative mx-auto w-full aspect-[596/720] max-w-[236px] overflow-hidden sm:max-w-[294px] md:max-w-[339px] lg:mx-0 lg:h-full lg:w-auto lg:max-w-none"
+              style={{
+                opacity: 0.1 + ease * 0.9,
+                transform: `scale(${0.88 + ease * 0.12})`,
+                transition: 'opacity 0.1s, transform 0.1s',
+                backgroundColor: colors.infoSecondaryBg,
+                transformOrigin: 'top center',
+              }}
+            >
+              {/* El asset trae aire propio: su viewBox es 810x1012.5 pero el
+                  dibujo real vive en (107,146)-(703,866) — o sea ~14% de lienzo
+                  vacío arriba y abajo. Por eso `object-top` no servía: el lienzo
+                  ya llenaba la caja y el hueco estaba adentro de la imagen. Se
+                  recorta acá, escalando la img y corriéndola con offsets
+                  negativos, para no tocar el SVG (que se reexporta desde diseño).
+                  La caja queda con el aspecto del dibujo, así su borde superior
+                  se alinea con el primer collapsible y los hotspots de abajo
+                  siguen midiéndose en % sobre el dibujo recortado. */}
+              <img
+                src="/CPE%20%20POST.svg"
+                alt="Circuito integrado de acción"
+                className="absolute left-[-17.95%] top-[-20.28%] block h-[140.63%] w-[135.91%] max-w-none select-none object-contain mix-blend-multiply"
+                loading="lazy"
+                draggable={false}
+              />
+
+              {/* Intervención Directa (Cuadrado superior) */}
+              <button
+                type="button"
+                aria-label="Intervención directa"
+                onClick={handleNavigate('/servicios/intervencion-directa')}
+                className="absolute left-[12.6%] top-[7.8%] h-[35.2%] w-[74.8%] bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              />
+
+              {/* Selección de Personal (Cuadrado inferior izquierdo) */}
+              <button
+                type="button"
+                aria-label="Selección de personal"
+                onClick={handleNavigate('/servicios/seleccion-de-personal')}
+                className="absolute left-[2.4%] top-[36%] h-[56.2%] w-[40.8%] bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              />
+
+              {/* Acompañamiento a las personas (Cuadrado inferior derecho) */}
+              <button
+                type="button"
+                aria-label="Acompañamiento a las personas"
+                onClick={handleNavigate('/servicios/acompanamiento')}
+                className="absolute left-[43.2%] top-[50%] h-[42.2%] w-[56.8%] bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              />
+            </div>
             </div>
 
-            {/* Donut chart (right) */}
+            {/* Hint — queda EN FLUJO también en desktop: es el único hijo en
+                flujo de la columna, así que `mt-auto` lo empuja al fondo de la
+                fila. Sacarlo del flujo (absolute + translate) lo dejaba colgando
+                fuera de la sección, que tiene `overflow-hidden` y ahora ya no
+                tiene alto sobrante donde apoyarse. Los `lg:bottom-8` del wrapper
+                del diagrama son el espacio que se le reserva acá. */}
             <div
-              className={`flex justify-center transition-all duration-700 delay-300 ${
-                isInView ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'
-              }`}
+              className="mt-2 text-center text-sm text-gray-500 lg:mt-auto"
+              style={{
+                opacity: Math.max(0, (progress - 0.43) / 0.1),
+                transition: 'opacity 0.1s',
+              }}
             >
-              <svg viewBox="0 0 300 300" className="w-full max-w-xs sm:max-w-sm md:max-w-md">
-                {segments.map(({ d, lp, lines }, i) => {
-                  const isHovered = hoveredSeg === i
-                  const color = isHovered ? HOVER_COLORS[i % HOVER_COLORS.length] : COLORS[i % COLORS.length]
-
-                  return (
-                    <g
-                      key={i}
-                      className="cursor-pointer"
-                      style={{
-                        transition: 'opacity 0.7s ease, transform 0.25s ease',
-                        transitionDelay: `${i * 80}ms`,
-                        opacity: isInView ? 1 : 0,
-                        transformOrigin: `${CENTER}px ${CENTER}px`,
-                        transform: isHovered
-                          ? 'scale(1.04)'
-                          : isInView ? 'scale(1)' : 'scale(0.85)',
-                      }}
-                      onMouseEnter={() => setHoveredSeg(i)}
-                      onMouseLeave={() => setHoveredSeg(null)}
-                      onClick={() => setOpenIndex(i)}
-                    >
-                      <path
-                        d={d}
-                        fill={color}
-                        stroke="transparent"
-                        strokeWidth={1}
-                        style={{ transition: 'fill 0.25s ease' }}
-                      />
-                      <text
-                        x={lp.x}
-                        y={lp.y - ((lines.length - 1) * 6)}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        className="pointer-events-none select-none"
-                      >
-                        {lines.map((line, li) => (
-                          <tspan
-                            key={li}
-                            x={lp.x}
-                            dy={li === 0 ? 0 : 13}
-                            className="fill-white text-[6px] sm:text-[7px] font-primary"
-                            style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}
-                          >
-                            {line}
-                          </tspan>
-                        ))}
-                      </text>
-                    </g>
-                  )
-                })}
-              </svg>
+              Clickeá cada sección del circuito para conocer nuestros servicios.
             </div>
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   )
 }

@@ -3,6 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Content Security Policy. Ver docs/security-headers.md (frame-ancestors y HSTS van por
+      header, no se pueden expresar aca). No lista el backend del foro: /admin no consume
+      foro.clinicaparaempresas.com (eso es solo el entry point publico, index.html).
+      `worker-src 'self' blob:` es para el cliente HMR de Vite en dev — igual que
+      `http://localhost:*`, no va en el header de produccion.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com http://localhost:*;
+        media-src 'self' blob: https://api.clinicaparaempresas.com http://localhost:*;
+        connect-src 'self' https://imagedelivery.net https://upload.imagedelivery.net http://localhost:* https://api.clinicaparaempresas.com;
+        frame-src 'self';
+        worker-src 'self' blob:;
+        font-src 'self' data:;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+      "
+    />
+
     <link rel="icon" type="image/png" href="/cpeTAB.jpeg" />
     <meta name="robots" content="noindex, nofollow" />
     <title>CPE Admin</title>

@@ -1,20 +1,23 @@
 import type { Section } from '../models'
 import TextBlock from './TextBlock'
 import MediaBlock from './MediaBlock'
-import {
-  HeroSection,
-  SecondaryHeroSection,
-  AboutSection,
-  NewsSection,
-  InfoPrimarySection,
-  InfoSecondarySection,
-  ContactFormSection,
-  ServiceDetailSection,
-  RecruitmentFormSection,
-  CircuitSection,
-  GenerationalTransferTeaser,
-  ClinicaEmpresariosTeaser,
-} from './sections'
+// Deep-imported one file at a time — NOT `from './sections'` (the barrel).
+// `sections/index.ts` also re-exports `ForoPreviewSection`/
+// `ServicesAccessSection`, which pull in `@features/foro` (and therefore
+// `better-auth`, via `foroAuthClient.ts`'s eager `createAuthClient(...)`
+// call at module scope). Rollup cannot tree-shake that call away just
+// because its binding ends up unused, so importing through the barrel drags
+// the whole better-auth client into every consumer of this file — including
+// the admin app (`AdminPreviewPage` -> `SectionRenderer`). Deep imports
+// avoid ever parsing those two modules from this file. See Part 7 of
+// rustling-wobbling-bentley.md.
+import HeroSection from './sections/HeroSection'
+import SecondaryHeroSection from './sections/SecondaryHeroSection'
+import AboutSection from './sections/AboutSection'
+import InfoSecondarySection from './sections/InfoSecondarySection'
+import ContactFormSection from './sections/ContactFormSection'
+import ServiceDetailSection from './sections/ServiceDetailSection'
+import RecruitmentFormSection from './sections/RecruitmentFormSection'
 
 interface SectionRendererProps {
   section: Section
@@ -25,18 +28,11 @@ const SECTION_LAYOUTS: Record<string, React.ComponentType<{ section: Section }>>
   hero: HeroSection,
   secondary_hero: SecondaryHeroSection,
   about: AboutSection,
-  news: NewsSection,
-  info_primary: InfoPrimarySection,
   info_secondary: InfoSecondarySection,
   contact_form: ContactFormSection,
   service_intervencion: ServiceDetailSection,
   service_seleccion: RecruitmentFormSection,
   service_acompanamiento: ServiceDetailSection,
-  traspaso_generacional: ServiceDetailSection,
-  service_clinica_empresarios: ServiceDetailSection,
-  teaser_circuit: CircuitSection,
-  teaser_clinica: ClinicaEmpresariosTeaser,
-  teaser_traspaso: GenerationalTransferTeaser,
 }
 
 /**
