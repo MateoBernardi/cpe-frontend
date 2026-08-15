@@ -23,8 +23,17 @@ interface PublicationListItemProps {
    * label between rows. `'revision'` is the open-revision-draft case (a
    * separate staging row for an already-published publication) — same amber
    * chip style as `'draft'`, different copy so the two aren't confused.
+   * `'under_review'` (visitor submission awaiting a publisher's review) reuses
+   * the same amber "not public yet" treatment; `'approved'` gets its own green
+   * chip — it's the one state that reads as progress, not a pending state.
    */
-  statusBadge?: 'draft' | 'revision'
+  statusBadge?: 'draft' | 'revision' | 'under_review' | 'approved'
+  /**
+   * "Mis publicaciones" (visitor's own listing) only — a publisher left at least one correction
+   * while this row was `under_review`. Separate from `statusBadge` (that's the publication's own
+   * lifecycle; this is "there's feedback waiting for you to read") so both can show at once.
+   */
+  hasCorrections?: boolean
 }
 
 /** Generic image glyph shown when a publication has no cover image (papers/novedades/podcast without a set `imageUrl`). */
@@ -49,7 +58,7 @@ function ImagePlaceholderIcon({ accent }: { accent: string }) {
  * chat-bubble placeholder for Discusiones, or the generic image glyph for
  * every other format.
  */
-export function PublicationListItem({ publication, typeSlug, typeName, size = 'default', showSave = true, statusBadge }: PublicationListItemProps) {
+export function PublicationListItem({ publication, typeSlug, typeName, size = 'default', showSave = true, statusBadge, hasCorrections = false }: PublicationListItemProps) {
   const to = `/publicaciones/${publication.id}`
   const accent = typeAccent(typeSlug)
   const isDiscusion = typeSlug === 'discusion'
@@ -91,17 +100,38 @@ export function PublicationListItem({ publication, typeSlug, typeName, size = 'd
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
           <TypePill slug={typeSlug} label={typeName} />
-          {(statusBadge === 'draft' || statusBadge === 'revision') && (
+          {(statusBadge === 'draft' || statusBadge === 'revision' || statusBadge === 'under_review') && (
             // Ámbar sólido, no el azul tenue de antes: un estado sin publicar es un estado
             // que hay que poder distinguir de un vistazo entre publicaciones ya
             // publicadas, y el azul se confundía con el resto de la fila. Mismo chip para
-            // 'revision' (cambios sin publicar de una publicación ya online) — sólo cambia el
-            // texto, no el color, porque ambos son variantes del mismo "todavía no es público".
+            // 'revision' (cambios sin publicar de una publicación ya online) y 'under_review'
+            // (envío de un visitante esperando revisión) — sólo cambia el texto, no el color,
+            // porque las tres son variantes del mismo "todavía no es público".
             <span
               className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
               style={{ backgroundColor: colors.draftBadge }}
             >
-              {statusBadge === 'revision' ? 'Cambios sin publicar' : 'Borrador'}
+              {statusBadge === 'revision' ? 'Cambios sin publicar' : statusBadge === 'under_review' ? 'En revisión' : 'Borrador'}
+            </span>
+          )}
+          {statusBadge === 'approved' && (
+            // Verde, no ámbar: este es el único estado que se lee como progreso ("ya se puede
+            // publicar") en vez de "todavía no es público" — ver `colors.approvedBadge`.
+            <span
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+              style={{ backgroundColor: colors.approvedBadge }}
+            >
+              Aprobada, pendiente de publicar
+            </span>
+          )}
+          {hasCorrections && (
+            // Teal (ctaPrimary), no ámbar/verde: no es un estado del ciclo de vida, es "hay algo
+            // que leer" — un tercer color evita que se confunda con el chip de status de al lado.
+            <span
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+              style={{ backgroundColor: colors.ctaPrimary }}
+            >
+              Correcciones del revisor
             </span>
           )}
           <span className="text-gray-300" aria-hidden="true">·</span>

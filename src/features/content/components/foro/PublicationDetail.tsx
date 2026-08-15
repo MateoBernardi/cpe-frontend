@@ -150,7 +150,7 @@ export function PublicationDetail({ publication, type, slug, related, embedded =
             <ExternalLinksCTA label={ctaLabel} title={publication.title} links={publication.externalLinks} />
           </div>
         )}
-        <CommentThread publicationId={publication.id} commentCount={publication.interactions?.comments} />
+        {!embedded && <CommentThread publicationId={publication.id} commentCount={publication.interactions?.comments} />}
       </article>
     )
   } else if (slug === 'podcast') {
@@ -166,7 +166,7 @@ export function PublicationDetail({ publication, type, slug, related, embedded =
           <CategoryList categories={publication.categories} />
           <InteractionsRow rows={rows} />
         </footer>
-        <CommentThread publicationId={publication.id} commentCount={publication.interactions?.comments} />
+        {!embedded && <CommentThread publicationId={publication.id} commentCount={publication.interactions?.comments} />}
       </article>
     )
   } else {
@@ -189,7 +189,7 @@ export function PublicationDetail({ publication, type, slug, related, embedded =
         <div className="mt-8 border-t border-gray-100 pt-6">
           <InteractionsRow rows={rows} />
         </div>
-        <CommentThread publicationId={publication.id} commentCount={publication.interactions?.comments} />
+        {!embedded && <CommentThread publicationId={publication.id} commentCount={publication.interactions?.comments} />}
       </article>
     )
   }

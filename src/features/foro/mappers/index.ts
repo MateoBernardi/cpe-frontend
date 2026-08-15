@@ -7,3 +7,4 @@ export {
   mapPublicationInputToPatchDTO,
   mapMyInteractionDTO,
 } from './publicationMapper'
+export { mapCorrectionDTO, mapCreateCorrectionInputToDTO } from './correctionMapper'

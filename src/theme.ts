@@ -65,8 +65,12 @@ export const colors = {
 
   // Misc UI
   whatsapp:         '#25D366',
-  /** Chip de "Borrador": ámbar sólido, deliberadamente fuera de la paleta de marca para que no se confunda con un estado normal. */
+  /** Chip de "Borrador": ámbar sólido, deliberadamente fuera de la paleta de marca para que no se confunda con un estado normal. Reused for "Cambios sin publicar" (revision) and "En revisión". */
   draftBadge:       '#b45309',
+  /** Chip de "Aprobada, pendiente de publicar": verde sólido, fuera de la paleta de marca por la
+   *  misma razón que `draftBadge` — necesita leerse como un estado distinto de un vistazo, esta vez
+   *  uno positivo ("ya podés publicar") en vez del ámbar de "todavía no es público". */
+  approvedBadge:    '#15803d',
 
   // Secondary pages: alternating accent usage
   secondary: {

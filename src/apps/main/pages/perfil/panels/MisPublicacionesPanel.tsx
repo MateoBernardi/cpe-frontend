@@ -8,10 +8,11 @@ import { colors, foroPalette } from '@/theme'
 const MY_PUBLICATIONS_LIMIT = 50
 
 /**
- * Publisher-only panel (gated by `canPublish(role)` at the `ProfilePage`
- * tab-list level) — the user's own publications, plus a link into the
- * composer at `/perfil/publicar`. The composer itself is a later wave: this
- * only links to it.
+ * Author panel (gated by `canAuthor(role)` at the `ProfilePage` tab-list
+ * level — publishers AND visitors) — the user's own publications, plus a
+ * link into the composer at `/perfil/publicar`. For a visitor these rows
+ * include their `draft`/`under_review`/`approved` submissions, never other
+ * authors' — `usePublications({ createdBy: user.id })` is own-scoped.
  */
 export default function MisPublicacionesPanel() {
   const { user } = useForoAuth()
@@ -89,8 +90,20 @@ export default function MisPublicacionesPanel() {
                         // El chip va DENTRO de la fila, junto al pill de formato: antes flotaba
                         // encima y se leía como un separador entre publicaciones. `revision`
                         // (este original tiene cambios sin publicar) ya dice lo que antes decía
-                        // la nota aparte de abajo — no hace falta duplicarlo.
-                        statusBadge={pub.revisionId != null ? 'revision' : pub.status === 'draft' ? 'draft' : undefined}
+                        // la nota aparte de abajo — no hace falta duplicarlo. `revisionId` gana
+                        // sobre `status` porque sólo un publicador puede abrir una revisión (su
+                        // propio envío de visitante nunca tiene una), así que no compiten entre sí.
+                        statusBadge={
+                          pub.revisionId != null
+                            ? 'revision'
+                            : pub.status === 'draft' || pub.status === 'under_review' || pub.status === 'approved'
+                              ? pub.status
+                              : undefined
+                        }
+                        // Gateado a `under_review`, mismo criterio de visibilidad que
+                        // `ReviewCorrectionsPanel` (no renderiza nada fuera de ese status) — pasado
+                        // ese punto el chip quedaría apuntando a un panel que ya no muestra nada.
+                        hasCorrections={pub.status === 'under_review' && pub.hasCorrections}
                       />
                     </div>
                     <Link

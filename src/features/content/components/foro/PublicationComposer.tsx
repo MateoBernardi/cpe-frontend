@@ -22,7 +22,9 @@ import { colors, foroHairline, foroPalette } from '../../../../theme'
 import { ComposePreviewPane } from './ComposePreviewPane'
 import { TYPE_CONFIG, PUBLICATION_CONTENT_MAX, MAX_NOVEDAD_IMAGES, EMPTY_FORM, type FormState, type TypeFieldConfig } from './composeConfig'
 import { TypePill } from './TypePill'
-import { ActionButton } from './ActionButton'
+import { ChevronRight } from './ForoIcons'
+import { ActionButton, type ActionButtonStatus } from './ActionButton'
+import { ReviewCorrectionsPanel } from './ReviewCorrectionsPanel'
 import { isSafeHttpUrl } from './foroHelpers'
 
 /**
@@ -157,7 +159,7 @@ export interface PublicationComposerProps {
 
 export function PublicationComposer({ mode, slug, publicationId, onChangeType, form: formProp, onFormChange }: PublicationComposerProps) {
   const navigate = useNavigate()
-  const { user } = useForoAuth()
+  const { user, role } = useForoAuth()
 
   const isEdit = mode === 'edit'
   // Sin `isLoading`: el gate de más abajo (`refDataReady`) mira `existing != null`, que cubre
@@ -167,6 +169,19 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   // see `handleSave`.
   const editsPublished = isEdit && existing?.status === 'published'
   const isRevisionDraft = isEdit && existing?.revisionOf != null
+  // A publisher opening someone else's publication is reviewing it, not editing their own — this
+  // composer no longer offers direct edit/publish for that case, only `ReviewCorrectionsPanel`'s
+  // corrections + "Aprobar" (which computes the same owner/reviewer split independently, scoped to
+  // its own `under_review` gate). Trivially true in create mode: there's no `existing` row yet, and
+  // whoever is creating it is by definition its author.
+  const isOwner = !isEdit || existing == null || existing.createdBy === user?.id
+  // A visitor's own submission once a publisher approved it: the backend rejects every write
+  // except the explicit confirm transition (`status: 'published'`) while `approved` — see
+  // `updatePublicationService`'s `assertVisitorTransitionAllowed` in the backend plan. So the
+  // normal "Guardar borrador"/"Enviar a revisión" actions would just 409 here; they're hidden in
+  // favor of the single "Confirmar y publicar" action below.
+  const isOwnApprovedVisitorSubmission =
+    isEdit && role === 'visitor' && existing?.status === 'approved' && existing.createdBy === user?.id
   // `error`/`refetch` NO son opcionales acá: `retry` global es sólo-429 (ver `App.tsx`), así que
   // un único fallo de red deja estas dos queries en `error` para siempre — y una query en `error`
   // tiene `isLoading === false` con `data === undefined`. Sin mirar el error, ese estado se
@@ -410,7 +425,32 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   // stays untouched either way, only the wording changes to reflect that a separate draft is
   // involved.
   const draftButtonLabel = editsPublished ? 'Guardar cambios sin publicar' : 'Guardar borrador'
-  const publishButtonLabel = editsPublished || isRevisionDraft ? 'Publicar cambios' : 'Publicar'
+  // A visitor never publishes directly — their "Publicar" action sends the submission into
+  // review instead. `publisher` keeps today's behaviour unchanged.
+  const targetPublishStatus: WritablePublicationStatus = role === 'visitor' ? 'under_review' : 'published'
+  const publishButtonLabel =
+    role === 'visitor'
+      ? existing?.status === 'under_review'
+        ? 'Reenviar a revisión'
+        : 'Enviar a revisión'
+      : editsPublished || isRevisionDraft
+        ? 'Publicar cambios'
+        : 'Publicar'
+
+  // "Aprobar" (publisher reviewing someone else's `under_review` submission) reuses this same
+  // `update` mutation instead of a dedicated one — see `ReviewCorrectionsPanel`'s `onApprove`.
+  // Tracked separately from `pendingStatus` (which is scoped to the draft/publish buttons below)
+  // so the two spinners never light up for the other's in-flight request.
+  const [pendingApprove, setPendingApprove] = useState(false)
+  const approveStatus: ActionButtonStatus = update.isPending && pendingApprove ? 'pending' : 'idle'
+  const handleApprove = () => {
+    if (mutationInProgress || publicationId == null) return
+    setPendingApprove(true)
+    update.mutate(
+      { id: publicationId, input: { status: 'approved' } },
+      { onSettled: () => setPendingApprove(false) },
+    )
+  }
 
   const handleSave = (status: WritablePublicationStatus) => {
     // Synchronous re-entrancy guard: `disabled={mutationInProgress}` only
@@ -519,6 +559,24 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   }
 
   /**
+   * "Confirmar y publicar" — sólo existe cuando `isOwnApprovedVisitorSubmission`. Deliberadamente
+   * NO reusa `handleSave`: ese siempre manda `baseInput` completo (title/content/categoryIds/...)
+   * junto con `status`, pero el backend rechaza con 409 cualquier PATCH desde `approved` que no
+   * sea EXACTAMENTE `{ status: 'published' }` (ver `assertVisitorTransitionAllowed` — evita que el
+   * autor cuele un cambio de contenido distinto de lo que el revisor aprobó). Por eso este handler
+   * manda un input mínimo en vez de construir uno desde `form`.
+   */
+  const handleConfirmPublish = () => {
+    if (mutationInProgress || !canSubmit || publicationId == null) return
+    setSaveError(null)
+    setPendingStatus('published')
+    update.mutate(
+      { id: publicationId, input: { status: 'published' } },
+      { onSuccess: () => navigate('/perfil/publicaciones') },
+    )
+  }
+
+  /**
    * "Descartar cambios" — sólo existe cuando `isRevisionDraft` (esta fila ES el borrador de
    * revisión de una publicación ya publicada). Pega contra `DELETE /publications/:originalId/
    * revision`, un endpoint dedicado que nunca puede tocar la fila publicada aunque el id
@@ -584,6 +642,40 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
 
   const previewType: PublicationType | null = matchedType ?? (resolvedSlug ? { id: 0, name: config?.name ?? '', slug: resolvedSlug } : null)
 
+  // Shared between the owner layout (side-by-side with the form) and the reviewer layout (preview
+  // only, no form — see `isOwner` below): same pane either way, just a different neighbour.
+  const previewPane =
+    previewType && resolvedSlug ? (
+      <ComposePreviewPane publication={previewPublication} type={previewType} slug={resolvedSlug} related={[]} />
+    ) : (
+      <div
+        className="flex h-full min-h-[16rem] items-center justify-center rounded-2xl px-6 text-center text-sm text-gray-400"
+        style={{ border: `1px solid ${foroHairline}` }}
+      >
+        No se reconoce el tipo de esta publicación, así que no hay vista previa disponible.
+      </div>
+    )
+
+  // Gates "Confirmar y publicar" (see `isOwnApprovedVisitorSubmission`): the backend only accepts
+  // an exact `{status:'published'}` PATCH from `approved`, so anything the visitor typed here after
+  // the approval would be silently dropped by `handleConfirmPublish` rather than saved — better to
+  // hide the confirm action than let it discard edits with no warning.
+  const hasFormChanges = useMemo(() => {
+    if (!existing) return false
+    const currentGalleryIds = form.galleryImages.map((img) => img.id)
+    const originalGalleryIds = existing.images.map((img) => img.id)
+    return (
+      form.title.trim() !== existing.title ||
+      form.subtitle.trim() !== (existing.subtitle ?? '') ||
+      form.content !== existing.content ||
+      form.frontImageUrl !== (existing.imageUrl ?? '') ||
+      JSON.stringify([...form.categoryIds].sort((a, b) => a - b)) !==
+        JSON.stringify([...existing.categories.map((c) => c.id)].sort((a, b) => a - b)) ||
+      JSON.stringify(currentGalleryIds) !== JSON.stringify(originalGalleryIds) ||
+      JSON.stringify(form.externalLinks) !== JSON.stringify(existing.externalLinks)
+    )
+  }, [form, existing])
+
   if (isEdit && loadError) {
     return <ErrorMessage message={getForoApiErrorMessage(loadError)} />
   }
@@ -606,6 +698,17 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
 
   return (
     <div className="space-y-6">
+      {/* Above the mobile form/preview toggle further down, so it's reachable from either pane
+          without switching back to "Editar" first — same target as the "Cancelar" button at the
+          bottom of the form, just not buried behind a scroll. */}
+      <Link
+        to="/perfil/publicaciones"
+        className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 transition-colors hover:text-gray-700"
+      >
+        <ChevronRight size={14} className="rotate-180" />
+        Volver a mis publicaciones
+      </Link>
+
       {/* `flex-col` on mobile so "Cambiar tipo" sits as a compact link under the title instead of
           wrapping onto its own line and reflowing the whole header (see `flex-wrap`'s old
           behaviour at narrow widths); back to a single row with the action on the right from `sm`
@@ -643,6 +746,16 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
 
       {!refDataReady ? (
         <LoadingSpinner className="py-12" />
+      ) : !isOwner ? (
+        // Reviewing someone else's publication: read-only preview only — no form, no draft/publish
+        // actions. `ReviewCorrectionsPanel` below (rendered outside this branch) is the one write
+        // path a reviewing publisher gets, and only while the row is `under_review`.
+        <div className="space-y-4">
+          <div className="rounded-xl border px-4 py-3 text-sm text-gray-600" style={{ borderColor: colors.lightGray }}>
+            No sos el autor de esta publicación — podés revisarla y dejar correcciones, pero no editarla.
+          </div>
+          {previewPane}
+        </div>
       ) : (
         <>
           <div className="flex rounded-full p-1 lg:hidden" style={{ backgroundImage: `linear-gradient(135deg, ${colors.blueDark}, ${colors.tealDeep})` }}>
@@ -930,23 +1043,42 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
                     Descartar cambios
                   </ActionButton>
                 )}
-                <ActionButton
-                  variant="outline"
-                  status={mutationInProgress && pendingStatus === 'draft' ? 'pending' : 'idle'}
-                  onClick={() => handleSave('draft')}
-                  disabled={!canSubmit || mutationInProgress || uploadingFront || uploadingGallery}
-                  pendingLabel="Guardando…"
-                >
-                  {draftButtonLabel}
-                </ActionButton>
-                <ActionButton
-                  status={mutationInProgress && pendingStatus === 'published' ? 'pending' : 'idle'}
-                  onClick={() => handleSave('published')}
-                  disabled={!canSubmit || mutationInProgress || uploadingFront || uploadingGallery}
-                  pendingLabel="Publicando…"
-                >
-                  {publishButtonLabel}
-                </ActionButton>
+                {!isOwnApprovedVisitorSubmission && (
+                  <>
+                    <ActionButton
+                      variant="outline"
+                      status={mutationInProgress && pendingStatus === 'draft' ? 'pending' : 'idle'}
+                      onClick={() => handleSave('draft')}
+                      disabled={!canSubmit || mutationInProgress || uploadingFront || uploadingGallery}
+                      pendingLabel="Guardando…"
+                    >
+                      {draftButtonLabel}
+                    </ActionButton>
+                    <ActionButton
+                      status={mutationInProgress && pendingStatus === targetPublishStatus ? 'pending' : 'idle'}
+                      onClick={() => handleSave(targetPublishStatus)}
+                      disabled={!canSubmit || mutationInProgress || uploadingFront || uploadingGallery}
+                      pendingLabel={targetPublishStatus === 'published' ? 'Publicando…' : 'Enviando…'}
+                    >
+                      {publishButtonLabel}
+                    </ActionButton>
+                  </>
+                )}
+                {/* Sólo cuando esta fila ES el propio envío aprobado del visitante Y todavía no le
+                    tocó nada al formulario — la única transición que el backend permite desde
+                    `approved` es un PATCH mínimo `{status:'published'}` (ver
+                    `isOwnApprovedVisitorSubmission`/`hasFormChanges`); con cambios sin guardar, ese
+                    PATCH los descartaría en silencio, así que el botón mejor no aparece. */}
+                {isOwnApprovedVisitorSubmission && !hasFormChanges && (
+                  <ActionButton
+                    status={mutationInProgress && pendingStatus === 'published' ? 'pending' : 'idle'}
+                    onClick={handleConfirmPublish}
+                    disabled={!canSubmit || mutationInProgress}
+                    pendingLabel="Publicando…"
+                  >
+                    Confirmar y publicar
+                  </ActionButton>
+                )}
               </div>
 
               {editsPublished && (
@@ -954,22 +1086,22 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
                   Se guarda aparte como borrador; la publicación actual sigue online hasta que publiques los cambios.
                 </p>
               )}
-            </div>
-
-            <div className={`${mobilePane === 'preview' ? 'block' : 'hidden'} lg:block`}>
-              {previewType && resolvedSlug ? (
-                <ComposePreviewPane publication={previewPublication} type={previewType} slug={resolvedSlug} related={[]} />
-              ) : (
-                <div
-                  className="flex h-full min-h-[16rem] items-center justify-center rounded-2xl px-6 text-center text-sm text-gray-400"
-                  style={{ border: `1px solid ${foroHairline}` }}
-                >
-                  No se reconoce el tipo de esta publicación, así que no hay vista previa disponible.
-                </div>
+              {isOwnApprovedVisitorSubmission && (
+                <p className="text-right text-xs text-gray-400">
+                  {hasFormChanges
+                    ? 'Hiciste cambios que no se van a guardar así — un publicador ya aprobó el contenido original. Recargá la página para descartar tus cambios y poder confirmar la publicación.'
+                    : 'Un publicador ya aprobó este envío tal como está. Confirmá para publicarlo — ya no se puede editar el contenido.'}
+                </p>
               )}
             </div>
+
+            <div className={`${mobilePane === 'preview' ? 'block' : 'hidden'} lg:block`}>{previewPane}</div>
           </div>
         </>
+      )}
+
+      {isEdit && existing && (
+        <ReviewCorrectionsPanel publication={existing} onApprove={handleApprove} approveStatus={approveStatus} />
       )}
     </div>
   )

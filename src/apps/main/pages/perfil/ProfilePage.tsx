@@ -1,14 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useForoAuth, canPublish } from '@features/foro'
+import { useForoAuth, canAuthor, canPublish } from '@features/foro'
 import { hexToRgba } from '@features/content/components/foro'
 import { colors, layout } from '@/theme'
 import CuentaPanel from './panels/CuentaPanel'
 import GuardadosPanel from './panels/GuardadosPanel'
 import InteraccionesPanel from './panels/InteraccionesPanel'
 import MisPublicacionesPanel from './panels/MisPublicacionesPanel'
+import RevisionesPanel from './panels/RevisionesPanel'
 
-type PanelSlug = 'cuenta' | 'guardados' | 'interacciones' | 'publicaciones'
+type PanelSlug = 'cuenta' | 'guardados' | 'interacciones' | 'publicaciones' | 'revisiones'
 
 interface PanelDef {
   slug: PanelSlug
@@ -23,8 +24,14 @@ const BASE_PANELS: PanelDef[] = [
   { slug: 'interacciones', label: 'Interacciones' },
 ]
 
-/** Authoring is publisher-gated — this panel and its tab only render for publisher/admin roles. */
+/** Authoring is author-gated (`canAuthor`), not publisher-only: visitors submit into the review
+ *  workflow from here too — same composer, gated down to `paper`/`discusion` and forced into
+ *  `under_review` instead of `published` (see `PublicarPage.tsx`/`PublicationComposer.tsx`). */
 const PUBLISHER_PANEL: PanelDef = { slug: 'publicaciones', label: 'Mis publicaciones' }
+
+/** Reviewing visitor submissions is publisher-gated too, same `canPublish(role)` check as
+ *  `PUBLISHER_PANEL` — only publishers act as reviewers (D59's "any publisher = moderator"). */
+const REVIEW_PANEL: PanelDef = { slug: 'revisiones', label: 'Revisiones pendientes' }
 
 interface PillRect { left: number; top: number; width: number; height: number }
 
@@ -49,7 +56,11 @@ export default function ProfilePage() {
   const { panel } = useParams<{ panel?: string }>()
   const { role } = useForoAuth()
 
-  const panels = canPublish(role) ? [...BASE_PANELS, PUBLISHER_PANEL] : BASE_PANELS
+  const panels = canAuthor(role)
+    ? canPublish(role)
+      ? [...BASE_PANELS, PUBLISHER_PANEL, REVIEW_PANEL]
+      : [...BASE_PANELS, PUBLISHER_PANEL]
+    : BASE_PANELS
   const requestedSlug = (panel ?? DEFAULT_PANEL) as PanelSlug
   const active = panels.find((p) => p.slug === requestedSlug) ?? panels[0]
 
@@ -210,6 +221,7 @@ export default function ProfilePage() {
           {active.slug === 'guardados' && <GuardadosPanel />}
           {active.slug === 'interacciones' && <InteraccionesPanel />}
           {active.slug === 'publicaciones' && <MisPublicacionesPanel />}
+          {active.slug === 'revisiones' && <RevisionesPanel />}
         </div>
       </div>
     </div>

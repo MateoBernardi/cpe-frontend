@@ -82,6 +82,9 @@ export interface PublicationPreviewDTO {
    *  del usuario logueado): el backend nunca lo calcula para el feed público, así que ni siquiera
    *  llega la key ahí. */
   revision_id?: number | null
+  /** Misma asimetría que `revision_id`: sólo viaja en el listado propio. `true` cuando un
+   *  publisher dejó al menos una corrección sobre esta publicación. */
+  has_corrections?: boolean
 }
 
 /** Query params for GET /publications (all optional; numeric coercion done server-side) */
@@ -91,6 +94,8 @@ export interface ListPublicationsQueryDTO {
   created_by?: string
   limit?: number
   offset?: number
+  /** Publisher-only reviewer-queue exception — see `ListPublicationsParams.status`. */
+  status?: WritablePublicationStatus
 }
 
 /** A single external link, as sent on write (array — asymmetric with the read MAP). */

@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import type { KnownPublicationTypeSlug } from '@features/foro'
+import { useForoAuth, type KnownPublicationTypeSlug } from '@features/foro'
 import { TypePill, PublicationComposer, TYPE_OPTIONS, TYPE_CONFIG, typeAccent, EMPTY_FORM, type FormState } from '@features/content/components/foro'
 import { colors, layout, foroHairline } from '@/theme'
 import PublisherGate from './PublisherGate'
+
+/** The two types visitors may submit — the rest (`podcast`, `novedad`) stay publisher-only, per the
+ *  review-workflow decision: only community-contribution formats go through review. */
+const VISITOR_TYPE_SLUGS: readonly KnownPublicationTypeSlug[] = ['paper', 'discusion']
 
 /**
  * `/perfil/publicar` — URL-driven type picker (`?tipo=`) then the shared
@@ -16,10 +20,8 @@ import PublisherGate from './PublisherGate'
  * the format a property of the draft instead of a reason to start over.
  */
 
-const KNOWN_SLUGS = TYPE_OPTIONS.map((t) => t.slug)
-
-function isKnownSlug(value: string | null): value is KnownPublicationTypeSlug {
-  return value != null && (KNOWN_SLUGS as string[]).includes(value)
+function isKnownSlug(value: string | null, allowedSlugs: readonly KnownPublicationTypeSlug[]): value is KnownPublicationTypeSlug {
+  return value != null && (allowedSlugs as readonly string[]).includes(value)
 }
 
 export default function PublicarPage() {
@@ -35,15 +37,21 @@ export default function PublicarPage() {
 }
 
 function PublicarFlow() {
+  const { role } = useForoAuth()
+  // Visitors only submit paper/discusión — the two formats the review workflow was built for
+  // (see `VISITOR_TYPE_SLUGS`). Publishers keep the full picker, unaffected.
+  const availableOptions = role === 'visitor' ? TYPE_OPTIONS.filter((opt) => VISITOR_TYPE_SLUGS.includes(opt.slug)) : TYPE_OPTIONS
+  const allowedSlugs = availableOptions.map((opt) => opt.slug)
+
   const [searchParams, setSearchParams] = useSearchParams()
   const tipoParam = searchParams.get('tipo')
-  const slug = isKnownSlug(tipoParam) ? tipoParam : null
+  const slug = isKnownSlug(tipoParam, allowedSlugs) ? tipoParam : null
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const hasDraft = form.title.trim() !== '' || form.content.trim() !== ''
 
   if (!slug) {
-    return <TypePicker hasDraft={hasDraft} onPick={(picked) => setSearchParams({ tipo: picked })} />
+    return <TypePicker options={availableOptions} hasDraft={hasDraft} onPick={(picked) => setSearchParams({ tipo: picked })} />
   }
 
   return (
@@ -57,7 +65,15 @@ function PublicarFlow() {
   )
 }
 
-function TypePicker({ hasDraft, onPick }: { hasDraft: boolean; onPick: (slug: KnownPublicationTypeSlug) => void }) {
+function TypePicker({
+  options,
+  hasDraft,
+  onPick,
+}: {
+  options: typeof TYPE_OPTIONS
+  hasDraft: boolean
+  onPick: (slug: KnownPublicationTypeSlug) => void
+}) {
   return (
     <div>
       <h1 className="text-xl font-bold sm:text-2xl" style={{ color: colors.blueDark }}>
@@ -69,7 +85,7 @@ function TypePicker({ hasDraft, onPick }: { hasDraft: boolean; onPick: (slug: Kn
           : 'Elegí un formato para empezar. Vas a ver la vista previa real mientras escribís.'}
       </p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {TYPE_OPTIONS.map((opt) => {
+        {options.map((opt) => {
           const config = TYPE_CONFIG[opt.slug]
           return (
             <button

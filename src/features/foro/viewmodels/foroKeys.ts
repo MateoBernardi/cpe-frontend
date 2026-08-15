@@ -32,4 +32,5 @@ export const foroKeys = {
   myInteractions: (userId: string | null, params: ListMyInteractionsParams) =>
     [...foroKeys.myInteractionsPrefix(), userId, params] as const,
   userPreferences: (userId: string | null) => [...foroKeys.all, 'user-preferences', userId] as const,
+  corrections: (publicationId: number) => [...foroKeys.all, 'corrections', publicationId] as const,
 }

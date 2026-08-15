@@ -36,7 +36,7 @@ export function ComposePreviewPane({ publication, type, slug, related, label = '
       </div>
       <div className="max-h-[80vh] overflow-y-auto px-4 py-6 sm:px-6" aria-hidden>
         {slug === 'discusion' ? (
-          <DiscussionDetail publication={publication} typeName={type.name} related={related} preview embedded />
+          <DiscussionDetail publication={publication} typeName={type.name} related={related} embedded />
         ) : (
           <PublicationDetail publication={publication} type={type} slug={slug} related={related} embedded />
         )}

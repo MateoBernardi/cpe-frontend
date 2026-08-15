@@ -12,13 +12,10 @@ interface DiscussionDetailProps {
   typeName: string
   related: PublicationPreview[]
   /**
-   * Vista previa (formulario del admin / demo): la publicación todavía no
-   * existe, así que el composer se muestra deshabilitado y nunca escribe.
-   * `useComments` ya se auto-desactiva con `id <= 0`, así que en preview el
-   * hilo tampoco hace lecturas.
+   * Forwarded to `<DetailShell>` — full-width, single-column, no sidebar (composer preview).
+   * Also the sole "is this a preview" signal: the publication doesn't exist yet, so the comment
+   * thread doesn't render at all here (no reads, no composer).
    */
-  preview?: boolean
-  /** Forwarded to `<DetailShell>` — full-width, single-column, no sidebar (composer preview). */
   embedded?: boolean
 }
 
@@ -38,7 +35,7 @@ interface DiscussionDetailProps {
  * "share" card/related list work exactly like the other three formats — the
  * save and sharing affordances are the same everywhere.
  */
-export function DiscussionDetail({ publication, typeName, related, preview = false, embedded = false }: DiscussionDetailProps) {
+export function DiscussionDetail({ publication, typeName, related, embedded = false }: DiscussionDetailProps) {
   const ctaLabel = `${typeName} · ${formatForoDate(publication.createdAt)}`
 
   return (
@@ -53,12 +50,13 @@ export function DiscussionDetail({ publication, typeName, related, preview = fal
           <div className="mt-6 max-w-md"><ExternalLinksCTA label={ctaLabel} title={publication.title} links={publication.externalLinks} /></div>
         )}
 
-        <CommentThread
-          publicationId={publication.id}
-          commentCount={publication.interactions?.comments}
-          noun="respuestas"
-          preview={preview}
-        />
+        {!embedded && (
+          <CommentThread
+            publicationId={publication.id}
+            commentCount={publication.interactions?.comments}
+            noun="respuestas"
+          />
+        )}
       </article>
     </DetailShell>
   )

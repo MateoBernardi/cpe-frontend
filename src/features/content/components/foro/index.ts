@@ -36,6 +36,7 @@ export { ComposePreviewPane } from './ComposePreviewPane'
 export { TYPE_OPTIONS, TYPE_CONFIG, MAX_NOVEDAD_IMAGES, PUBLICATION_CONTENT_MAX, EMPTY_FORM } from './composeConfig'
 export type { CoverMode, TypeFieldConfig, FormState, GalleryImage } from './composeConfig'
 export { PublicationComposer } from './PublicationComposer'
+export { ReviewCorrectionsPanel } from './ReviewCorrectionsPanel'
 export { ActionButton } from './ActionButton'
 export type { ActionButtonStatus } from './ActionButton'
 

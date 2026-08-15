@@ -19,6 +19,8 @@ import type {
   InteractionDTO,
   ListMyInteractionsQueryDTO,
   MyInteractionDTO,
+  CreateCorrectionDTO,
+  CorrectionDTO,
   RequestImageUploadUrlDTO,
   ImageUploadUrlResponseDTO,
   ConfirmImageDTO,
@@ -103,6 +105,7 @@ export const foroService = {
       created_by: query?.created_by,
       limit: query?.limit,
       offset: query?.offset,
+      status: query?.status,
     })
     return foroApiRequest<PublicationPreviewDTO[]>({
       method: 'GET',
@@ -283,6 +286,26 @@ export const foroService = {
     return foroApiRequest<MyInteractionDTO[]>({
       method: 'GET',
       endpoint: `/interactions/me${qs}`,
+      signal,
+    })
+  },
+
+  // ── Corrections (review workflow) ──
+
+  /** POST /corrections — role publisher, `publication_id` must be `under_review`. */
+  createCorrection(data: CreateCorrectionDTO) {
+    return foroApiRequest<CorrectionDTO, CreateCorrectionDTO>({
+      method: 'POST',
+      endpoint: '/corrections',
+      body: data,
+    })
+  },
+
+  /** GET /corrections?publication_id= — publisher or the submission's own author (enforced server-side). */
+  getCorrections(publicationId: number, signal?: AbortSignal) {
+    return foroApiRequest<CorrectionDTO[]>({
+      method: 'GET',
+      endpoint: `/corrections${buildQuery({ publication_id: publicationId })}`,
       signal,
     })
   },

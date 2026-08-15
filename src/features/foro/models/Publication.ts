@@ -11,15 +11,24 @@ export interface ExternalLink {
  * Lifecycle state, mirroring the backend's `publicacion_status` enum. Only `published` is
  * publicly readable — the rest are visible to the author (and admins) alone, so they can show
  * up on `/perfil/publicaciones` but never on a public list.
+ *
+ * `under_review` / `approved` are the visitor-submission review states: a visitor's paper/
+ * discusión enters `under_review`, a publisher reviews it (leaving corrections — see
+ * `Correction.ts`) and sets `approved`, and only then may the author confirm into `published`.
+ * Publisher-authored publications never pass through either — they keep the direct
+ * draft/published flow.
  */
-export type PublicationStatus = 'published' | 'draft' | 'archived' | 'pending'
+export type PublicationStatus = 'published' | 'draft' | 'archived' | 'pending' | 'under_review' | 'approved'
 
 /**
  * The subset a client may actually SET. `pending` (en moderación) and `archived` are
  * server-assigned: the backend's Zod schema rejects them in a POST/PATCH body, so the composer
- * must not be able to construct one.
+ * must not be able to construct one. `under_review`/`approved` ARE client-settable, but only by
+ * the right actor in the right prior state — the backend's service layer enforces who may set
+ * what (visitor → `under_review`/`published`-from-`approved`; publisher → `approved`-from-
+ * `under_review`), same "explicit rejection, not silent coercion" style as the other two.
  */
-export type WritablePublicationStatus = Extract<PublicationStatus, 'draft' | 'published'>
+export type WritablePublicationStatus = Extract<PublicationStatus, 'draft' | 'published' | 'under_review' | 'approved'>
 
 /** The signed-in viewer's own state on a publication. `null` for anonymous viewers
  *  (the backend omits `viewer` entirely when there's no session — see the mapper). */
@@ -85,6 +94,10 @@ export interface PublicationPreview {
   /** Id of THIS publication's own open revision draft, `null` when there is none or the viewer is
    *  anonymous (`revision_id` on the wire). */
   revisionId: number | null
+  /** Same asymmetry as `revisionId`: `false` unless the caller is looking at their own listing
+   *  (`has_corrections` on the wire). `true` means a publisher left feedback while this was
+   *  `under_review` — see `ReviewCorrectionsPanel.tsx`, the only place that renders it. */
+  hasCorrections: boolean
 }
 
 export interface ListPublicationsParams {
@@ -93,6 +106,13 @@ export interface ListPublicationsParams {
   createdBy?: string
   limit?: number
   offset?: number
+  /**
+   * Publisher-only, deliberate exception to the "reads never leak other users' drafts" rule:
+   * `status: 'under_review'` asks the backend for every author's pending-review submissions
+   * (the reviewer queue), not just the caller's own. Any other value is ignored server-side —
+   * see `RevisionesPanel.tsx`, the only caller.
+   */
+  status?: WritablePublicationStatus
 }
 
 export interface PublicationInput {

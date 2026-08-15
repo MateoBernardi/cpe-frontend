@@ -18,6 +18,7 @@ export function usePublications(params?: ListPublicationsParams) {
           created_by: params?.createdBy,
           limit: params?.limit,
           offset: params?.offset,
+          status: params?.status,
         },
         signal,
       ),

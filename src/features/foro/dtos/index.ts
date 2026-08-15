@@ -41,6 +41,8 @@ export type {
   PublicationPatchDTO,
 } from './PublicationDTO'
 
+export type { CreateCorrectionDTO, CorrectionDTO } from './CorrectionDTO'
+
 export {
   INTERACTION_TYPE_IDS,
 } from './InteractionDTO'

@@ -69,6 +69,17 @@ export default function PublicacionPage() {
     )
   }
 
+  // Not published yet (draft / under_review / approved, or someone else's revision draft): there
+  // is no reader-facing page for it, so pressing it goes straight to the editor instead of
+  // rendering the detail template. If the repo/service returned it at all, the viewer is already
+  // either the owner or a moderating publisher (see `getPublicationService`'s visibility check —
+  // anyone else 404s before reaching this component), so no extra client-side gate is needed:
+  // same audience the editor route itself requires. Covers visitors on their own submission and
+  // publishers on their own draft or someone else's `under_review` review queue item alike.
+  if (publication.status !== 'published') {
+    return <Navigate to={`/perfil/publicaciones/${publication.id}/editar`} replace />
+  }
+
   return slug === 'discusion'
     ? <DiscussionDetail publication={publication} typeName={type?.name ?? 'Discusión'} related={related} />
     : (

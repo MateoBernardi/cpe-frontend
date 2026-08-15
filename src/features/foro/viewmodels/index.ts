@@ -22,3 +22,7 @@ export {
   useUserPreferences,
   useUpdateUser,
 } from './useProfileViewModel'
+export {
+  useCorrections,
+  useCorrectionMutations,
+} from './useCorrectionsViewModel'
