@@ -186,3 +186,11 @@ export function CheckIcon({ size = 16, className }: IconProps) {
     </svg>
   )
 }
+
+export function TrashIcon({ size = 18, className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.75} className={className} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7m2 0v13a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 20V7h10ZM10 11v6M14 11v6" />
+    </svg>
+  )
+}

@@ -104,9 +104,6 @@ export default function ProfilePage() {
   return (
     <div className="pt-[22vh] pb-[6vh] sm:pb-[8vh] md:pb-[10vh]" style={{ backgroundColor: colors.white }}>
       <div className={layout.container}>
-        <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: colors.blueDark }}>
-          Mi perfil
-        </h1>
 
         {/* Glass segmented control, matching the publication hero's "Guardar" /
             "Compartir" pills exactly: rounded-full, navy scrim at 0.45, accent

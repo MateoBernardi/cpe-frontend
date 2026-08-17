@@ -55,11 +55,15 @@ export function useFeedsByType(typeIds: number[], limit: number = 4): FeedByType
   }))
 }
 
-/** GET /publications/:id — public. */
-export function usePublication(id: number | undefined) {
+/**
+ * GET /publications/:id — public. `trackVisit` must only be passed `true` by the actual public
+ * detail page (`PublicacionPage`) — the composer/editor reloading the same row for editing must
+ * leave it at the default `false`, or it would inflate the visit count.
+ */
+export function usePublication(id: number | undefined, trackVisit = false) {
   return useQuery({
     queryKey: foroKeys.publication(id ?? 0),
-    queryFn: ({ signal }) => foroService.getPublication(id as number, signal),
+    queryFn: ({ signal }) => foroService.getPublication(id as number, signal, trackVisit),
     select: mapPublicationDTO,
     enabled: typeof id === 'number' && id > 0,
   })

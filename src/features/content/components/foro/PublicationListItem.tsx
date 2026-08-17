@@ -34,6 +34,12 @@ interface PublicationListItemProps {
    * lifecycle; this is "there's feedback waiting for you to read") so both can show at once.
    */
   hasCorrections?: boolean
+  /**
+   * Overrides the thumbnail/title link target (defaults to the public reader page,
+   * `/publicaciones/:id`). `MisPublicacionesPanel` points this at the edit route instead — an own
+   * draft/under_review/revision row has no public page to preview yet.
+   */
+  to?: string
 }
 
 /** Generic image glyph shown when a publication has no cover image (papers/novedades/podcast without a set `imageUrl`). */
@@ -58,8 +64,8 @@ function ImagePlaceholderIcon({ accent }: { accent: string }) {
  * chat-bubble placeholder for Discusiones, or the generic image glyph for
  * every other format.
  */
-export function PublicationListItem({ publication, typeSlug, typeName, size = 'default', showSave = true, statusBadge, hasCorrections = false }: PublicationListItemProps) {
-  const to = `/publicaciones/${publication.id}`
+export function PublicationListItem({ publication, typeSlug, typeName, size = 'default', showSave = true, statusBadge, hasCorrections = false, to: toOverride }: PublicationListItemProps) {
+  const to = toOverride ?? `/publicaciones/${publication.id}`
   const accent = typeAccent(typeSlug)
   const isDiscusion = typeSlug === 'discusion'
   const isPodcast = typeSlug === 'podcast'

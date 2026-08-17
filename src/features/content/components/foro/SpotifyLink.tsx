@@ -1,8 +1,10 @@
-// The channel picture below is a placeholder monogram (navy square, "CPE" in
-// serif) drawn locally at ./assets/podcast-channel.svg — swap that file for
-// the show's real Spotify profile picture when it's available; this
-// component's import path stays the same.
-import podcastChannelPicture from './assets/podcast-channel.svg'
+// Real CPEVoz wordmark (cropped from the source artwork to its tight
+// bounding box) — replaces the old placeholder monogram at
+// ./assets/podcast-channel.svg. It's a wide lockup, not a square icon, so it
+// renders `object-contain` on a white disc rather than `object-cover`
+// (which would crop the text). Swap ./assets/cpevoz-logo.png directly if the
+// show gets a dedicated square profile picture later.
+import podcastChannelPicture from './assets/cpevoz-logo.png'
 import { ChevronRight } from './ForoIcons'
 import { hexToRgba, isSafeHttpUrl } from './foroHelpers'
 import { SafeExternalLink } from './externalLinkGuard'
@@ -40,8 +42,8 @@ function SpotifyMark({ size = 20 }: { size?: number }) {
 export function SpotifyLink({ url, episodeTitle }: SpotifyLinkProps) {
   const content = (
     <>
-      <span className="relative h-16 w-16 shrink-0">
-        <img src={podcastChannelPicture} alt="" className="block h-full w-full rounded-full object-cover ring-1 ring-gray-200" />
+      <span className="relative h-16 w-16 shrink-0 rounded-full bg-white p-2 ring-1 ring-gray-200">
+        <img src={podcastChannelPicture} alt="" className="block h-full w-full object-contain" />
         <span
           className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full text-white ring-2 ring-white"
           style={{ backgroundColor: platformColors.spotifyGreen }}

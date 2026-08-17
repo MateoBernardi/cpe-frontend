@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { usePublications, usePublicationTypes, usePublicationMutations, resolveKnownSlug, useForoAuth, getForoApiErrorMessage, type PublicationPreview } from '@features/foro'
-import { PublicationListItem } from '@features/content/components/foro'
+import { PublicationListItem, TrashIcon } from '@features/content/components/foro'
 import { QueryState } from '@shared/components'
 import { colors, foroPalette } from '@/theme'
 
@@ -73,9 +73,9 @@ export default function MisPublicacionesPanel() {
               // siempre — es un artefacto de edición, nunca un ítem de lista), así que
               // `pub.revisionOf` acá nunca puede ser distinto de `null`: cada fila es el
               // original. `pub.revisionId` es lo que indica que ese original tiene cambios sin
-              // publicar, y hacia dónde apunta "Editar" — así nunca se acuña una segunda revisión
-              // (el redirect autocurativo del composer cubre el caso de todos modos, pero esto
-              // evita el salto).
+              // publicar, y hacia dónde apunta la fila al editar — así nunca se acuña una segunda
+              // revisión (el redirect autocurativo del composer cubre el caso de todos modos, pero
+              // esto evita el salto).
               const editTargetId = pub.revisionId ?? pub.id
               return (
                 <div key={pub.id} className="flex flex-col gap-1.5 py-1">
@@ -83,6 +83,7 @@ export default function MisPublicacionesPanel() {
                     <div className="min-w-0 flex-1">
                       <PublicationListItem
                         publication={pub}
+                        to={`/perfil/publicaciones/${editTargetId}/editar`}
                         typeSlug={resolveKnownSlug(type)}
                         typeName={type?.name ?? ''}
                         size="compact"
@@ -106,21 +107,16 @@ export default function MisPublicacionesPanel() {
                         hasCorrections={pub.status === 'under_review' && pub.hasCorrections}
                       />
                     </div>
-                    <Link
-                      to={`/perfil/publicaciones/${editTargetId}/editar`}
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
-                      style={{ color: colors.ctaPrimary, border: `1px solid ${colors.ctaPrimary}` }}
-                    >
-                      Editar
-                    </Link>
                     <button
                       type="button"
-                      className="shrink-0 rounded-lg border bg-transparent px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                      className="flex shrink-0 items-center justify-center rounded-lg border bg-transparent p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
                       style={{ color: foroPalette.errorText, borderColor: foroPalette.errorText }}
                       onClick={() => void handleDelete(pub)}
                       disabled={remove.isPending}
+                      aria-label={`Eliminar "${pub.title}"`}
+                      title="Eliminar"
                     >
-                      Eliminar
+                      <TrashIcon size={16} />
                     </button>
                   </div>
                 </div>

@@ -114,11 +114,15 @@ export const foroService = {
     })
   },
 
-  /** GET /publications/:id — public. */
-  getPublication(id: number, signal?: AbortSignal) {
+  /**
+   * GET /publications/:id — public. `trackVisit` must only be `true` from the actual public
+   * detail page: it's what the backend gates visit-counting on (in addition to the publication
+   * being `published`) — the composer/editor reloading the same row must never pass it.
+   */
+  getPublication(id: number, signal?: AbortSignal, trackVisit = false) {
     return foroApiRequest<PublicationDTO>({
       method: 'GET',
-      endpoint: `/publications/${id}`,
+      endpoint: `/publications/${id}${trackVisit ? '?visit=true' : ''}`,
       signal,
     })
   },

@@ -45,10 +45,47 @@ function groupByParagraph(corrections: Correction[] | undefined): Map<number, Co
 }
 
 /**
+ * Flattens corrections into paragraph order (ties broken by `createdAt`) so every comment gets a
+ * stable citation number — the same number appears as an inline tag next to the paragraph it
+ * cites and as the heading of its entry in the "Comentarios" list below, the way a footnote marker
+ * ties back to its footnote.
+ */
+function orderForCitations(corrections: Correction[] | undefined): Correction[] {
+  return [...(corrections ?? [])].sort((a, b) =>
+    a.paragraphIndex - b.paragraphIndex || a.createdAt.getTime() - b.createdAt.getTime(),
+  )
+}
+
+interface CitationTagProps {
+  number: number
+  href: string
+  title: string
+}
+
+/** Small numbered badge — the citation marker itself. Same visual weight inline (next to a
+ *  paragraph) and as the anchor target's heading (in the list below), so the two read as one pair. */
+function CitationTag({ number, href, title }: CitationTagProps) {
+  return (
+    <a
+      href={href}
+      title={title}
+      className="inline-flex h-4 min-w-[1rem] shrink-0 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none text-white no-underline"
+      style={{ backgroundColor: colors.ctaPrimary }}
+    >
+      {number}
+    </a>
+  )
+}
+
+/**
  * Reviewer comment panel for a visitor's `under_review` submission — the paragraph-anchored
  * "correction" UI the review workflow needs. There is no existing anchoring/annotation UI
  * anywhere in this codebase to build on; per the product decision, anchoring is a plain integer
  * paragraph index (not a text-offset range) — simpler, and it survives edits.
+ *
+ * Comments read as footnotes: a numbered `<CitationTag>` sits inline right after the paragraph it
+ * cites (`#comentario-N`), and the full text lives once, in the "Comentarios" list at the bottom
+ * (`#paragraph-N` links back) — no more duplicating the reviewer's text under every paragraph.
  *
  * Two audiences render the same component:
  * - the author, read-only, while their own submission is `under_review` (sees feedback live,
@@ -71,6 +108,12 @@ export function ReviewCorrectionsPanel({ publication, onApprove, approveStatus }
 
   const paragraphs = useMemo(() => splitParagraphs(publication.content), [publication.content])
   const byParagraph = useMemo(() => groupByParagraph(corrections), [corrections])
+  const orderedCorrections = useMemo(() => orderForCitations(corrections), [corrections])
+  const citationNumbers = useMemo(() => {
+    const map = new Map<number, number>()
+    orderedCorrections.forEach((correction, i) => map.set(correction.id, i + 1))
+    return map
+  }, [orderedCorrections])
 
   if (publication.status !== 'under_review' || (!isOwner && !isReviewer)) {
     return null
@@ -125,9 +168,23 @@ export function ReviewCorrectionsPanel({ publication, onApprove, approveStatus }
             const paragraphCorrections = byParagraph.get(index) ?? []
             const isOpen = openParagraph === index
             return (
-              <div key={index} className="flex flex-col gap-2 py-3">
+              <div key={index} id={`paragraph-${index}`} className="flex scroll-mt-4 flex-col gap-2 py-3">
                 <div className="flex items-start gap-2">
-                  <p className="flex-1 text-sm text-gray-700">{paragraph}</p>
+                  <p className="flex-1 text-sm text-gray-700">
+                    {paragraph}
+                    {paragraphCorrections.length > 0 && (
+                      <span className="ml-1.5 inline-flex items-center gap-1 align-middle">
+                        {paragraphCorrections.map((correction) => (
+                          <CitationTag
+                            key={correction.id}
+                            number={citationNumbers.get(correction.id) ?? 0}
+                            href={`#comentario-${correction.id}`}
+                            title={`Ver comentario de ${correction.reviewerName ?? 'Revisor'}`}
+                          />
+                        ))}
+                      </span>
+                    )}
+                  </p>
                   {isReviewer && (
                     <button
                       type="button"
@@ -149,19 +206,6 @@ export function ReviewCorrectionsPanel({ publication, onApprove, approveStatus }
                     </button>
                   )}
                 </div>
-
-                {paragraphCorrections.length > 0 && (
-                  <ul className="flex flex-col gap-1.5 pl-3" style={{ borderLeft: `2px solid ${colors.draftBadge}` }}>
-                    {paragraphCorrections.map((correction) => (
-                      <li key={correction.id} className="text-xs text-gray-600">
-                        <span className="font-semibold" style={{ color: colors.blueDark }}>
-                          {correction.reviewerName ?? 'Revisor'}:
-                        </span>{' '}
-                        {correction.body}
-                      </li>
-                    ))}
-                  </ul>
-                )}
 
                 {isReviewer && isOpen && (
                   <div className="flex flex-col gap-2 rounded-lg p-3" style={{ backgroundColor: colors.lightGray }}>
@@ -193,6 +237,34 @@ export function ReviewCorrectionsPanel({ publication, onApprove, approveStatus }
               </div>
             )
           })}
+        </div>
+      )}
+
+      {!isLoading && !isError && orderedCorrections.length > 0 && (
+        <div className="space-y-2 border-t pt-4" style={{ borderColor: colors.lightGray }}>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400">Comentarios</h3>
+          <ul className="flex flex-col gap-2">
+            {orderedCorrections.map((correction) => (
+              <li
+                key={correction.id}
+                id={`comentario-${correction.id}`}
+                className="flex scroll-mt-4 items-start gap-2 rounded-lg p-2"
+                style={{ backgroundColor: colors.lightGray }}
+              >
+                <CitationTag
+                  number={citationNumbers.get(correction.id) ?? 0}
+                  href={`#paragraph-${correction.paragraphIndex}`}
+                  title={`Ir al párrafo ${correction.paragraphIndex + 1}`}
+                />
+                <p className="flex-1 text-xs text-gray-600">
+                  <span className="font-semibold" style={{ color: colors.blueDark }}>
+                    {correction.reviewerName ?? 'Revisor'}:
+                  </span>{' '}
+                  {correction.body}
+                </p>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

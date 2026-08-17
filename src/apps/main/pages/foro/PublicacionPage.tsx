@@ -29,7 +29,7 @@ export default function PublicacionPage() {
   const id = Number(params.id)
   const validId = Number.isFinite(id) && id > 0
 
-  const { data: publication, isLoading, isError, refetch } = usePublication(validId ? id : undefined)
+  const { data: publication, isLoading, isError, refetch } = usePublication(validId ? id : undefined, true)
   const { data: types } = usePublicationTypes()
   const type = types?.find((t) => t.id === publication?.typeId)
   const slug = resolveKnownSlug(type)

@@ -445,7 +445,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
           >
             <img
               src="/cpeLogo.png"
-              className={`w-auto transition-all duration-500 ${headerActive ? 'h-44 sm:h-52 md:h-60 lg:h-72' : 'h-60 sm:h-72 md:h-80 lg:h-96'}`}
+              // `pointer-events-none`: cpeLogo.png is a 1080x1350 canvas with the real 558x206
+              // mark centered — 85% of it transparent padding (see the footer logo's crop, which
+              // works around the same file). This `<img>` is deliberately rendered way taller
+              // than the button's own box and left to overflow, so its transparent margins spill
+              // out well past the header pill — without this, that invisible overflow was
+              // swallowing clicks meant for whatever page content happened to sit underneath it
+              // (e.g. the /perfil tab strip). The button's own (correctly small) box still
+              // catches clicks on the visible logo.
+              className={`pointer-events-none w-auto transition-all duration-500 ${headerActive ? 'h-44 sm:h-52 md:h-60 lg:h-72' : 'h-60 sm:h-72 md:h-80 lg:h-96'}`}
               alt="CPE Logo"
             />
           </button>

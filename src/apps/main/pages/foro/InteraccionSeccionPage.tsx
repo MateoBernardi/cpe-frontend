@@ -3,6 +3,7 @@ import { usePublications, usePublicationTypes, resolveKnownSlug } from '@feature
 import {
   FeaturedCard,
   LatestList,
+  CpeVozComingSoon,
   findInteraccionSection,
   DEFAULT_INTERACCION_ROUTE,
 } from '@features/content/components/foro'
@@ -90,7 +91,9 @@ export default function InteraccionSeccionPage() {
         )}
 
         {!pubsLoading && !pubsError && (!publications || publications.length === 0) && (
-          <p className="py-16 text-center text-sm text-gray-500">Todavía no hay publicaciones en este canal.</p>
+          section.slug === 'podcast'
+            ? <CpeVozComingSoon />
+            : <p className="py-16 text-center text-sm text-gray-500">Todavía no hay publicaciones en este canal.</p>
         )}
 
         {!pubsLoading && !pubsError && featured && (
