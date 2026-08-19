@@ -204,7 +204,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const { data: types, error: typesError, refetch: refetchTypes } = usePublicationTypes()
   const { data: categories, error: categoriesError, refetch: refetchCategories } = useCategories()
   const { create: createCategory, remove: removeCategory } = useCategoryMutations()
-  const { create, update, discardRevision } = usePublicationMutations()
+  const { create, update, remove, discardRevision } = usePublicationMutations()
   const { keyFor, reset: resetIdempotencyKey } = useIdempotencyKey()
 
   // Controlled from above in create mode, internal in edit mode. The internal
@@ -514,12 +514,32 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const [pendingApprove, setPendingApprove] = useState(false)
   const approveStatus: ActionButtonStatus = update.isPending && pendingApprove ? 'pending' : 'idle'
   const handleApprove = () => {
-    if (mutationInProgress || publicationId == null) return
+    if (mutationInProgress || remove.isPending || publicationId == null) return
     setPendingApprove(true)
     update.mutate(
       { id: publicationId, input: { status: 'approved' } },
       { onSettled: () => setPendingApprove(false) },
     )
+  }
+
+  /**
+   * "Eliminar" next to "Aprobar" — a reviewing publisher moderating someone else's `under_review`
+   * submission. Backend allows this for any publisher, or for the owner themselves
+   * (`assertOwnerOrModerator`); this button only reaches reviewers (see `ReviewCorrectionsPanel`'s
+   * `isReviewer` gate), same scope as `onApprove`. Soft delete — 204, no undo — so it's gated
+   * behind a confirm, same idiom as `handleDiscardRevision`.
+   */
+  const deleteStatus: ActionButtonStatus = remove.isPending ? 'pending' : 'idle'
+  const handleDelete = async () => {
+    if (update.isPending || remove.isPending || publicationId == null) return
+    if (!confirm(`¿Eliminar "${existing?.title ?? 'esta publicación'}"? No vas a poder deshacerlo.`)) return
+    try {
+      await remove.mutateAsync(publicationId)
+      navigate('/perfil/publicaciones')
+    } catch {
+      // El error queda en `remove.error`, mostrado por `ReviewCorrectionsPanel` (la vista de
+      // revisor no renderiza el bloque de `mutationError` de más abajo, sólo el preview + panel).
+    }
   }
 
   const handleSave = (status: WritablePublicationStatus) => {
@@ -1233,7 +1253,14 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
       )}
 
       {isEdit && existing && (
-        <ReviewCorrectionsPanel publication={existing} onApprove={handleApprove} approveStatus={approveStatus} />
+        <ReviewCorrectionsPanel
+          publication={existing}
+          onApprove={handleApprove}
+          approveStatus={approveStatus}
+          onDelete={handleDelete}
+          deleteStatus={deleteStatus}
+          deleteError={remove.error ? getForoApiErrorMessage(remove.error) : null}
+        />
       )}
     </div>
   )

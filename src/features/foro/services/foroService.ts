@@ -163,10 +163,10 @@ export const foroService = {
   },
 
   /**
-   * DELETE /publications/:id — role publisher|admin, y sólo sobre las propias
-   * (el backend aplica `assertOwnerOrAdmin`). Es un SOFT delete: la fila queda
-   * con `deleted_at`, y sus imágenes quedan huérfanas pero recuperables hasta
-   * que un admin corra `POST /images/purge-orphans`.
+   * DELETE /publications/:id — publisher|visitor pueden intentarlo; el backend sólo deja borrar
+   * lo propio (`assertOwnerOrModerator`), salvo un publisher que puede borrar cualquiera
+   * (moderación). Es un SOFT delete: la fila queda con `deleted_at`, y sus imágenes quedan
+   * huérfanas pero recuperables hasta que un publisher corra `POST /images/purge-orphans`.
    */
   deletePublication(id: number) {
     return foroApiRequest<void>({

@@ -1,8 +1,16 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { usePublications, usePublicationTypes, resolveKnownSlug, getForoApiErrorMessage } from '@features/foro'
-import { PublicationListItem } from '@features/content/components/foro'
+import {
+  usePublications,
+  usePublicationTypes,
+  usePublicationMutations,
+  resolveKnownSlug,
+  getForoApiErrorMessage,
+  type PublicationPreview,
+} from '@features/foro'
+import { PublicationListItem, TrashIcon } from '@features/content/components/foro'
 import { QueryState } from '@shared/components'
-import { colors } from '@/theme'
+import { colors, foroPalette } from '@/theme'
 
 const REVIEW_QUEUE_LIMIT = 50
 
@@ -12,16 +20,36 @@ const REVIEW_QUEUE_LIMIT = 50
  * authors. `status: 'under_review'` is the one deliberate exception the backend's publications
  * list makes to "you only ever see your own drafts" — see `usePublications`/`foroService`.
  *
- * No per-row edit/delete here, just a link into the shared edit route: `/perfil/publicaciones/:id/
- * editar` already renders `<ReviewCorrectionsPanel>` for a publisher looking at someone else's
- * `under_review` submission, so that single route doubles as the review view.
+ * Per-row actions: "Revisar" links into the shared edit route (`/perfil/publicaciones/:id/editar`,
+ * which renders `<ReviewCorrectionsPanel>` for a publisher looking at someone else's `under_review`
+ * submission) and "Eliminar" soft-deletes straight from the queue — same `remove` mutation and
+ * confirm idiom as `MisPublicacionesPanel`; a reviewing publisher can delete any submission here
+ * (moderation), per `assertOwnerOrModerator` on the backend.
  */
 export default function RevisionesPanel() {
   const { data: types } = usePublicationTypes()
   const { data, isLoading, isError, error, refetch } = usePublications({ status: 'under_review', limit: REVIEW_QUEUE_LIMIT })
+  const { remove } = usePublicationMutations()
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  const handleDelete = async (pub: PublicationPreview) => {
+    if (!confirm(`¿Eliminar "${pub.title}"? No vas a poder deshacerlo.`)) return
+    setDeleteError(null)
+    try {
+      await remove.mutateAsync(pub.id)
+    } catch (err) {
+      setDeleteError(getForoApiErrorMessage(err))
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
+      {deleteError && (
+        <p className="text-sm" role="alert" style={{ color: foroPalette.errorText }}>
+          {deleteError}
+        </p>
+      )}
+
       <QueryState
         isLoading={isLoading}
         isError={isError}
@@ -54,6 +82,17 @@ export default function RevisionesPanel() {
                     >
                       Revisar
                     </Link>
+                    <button
+                      type="button"
+                      className="flex shrink-0 items-center justify-center rounded-lg border bg-transparent p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{ color: foroPalette.errorText, borderColor: foroPalette.errorText }}
+                      onClick={() => void handleDelete(pub)}
+                      disabled={remove.isPending}
+                      aria-label={`Eliminar "${pub.title}"`}
+                      title="Eliminar"
+                    >
+                      <TrashIcon size={16} />
+                    </button>
                   </div>
                 </div>
               )
