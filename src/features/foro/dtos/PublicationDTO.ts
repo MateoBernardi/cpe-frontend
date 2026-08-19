@@ -4,7 +4,7 @@ import type { PublicationImageDTO } from './ImageDTO'
 import type { Category } from '../models/Category'
 // Same collapsed-identity call as `Category`: the status unions are shared with the models
 // verbatim, so re-declaring them here would only let the two drift.
-import type { PublicationStatus, WritablePublicationStatus } from '../models/Publication'
+import type { ContentFormat, PublicationStatus, WritablePublicationStatus } from '../models/Publication'
 
 /** `interactions` summary embedded in publication DTOs (read-only, aggregated counts). */
 export interface InteractionCountsDTO {
@@ -32,6 +32,8 @@ export interface PublicationDTO {
   subtitle?: string | null
   image_url?: string | null
   content: string
+  /** Absent only on responses predating the column; the mapper defaults it to 'text'. */
+  content_format?: ContentFormat
   type_id?: number | null
   created_by: string
   /** Resolved author display name. Optional until the backend JOIN lands; nullable for orphaned FKs. */
@@ -110,6 +112,8 @@ export interface PublicationWriteDTO {
   subtitle?: string
   front_image_url?: string
   content: string
+  /** Omitida = 'text' server-side. Ver el comentario homólogo en el modelo (`PublicationInput`). */
+  content_format?: ContentFormat
   type_id?: number
   category_ids?: number[]
   external_links?: ExternalLinkWriteDTO[]
@@ -131,4 +135,22 @@ export type PublicationPatchDTO = Partial<Omit<PublicationWriteDTO, 'subtitle' |
   subtitle?: string | null
   front_image_url?: string | null
   type_id?: number | null
+}
+
+/**
+ * POST /publications/import-docx response. Never persists a publication — just the parsed draft
+ * (título/subtítulo auto-extraídos de los primeros Heading 1/Heading 2, cuerpo ya sanitizado en
+ * HTML server-side, imágenes embebidas ya subidas e inlineadas como `<img>` con URL de Cloudflare)
+ * para que el composer lo cargue en el editor rich-text. Confirmar sigue siendo un POST
+ * /publications normal con este mismo shape.
+ */
+export interface DocxImportResultDTO {
+  title: string
+  subtitle: string | null
+  content: string
+  content_format: 'html'
+  /** Imágenes embebidas en el .docx — ya subidas y moderadas server-side (mismo pipeline que una
+   *  imagen subida a mano), y ya inlineadas como `<img>` dentro de `content`. Vienen acá además con
+   *  su `id` real para que el composer las sume también a la galería del formulario. */
+  images: PublicationImageDTO[]
 }

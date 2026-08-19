@@ -139,7 +139,7 @@ export function PublicationDetail({ publication, type, slug, related, embedded =
   if (slug === 'paper') {
     body = (
       <article>
-        <Prose content={publication.content} />
+        <Prose content={publication.content} format={publication.contentFormat} />
         <Gallery images={publication.images} />
         <footer className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-6">
           <CategoryList categories={publication.categories} />
@@ -161,7 +161,7 @@ export function PublicationDetail({ publication, type, slug, related, embedded =
             <ExternalLinksCTA label={ctaLabel} title={publication.title} links={publication.externalLinks} />
           </div>
         )}
-        <Prose content={publication.content} />
+        <Prose content={publication.content} format={publication.contentFormat} />
         <footer className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-6">
           <CategoryList categories={publication.categories} />
           <InteractionsRow rows={rows} />
@@ -180,7 +180,7 @@ export function PublicationDetail({ publication, type, slug, related, embedded =
         {embedUrl
           ? <NovedadVideo embedUrl={embedUrl} title={publication.title} />
           : <NovedadCollage images={publication.images} />}
-        <Prose content={publication.content} size="lg" />
+        <Prose content={publication.content} size="lg" format={publication.contentFormat} />
         {otherLinks.length > 0 && (
           <div className="mt-7 max-w-md">
             <ExternalLinksCTA label={ctaLabel} title={publication.title} links={otherLinks} />

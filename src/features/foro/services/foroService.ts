@@ -13,6 +13,7 @@ import type {
   ListPublicationsQueryDTO,
   PublicationWriteDTO,
   PublicationPatchDTO,
+  DocxImportResultDTO,
   CreateInteractionDTO,
   PatchInteractionDTO,
   DeleteInteractionByTargetDTO,
@@ -185,6 +186,24 @@ export const foroService = {
     return foroApiRequest<void>({
       method: 'DELETE',
       endpoint: `/publications/${originalId}/revision`,
+    })
+  },
+
+  /**
+   * POST /publications/import-docx — multipart, role publisher|visitor (mismo gate que crear una
+   * publicación). No crea nada: parsea el .docx server-side (imágenes embebidas ya subidas y
+   * moderadas, texto moderado) y devuelve un borrador para cargar en el editor. `foroApiRequest`
+   * detecta el `FormData` y lo manda tal cual (sin `JSON.stringify`, sin `Content-Type` propio),
+   * así que esto comparte el mismo manejo de errores/401/422 que el resto de las llamadas —
+   * a diferencia de `uploadImageToCloudflare`, que pega contra Cloudflare y no puede reusarlo.
+   */
+  importDocx(file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return foroApiRequest<DocxImportResultDTO, FormData>({
+      method: 'POST',
+      endpoint: '/publications/import-docx',
+      body: formData,
     })
   },
 

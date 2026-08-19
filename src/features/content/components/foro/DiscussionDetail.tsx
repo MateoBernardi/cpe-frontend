@@ -44,7 +44,7 @@ export function DiscussionDetail({ publication, typeName, related, embedded = fa
         {publication.categories.length > 0 && (
           <div className="mb-5"><CategoryList categories={publication.categories} /></div>
         )}
-        <Prose content={publication.content} />
+        <Prose content={publication.content} format={publication.contentFormat} />
         <Gallery images={publication.images} />
         {publication.externalLinks.length > 0 && (
           <div className="mt-6 max-w-md"><ExternalLinksCTA label={ctaLabel} title={publication.title} links={publication.externalLinks} /></div>

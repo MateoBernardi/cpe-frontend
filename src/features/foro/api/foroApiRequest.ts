@@ -6,6 +6,8 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 interface ForoApiRequestOptions<TBody = unknown> {
   method: HttpMethod
   endpoint: string
+  /** Un `FormData` (p.ej. el import de .docx) viaja tal cual, sin `JSON.stringify` ni
+   *  `Content-Type` propio — el browser arma el `multipart/form-data` con el boundary. */
   body?: TBody
   signal?: AbortSignal
   /** `Idempotency-Key` header — sólo se manda cuando está definida. Ver `api/idempotency.ts`. */
@@ -179,9 +181,11 @@ export async function foroApiRequest<TResponse, TBody = unknown>(
 
   const url = `${FORO_ENV.API_BASE_URL}${endpoint}`
 
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     'Accept': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(idempotencyKey !== undefined ? { 'Idempotency-Key': idempotencyKey } : {}),
   }
 
@@ -193,7 +197,7 @@ export async function foroApiRequest<TResponse, TBody = unknown>(
   }
 
   if (body !== undefined && method !== 'GET') {
-    config.body = JSON.stringify(body)
+    config.body = isFormData ? (body as FormData) : JSON.stringify(body)
   }
 
   const performRequest = async (): Promise<TResponse> => {

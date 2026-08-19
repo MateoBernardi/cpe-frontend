@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   usePublication,
@@ -20,11 +20,20 @@ import {
 import { LoadingSpinner, ErrorMessage } from '@shared/components'
 import { colors, foroHairline, foroPalette } from '../../../../theme'
 import { ComposePreviewPane } from './ComposePreviewPane'
-import { TYPE_CONFIG, PUBLICATION_CONTENT_MAX, MAX_NOVEDAD_IMAGES, EMPTY_FORM, type FormState, type TypeFieldConfig } from './composeConfig'
+import {
+  TYPE_CONFIG,
+  PUBLICATION_CONTENT_MAX,
+  PUBLICATION_CONTENT_MAX_HTML,
+  MAX_NOVEDAD_IMAGES,
+  EMPTY_FORM,
+  type FormState,
+  type TypeFieldConfig,
+} from './composeConfig'
 import { TypePill } from './TypePill'
-import { ChevronRight } from './ForoIcons'
+import { ChevronRight, DocumentIcon } from './ForoIcons'
 import { ActionButton, type ActionButtonStatus } from './ActionButton'
 import { ReviewCorrectionsPanel } from './ReviewCorrectionsPanel'
+import { TipTapEditor } from './TipTapEditor'
 import { isSafeHttpUrl } from './foroHelpers'
 
 /**
@@ -110,10 +119,15 @@ function validateForm(form: FormState, bodyLabel: string, config: TypeFieldConfi
     errors.subtitle = 'El subtítulo no puede superar los 500 caracteres.'
   }
 
-  if (!form.content.trim()) {
+  // Un editor TipTap vacío sigue devolviendo `<p></p>` (nunca un string vacío), así que el chequeo
+  // de "obligatorio" para 'html' mira el texto sin etiquetas, no el HTML crudo.
+  const isHtml = form.contentFormat === 'html'
+  const contentIsEmpty = isHtml ? form.content.replace(/<[^>]*>/g, '').trim().length === 0 : !form.content.trim()
+  const contentMax = isHtml ? PUBLICATION_CONTENT_MAX_HTML : PUBLICATION_CONTENT_MAX
+  if (contentIsEmpty) {
     errors.content = `El campo "${bodyLabel}" es obligatorio.`
-  } else if (form.content.length > PUBLICATION_CONTENT_MAX) {
-    errors.content = `El campo "${bodyLabel}" no puede superar los ${PUBLICATION_CONTENT_MAX.toLocaleString('es-AR')} caracteres.`
+  } else if (form.content.length > contentMax) {
+    errors.content = `El campo "${bodyLabel}" no puede superar los ${contentMax.toLocaleString('es-AR')} caracteres.`
   }
 
   // Only the three known kinds are validated: a legacy link with some other
@@ -206,6 +220,14 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const [uploadingFront, setUploadingFront] = useState(false)
   const [uploadingGallery, setUploadingGallery] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [uploadingDocx, setUploadingDocx] = useState(false)
+  const [docxError, setDocxError] = useState<string | null>(null)
+  /** El input real queda `hidden` y se dispara por `.click()` — el navegador rotula el botón
+   *  nativo de un `<input type="file">` en SU propio idioma (p.ej. "Choose File" en un browser en
+   *  inglés) sin que CSS pueda tocar ese texto, así que la única forma de que el botón diga
+   *  "Elegir archivo" siempre es reemplazarlo por uno propio. Mismo patrón que el botón de imagen
+   *  de `TipTapEditor.tsx`. */
+  const docxInputRef = useRef<HTMLInputElement>(null)
   const [mobilePane, setMobilePane] = useState<'form' | 'preview'>('form')
   const [pendingStatus, setPendingStatus] = useState<WritablePublicationStatus | null>(null)
   /** Guardado bloqueado ANTES de salir a la red (no es un error de mutación): hoy sólo el caso de
@@ -238,6 +260,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
       title: existing.title,
       subtitle: existing.subtitle ?? '',
       content: existing.content,
+      contentFormat: existing.contentFormat,
       categoryIds: existing.categories.map((category) => category.id),
       frontImageUrl: existing.imageUrl ?? '',
       galleryImages: existing.images.map((img) => ({
@@ -261,6 +284,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const resolvedSlug: KnownPublicationTypeSlug | null = isEdit ? resolveKnownSlug(existingType) : (slug ?? null)
   const config = resolvedSlug ? TYPE_CONFIG[resolvedSlug] : null
   const bodyLabel = config?.bodyLabel ?? 'Contenido'
+  const contentMaxForCounter = form.contentFormat === 'html' ? PUBLICATION_CONTENT_MAX_HTML : PUBLICATION_CONTENT_MAX
 
   // Field visibility, derived from `TYPE_CONFIG` instead of hardcoded per
   // section below — this is the single place that decides what the active
@@ -271,6 +295,10 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
   const showCover = (config?.coverMode ?? 'single') !== 'none'
   const showGallery = config?.showGallery ?? true
   const showLinks = config?.showLinks ?? true
+  // Opposite default from the flags above: paper is the ONLY type this renders for (see
+  // `TYPE_CONFIG`'s comment), so an unresolved type defaults to hidden, not shown — there is no
+  // "might actually need it" case to protect against here, the other three formats never want it.
+  const showDocxImport = config?.showDocxImport ?? false
 
   // "Listo" = HAY datos, no "no está cargando". `isLoading` (`isPending && isFetching`) es `false`
   // tanto para una query que falló como para una que quedó cancelada e inactiva (React Query
@@ -384,6 +412,48 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
     })
   }
 
+  /**
+   * "Importar desde Word (.docx)" — parsea el archivo server-side (imágenes embebidas ya subidas
+   * y moderadas, texto moderado) y pisa título/subtítulo/cuerpo del borrador actual con lo
+   * extraído, dejando `contentFormat: 'html'` para que el campo de cuerpo pase del `<textarea>` de
+   * siempre al editor rich-text. El título/subtítulo auto-extraídos quedan editables como
+   * cualquier otro campo — el usuario los corrige acá mismo si mammoth se equivocó.
+   *
+   * Las imágenes embebidas ya quedan inlineadas como `<img>` dentro de `content`, pero además se
+   * suman acá a `galleryImages` — mismas filas de `images` en el backend, mismos ids reales — para
+   * que también aparezcan en "Galería de imágenes" y viajen en `imageIds` al guardar, en vez de
+   * quedar sólo enterradas dentro del cuerpo.
+   */
+  const handleDocxImport = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setDocxError(null)
+    setUploadingDocx(true)
+    try {
+      const result = await foroService.importDocx(file)
+      setForm((f) => ({
+        ...f,
+        title: result.title || f.title,
+        subtitle: result.subtitle ?? f.subtitle,
+        content: result.content,
+        contentFormat: result.content_format,
+        galleryImages: [
+          ...f.galleryImages,
+          ...result.images.map((img, i) => ({
+            id: img.id,
+            url: img.url,
+            name: img.alt_text ?? `Imagen del documento ${i + 1}`,
+          })),
+        ],
+      }))
+    } catch (err) {
+      if (!isContentRejected(err)) setDocxError(getForoApiErrorMessage(err))
+    } finally {
+      setUploadingDocx(false)
+    }
+  }
+
   const linkUrlFor = (label: LinkLabel): string =>
     form.externalLinks.find((l) => l.label === label)?.url ?? ''
 
@@ -485,6 +555,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
       title: form.title.trim(),
       subtitle: showSubtitle && form.subtitle.trim() ? form.subtitle.trim() : null,
       content: form.content,
+      contentFormat: form.contentFormat,
       categoryIds: form.categoryIds,
       frontImageUrl: showCover && form.frontImageUrl ? form.frontImageUrl : null,
       imageIds: showGallery ? form.galleryImages.map((img) => img.id) : [],
@@ -620,6 +691,7 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
       subtitle: form.subtitle.trim() || null,
       imageUrl: form.frontImageUrl || null,
       content: form.content || 'El contenido aparecerá acá…',
+      contentFormat: form.contentFormat,
       typeId: matchedType?.id ?? existing?.typeId ?? null,
       createdBy: existing?.createdBy ?? user?.id ?? '',
       // The byline now comes from the joined author name, so the preview shows
@@ -785,6 +857,60 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
               className={`${mobilePane === 'form' ? 'block' : 'hidden'} space-y-6 rounded-2xl border bg-white p-6 shadow-sm lg:block`}
               style={{ borderColor: colors.lightGray }}
             >
+              {/* ── Importar desde Word ──
+                  Deliberadamente lo primero que se ve en el form (antes del título) y visualmente
+                  destacado: pisa título/subtítulo/cuerpo Y suma sus imágenes embebidas a la galería
+                  (ver `handleDocxImport`) de una sola acción, así que es el atajo más rápido para
+                  cargar una publicación entera — vale la pena que se note antes que cualquier campo
+                  suelto. Sólo paper (`showDocxImport` en `composeConfig.ts`): podcast/novedad/
+                  discusión tienen cada una su propio estilo de carga deliberado (descripción de
+                  audio, copy promocional, planteo de discusión) que un .docx volcado entero
+                  pisotearía — paper es el único formato de artículo largo al que este atajo apunta. */}
+              {showDocxImport && (
+              <div
+                className="rounded-2xl border-2 px-5 py-4"
+                style={{ borderColor: colors.ctaPrimary, backgroundColor: `${colors.ctaPrimary}0d` }}
+              >
+                <div className="flex items-start gap-3">
+                  <span
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full"
+                    style={{ backgroundColor: colors.ctaPrimary, color: colors.white }}
+                    aria-hidden="true"
+                  >
+                    <DocumentIcon size={20} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-base font-bold" style={{ color: colors.blueDark }}>
+                      Importar desde Word (.docx)
+                    </span>
+                    <p className="mb-2 mt-0.5 text-xs text-gray-500">
+                      Subí un documento y completamos automáticamente el título, el subtítulo, el
+                      cuerpo y la galería de imágenes.
+                    </p>
+                    <input
+                      ref={docxInputRef}
+                      type="file"
+                      accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      onChange={(e) => void handleDocxImport(e)}
+                      disabled={uploadingDocx}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => docxInputRef.current?.click()}
+                      disabled={uploadingDocx}
+                      className="rounded-full px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{ backgroundColor: colors.ctaPrimary }}
+                    >
+                      Elegir archivo
+                    </button>
+                    {uploadingDocx && <p className="mt-2 text-xs text-gray-500">Procesando documento…</p>}
+                    {docxError && <div className="mt-2"><ErrorMessage message={docxError} /></div>}
+                  </div>
+                </div>
+              </div>
+              )}
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block sm:col-span-2">
                   <span className="mb-1 flex items-baseline justify-between text-sm font-medium text-gray-700">
@@ -819,22 +945,28 @@ export function PublicationComposer({ mode, slug, publicationId, onChangeType, f
                 )}
               </div>
 
-              <label className="block">
-                <span className="mb-1 flex items-baseline justify-between text-sm font-medium text-gray-700">
-                  {bodyLabel}
-                  <span className={`text-xs ${form.content.length > PUBLICATION_CONTENT_MAX ? 'text-red-600' : 'text-gray-400'}`}>
-                    {form.content.length.toLocaleString('es-AR')}/{PUBLICATION_CONTENT_MAX.toLocaleString('es-AR')}
+              <div>
+                <label className="block">
+                  <span className="mb-1 flex items-baseline justify-between text-sm font-medium text-gray-700">
+                    {bodyLabel}
+                    <span className={`text-xs ${form.content.length > contentMaxForCounter ? 'text-red-600' : 'text-gray-400'}`}>
+                      {form.content.length.toLocaleString('es-AR')}/{contentMaxForCounter.toLocaleString('es-AR')}
+                    </span>
                   </span>
-                </span>
-                <textarea
-                  rows={10}
-                  value={form.content}
-                  onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1"
-                  style={FIELD_STYLE}
-                />
-                {errors.content && <span className="mt-1 block text-xs text-red-600">{errors.content}</span>}
-              </label>
+                  {form.contentFormat === 'html' ? (
+                    <TipTapEditor content={form.content} onChange={(html) => setForm((f) => ({ ...f, content: html }))} />
+                  ) : (
+                    <textarea
+                      rows={10}
+                      value={form.content}
+                      onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
+                      className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1"
+                      style={FIELD_STYLE}
+                    />
+                  )}
+                  {errors.content && <span className="mt-1 block text-xs text-red-600">{errors.content}</span>}
+                </label>
+              </div>
 
               {/* ── Categorías ── */}
               <div>

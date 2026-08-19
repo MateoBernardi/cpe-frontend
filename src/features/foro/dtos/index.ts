@@ -39,6 +39,7 @@ export type {
   ExternalLinkWriteDTO,
   PublicationWriteDTO,
   PublicationPatchDTO,
+  DocxImportResultDTO,
 } from './PublicationDTO'
 
 export type { CreateCorrectionDTO, CorrectionDTO } from './CorrectionDTO'

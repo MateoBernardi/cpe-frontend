@@ -12,6 +12,7 @@ export type { Correction, CreateCorrectionInput } from './Correction'
 
 export type {
   ExternalLink,
+  ContentFormat,
   PublicationViewerState,
   Publication,
   PublicationPreview,

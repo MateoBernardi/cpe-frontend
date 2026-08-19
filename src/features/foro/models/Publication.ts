@@ -7,6 +7,9 @@ export interface ExternalLink {
   url: string
 }
 
+/** 'text' (siempre, hasta el import de .docx) | 'html' (import de .docx / edición rich-text). */
+export type ContentFormat = 'text' | 'html'
+
 /**
  * Lifecycle state, mirroring the backend's `publicacion_status` enum. Only `published` is
  * publicly readable — the rest are visible to the author (and admins) alone, so they can show
@@ -44,6 +47,10 @@ export interface Publication {
   subtitle: string | null
   imageUrl: string | null
   content: string
+  /** 'text' (todo lo existente, incluidas las publicaciones anteriores a este campo — el mapper
+   *  defaultea acá) | 'html' (import de .docx o edición rich-text). Decide qué renderer usa
+   *  `<Prose>` — ver Prose.tsx. */
+  contentFormat: ContentFormat
   typeId: number | null
   createdBy: string
   /** Resolved display name of the author (`created_by_name` on the wire). `null` when the
@@ -122,6 +129,10 @@ export interface PublicationInput {
   /** `null` explicitly clears the field on PATCH; `undefined` leaves it unset/unchanged. */
   frontImageUrl?: string | null
   content: string
+  /** Omitted = 'text' server-side (the backend default). Always sent explicitly by the composer
+   *  once a draft carries `content` in 'html' form (docx import), so a PATCH that changes
+   *  `content` without resending this stays capped at the text length, not the html one. */
+  contentFormat?: ContentFormat
   /** `null` explicitly clears the field on PATCH; `undefined` leaves it unset/unchanged. */
   typeId?: number | null
   /** Write-only — full-replace on PATCH, same as the wire contract. There is no `categoryIds`

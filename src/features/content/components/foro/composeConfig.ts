@@ -1,4 +1,4 @@
-import type { ExternalLink, KnownPublicationTypeSlug } from '@features/foro'
+import type { ContentFormat, ExternalLink, KnownPublicationTypeSlug } from '@features/foro'
 
 /**
  * Per-type composer field configuration. The backend's create schema accepts
@@ -40,6 +40,11 @@ export interface TypeFieldConfig {
    * podcast — see the capability table above. */
   showGallery: boolean
   showLinks: boolean
+  /** Whether "Importar desde Word (.docx)" renders for this type. Product decision: only paper
+   *  gets it — podcast/novedad/discusión each have their own deliberate composing style (audio
+   *  description, promotional copy, discussion prompt) that a dumped Word doc would clash with,
+   *  paper is the one long-form article format the import is actually meant for. */
+  showDocxImport: boolean
   /** Editorial "channel" descriptor shown next to the type picker card. */
   channelLabel: string
   /** Overrides the generic label-based links hint for types whose embed
@@ -72,6 +77,11 @@ export const MAX_NOVEDAD_IMAGES = 4
  * and the backend stay in sync without importing across repos. */
 export const PUBLICATION_CONTENT_MAX = 20_000
 
+/** Mirrors the backend's `PUBLICATION_CONTENT_MAX_HTML` — the cap that applies when
+ *  `contentFormat === 'html'` (docx import), higher than the plain-text cap because markup eats
+ *  into the same character budget as the visible text. */
+export const PUBLICATION_CONTENT_MAX_HTML = 60_000
+
 /** A gallery image already uploaded to Cloudflare Images (id assigned by the
  * backend) — tracked separately from the front cover, which is a single URL. */
 export interface GalleryImage {
@@ -92,6 +102,10 @@ export interface FormState {
   title: string
   subtitle: string
   content: string
+  /** 'text' (siempre, hasta que se importa un .docx) | 'html' (import de .docx). Decide si el
+   *  campo de cuerpo renderiza el <textarea> de siempre o el editor rich-text — ver
+   *  PublicationComposer.tsx. */
+  contentFormat: ContentFormat
   categoryIds: number[]
   frontImageUrl: string
   galleryImages: GalleryImage[]
@@ -102,6 +116,7 @@ export const EMPTY_FORM: FormState = {
   title: '',
   subtitle: '',
   content: '',
+  contentFormat: 'text',
   categoryIds: [],
   frontImageUrl: '',
   galleryImages: [],
@@ -116,6 +131,7 @@ export const TYPE_CONFIG: Record<KnownPublicationTypeSlug, TypeFieldConfig> = {
     coverMode: 'single',
     showGallery: true,
     showLinks: true,
+    showDocxImport: true,
     channelLabel: 'Investigación',
   },
   podcast: {
@@ -129,6 +145,7 @@ export const TYPE_CONFIG: Record<KnownPublicationTypeSlug, TypeFieldConfig> = {
     // is sent on save (see `PublicationComposer.handleSave`).
     showGallery: false,
     showLinks: true,
+    showDocxImport: false,
     channelLabel: 'Audio',
   },
   novedad: {
@@ -140,6 +157,7 @@ export const TYPE_CONFIG: Record<KnownPublicationTypeSlug, TypeFieldConfig> = {
     coverMode: 'single',
     showGallery: true,
     showLinks: true,
+    showDocxImport: false,
     channelLabel: 'Actualidad',
     linksHint: 'Un enlace de YouTube se muestra como video embebido.',
   },
@@ -154,6 +172,7 @@ export const TYPE_CONFIG: Record<KnownPublicationTypeSlug, TypeFieldConfig> = {
     coverMode: 'single',
     showGallery: true,
     showLinks: true,
+    showDocxImport: false,
     channelLabel: 'Comunidad',
   },
 }

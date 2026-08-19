@@ -20,6 +20,7 @@ export function mapPublicationDTO(dto: PublicationDTO): Publication {
     subtitle: dto.subtitle ?? null,
     imageUrl: dto.image_url ?? null,
     content: dto.content,
+    contentFormat: dto.content_format ?? 'text',
     typeId: dto.type_id ?? null,
     createdBy: dto.created_by,
     authorName: dto.created_by_name ?? null,
@@ -88,6 +89,7 @@ export function mapPublicationInputToWriteDTO(input: PublicationInput): Publicat
     title: input.title,
     content: input.content,
   }
+  if (input.contentFormat !== undefined) dto.content_format = input.contentFormat
   if (input.subtitle != null) dto.subtitle = input.subtitle
   if (input.frontImageUrl != null) dto.front_image_url = input.frontImageUrl
   if (input.typeId != null) dto.type_id = input.typeId
@@ -113,6 +115,7 @@ export function mapPublicationInputToPatchDTO(input: Partial<PublicationInput>):
   const dto: PublicationPatchDTO = {}
   if (input.title !== undefined) dto.title = input.title
   if (input.content !== undefined) dto.content = input.content
+  if (input.contentFormat !== undefined) dto.content_format = input.contentFormat
   if (input.subtitle !== undefined) dto.subtitle = input.subtitle
   if (input.frontImageUrl !== undefined) dto.front_image_url = input.frontImageUrl
   if (input.typeId !== undefined) dto.type_id = input.typeId
