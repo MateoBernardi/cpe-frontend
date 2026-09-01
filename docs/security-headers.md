@@ -29,7 +29,7 @@ restrictivo gana), asi que agregar el header es un refuerzo, no un duplicado inu
 ## 2. nginx
 
 ```nginx
-add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://imagedelivery.net https://upload.imagedelivery.net https://api.clinicaparaempresas.com https://foro.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com 'sha256-X4Q7l0jQBanO1gdBZXxyAGDmfwYUHLr2ctPe8fFsCaQ='; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://imagedelivery.net https://upload.imagedelivery.net https://api.clinicaparaempresas.com https://foro.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" always;
 add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
 add_header X-Content-Type-Options "nosniff" always;
 add_header Referrer-Policy "strict-origin-when-cross-origin" always;
@@ -62,7 +62,7 @@ el foro. Las imagenes del foro NO necesitan nada nuevo en `img-src`: se sirven d
 
 ```caddyfile
 header {
-    Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://imagedelivery.net https://upload.imagedelivery.net https://api.clinicaparaempresas.com https://foro.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+    Content-Security-Policy "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com 'sha256-X4Q7l0jQBanO1gdBZXxyAGDmfwYUHLr2ctPe8fFsCaQ='; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://clinicaparaempresas.com https://imagedelivery.net https://api.clinicaparaempresas.com; media-src 'self' blob: https://api.clinicaparaempresas.com; connect-src 'self' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com https://imagedelivery.net https://upload.imagedelivery.net https://api.clinicaparaempresas.com https://foro.clinicaparaempresas.com; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
     Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
     X-Content-Type-Options "nosniff"
     Referrer-Policy "strict-origin-when-cross-origin"
@@ -94,6 +94,15 @@ Misma nota que en nginx: swap del valor de `Content-Security-Policy` por la vari
 
 ## 5. Notas / deuda conocida
 
+- **`static.cloudflareinsights.com` (script-src + hash) y `cloudflareinsights.com` (connect-src)**:
+  no es analytics propio, es telemetria del widget de Turnstile. `challenges.cloudflare.com/turnstile/v0/api.js`
+  carga `beacon.min.js` desde ese host y corre un inline script como parte de su propia
+  ejecucion, ademas del iframe que ya cubre `challenges.cloudflare.com`. Sin esto el widget
+  falla con el error interno 600010 (ver `src/features/foro/components/TurnstileWidget.tsx`) en
+  vez de solo loguear un warning de CSP. El hash del inline script es el que Cloudflare sirve
+  hoy (2026-09-01); si cambian de version puede cambiar el hash, y Chrome lo loguea en la
+  consola con el mismo formato de error — hay que actualizarlo aca y en la meta-CSP de
+  `index.html` si eso pasa.
 - **`worker-src 'self' blob:` solo en los meta tags**: el cliente HMR de Vite crea un Worker
   desde una `blob:` URL; sin la directiva el fallback es `script-src` (que no lista `blob:`) y
   el dev server llena la consola de errores. Deliberadamente NO esta en los bloques de
