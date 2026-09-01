@@ -16,10 +16,10 @@ export default function AboutSection({ section }: Props) {
   const photo0 = photos[0]; const photo1 = photos[1]
 
   return (
-    <section ref={ref} className={`flex min-h-screen items-center ${layout.sectionPadY}`} style={{ backgroundColor: colors.aboutBg }}>
+    <section ref={ref} className="flex min-h-screen items-center pt-[5vh] sm:pt-[6vh] md:pt-[7vh] pb-[6vh] sm:pb-[8vh] md:pb-[10vh]" style={{ backgroundColor: colors.aboutBg }}>
       <div className={layout.container}>
         {heading && (
-          <h2 className={`mb-[2vh] sm:mb-[3vh] md:mb-[4vh] text-center text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl transition-all duration-700 font-primary ${
+          <h2 className={`mb-[5vh] sm:mb-[7vh] md:mb-[9vh] text-center text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl transition-all duration-700 font-primary ${
             isInView ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'
           }`} style={{ color: colors.blueDark }}>{heading.body}</h2>
         )}

@@ -1,17 +1,20 @@
+import { Fragment } from 'react'
 import { useMultipleSectionsViewModel } from '@features/content/viewmodels'
 import { SectionRenderer } from '@features/content/components'
+import { ForoPreviewSection, ServicesAccessSection } from '@features/content/components/sections'
 
 /**
  * Secciones de la landing page principal (en orden).
- * News y ContactForm se muestran en rutas separadas (/news, /contact).
+ * ContactForm se muestra en una ruta separada (/contact). El foro (papers,
+ * podcasts, discusiones, novedades) vive en /interacciones — la landing solo
+ * incluye un preview no-CMS (<ForoPreviewSection>) entre info_secondary y
+ * secondary_hero. La grilla de acceso directo a los tres servicios
+ * (<ServicesAccessSection>, también no-CMS) se renderiza justo debajo de
+ * "about" (Quiénes somos).
  */
 const PUBLIC_SECTIONS = [
   'hero',
   'about',
-  'teaser_circuit',
-  'teaser_clinica',
-  'teaser_traspaso',
-  'info_primary',
   'info_secondary',
   'secondary_hero',
 ] as const
@@ -51,9 +54,13 @@ export default function HomePage() {
         // Si la sección aún no está cargada, no renderizar nada (el MainLayout muestra el loading inicial)
         if (!section) return null
         return (
-          <section key={name} id={name}>
-            <SectionRenderer section={section} />
-          </section>
+          <Fragment key={name}>
+            <section id={name}>
+              <SectionRenderer section={section} />
+            </section>
+            {name === 'about' && <ServicesAccessSection />}
+            {name === 'info_secondary' && <ForoPreviewSection />}
+          </Fragment>
         )
       })}
     </div>

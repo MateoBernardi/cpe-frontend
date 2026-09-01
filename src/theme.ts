@@ -41,13 +41,6 @@ export const colors = {
   footerText:       '#ffffff',
   headerBgScrolled: '#ffffff',
 
-  // Circle colors for CircuitSection (brand degradé)
-  circuitCircles: [
-    { bg: '#0db6b4', hover: '#01888d', ring: '#0db6b4' },
-    { bg: '#036f73', hover: '#01888d', ring: '#036f73' },
-    { bg: '#0b6383', hover: '#064860', ring: '#0b6383' },
-  ],
-
   // Donut chart palette (brand degradé)
   donut: ['#0db6b4', '#01888d', '#036f73', '#0b6383', '#064860'],
   donutHover: ['#3dc9c7', '#02a0a6', '#048388', '#0d7a9e', '#07597a'],
@@ -72,6 +65,12 @@ export const colors = {
 
   // Misc UI
   whatsapp:         '#25D366',
+  /** Chip de "Borrador": ámbar sólido, deliberadamente fuera de la paleta de marca para que no se confunda con un estado normal. Reused for "Cambios sin publicar" (revision) and "En revisión". */
+  draftBadge:       '#b45309',
+  /** Chip de "Aprobada, pendiente de publicar": verde sólido, fuera de la paleta de marca por la
+   *  misma razón que `draftBadge` — necesita leerse como un estado distinto de un vistazo, esta vez
+   *  uno positivo ("ya podés publicar") en vez del ámbar de "todavía no es público". */
+  approvedBadge:    '#15803d',
 
   // Secondary pages: alternating accent usage
   secondary: {
@@ -81,6 +80,79 @@ export const colors = {
     accent2:    '#036f73',
     accent3:    '#0b6383',
   },
+} as const
+
+/**
+ * Acento por tipo de publicación del Foro (papers / CPEVoz / novedades / discusiones).
+ * Cada "canal" se distingue por color dentro de la paleta de marca — reemplaza los
+ * `--foro-c-*` en oklch del design handoff original.
+ */
+export const foroAccents = {
+  paper:     colors.blueDark,
+  podcast:   colors.tealMid,
+  novedad:   colors.tealDeep,
+  discusion: colors.blueMid,
+} as const
+
+/** Hairline compartido por las superficies del Foro — mismo borde plano que usa el hero. */
+export const foroHairline = `${colors.blueDark}1f`
+
+/**
+ * ─── Foro palette ───
+ *
+ * The Foro's design-handoff arrived with its own bespoke warm/cream palette
+ * (oklch custom properties, later flattened into raw hex literals scattered
+ * across the ported components). That palette has been retired in favour of
+ * the brand tokens above (`colors.*`, `foroAccents`) and Tailwind's stock
+ * gray scale wherever the rewritten Foro components need neutral text/
+ * surfaces. What remains here are the handful of values still consumed by
+ * `ForoAuthDialog` (owned by the `features/foro` data-layer module, out of
+ * this rewrite's scope) — kept so that dialog keeps compiling unchanged.
+ */
+export const foroPalette = {
+  // Text
+  ink:       '#17242a', // body copy on light surfaces
+  muted:     '#5c6f74', // meta text — secondary copy
+  mutedSoft: '#849399', // lowest-emphasis text — separators
+
+  // Warm neutral surface (auth dialog tab strip)
+  surfaceAlt: '#eae9e4',
+  line:       '#d8d5cc',
+
+  // Teal tint on light surfaces (hover fills)
+  tealTint: '#e3f0f0',
+
+  // Modal backdrop, ~55% black
+  scrim: `${colors.black}8c`,
+
+  // Status — functional, not brand-mapped (an error stays legibly red regardless of palette)
+  errorBg:   '#fce8e6',
+  errorText: '#b3261e',
+} as const
+
+/**
+ * Colors that encode third-party brand identity (Spotify / YouTube marks) —
+ * kept exactly as those brands specify, never swapped for the site's own
+ * palette. Most usages still appear as raw Tailwind arbitrary values in
+ * their components regardless: `hover:`/pseudo-class utilities can't read a
+ * JS constant, and CSS-var indirection would add behaviour this port isn't
+ * meant to change. This group exists so the values are named and
+ * documented in one place rather than silently duplicated.
+ */
+export const platformColors = {
+  spotifyGreen:       '#1db954', // <SpotifyLink>'s wordmark + hover border (raw literal at the two Tailwind hover call sites)
+  youtubeRed:         '#FF0000', // <YouTubeMark>'s badge fill
+  youtubeDarkBg:      '#0f0f0f', // YouTube-labeled CTA buttons (raw literal — Tailwind `bg-[]`/`hover:bg-[]` pair)
+  youtubeDarkBgHover: '#282828',
+
+  // Los cuatro colores de la "G" de Google, en el orden en que los usa el
+  // logo oficial. Van fijos (no `currentColor`) porque el mark es multicolor
+  // por definición: recolorearlo dejaría de ser el logo de Google, y las
+  // guidelines de "Sign in with Google" exigen usarlo tal cual.
+  googleYellow: '#FFC107',
+  googleRed:    '#FF3D00',
+  googleGreen:  '#4CAF50',
+  googleBlue:   '#1976D2',
 } as const
 
 // ─── Typography ─────────────────────────────────────────────────────────────

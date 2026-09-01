@@ -21,14 +21,6 @@ export const SECTION_ROLES: Record<string, SectionRoleConfig> = {
     textRoles: ['heading', 'paragraph', 'bio'],
     mediaRoles: ['photo'],
   },
-  news: {
-    textRoles: ['heading', 'paragraph'],
-    mediaRoles: ['thumbnail'],
-  },
-  info_primary: {
-    textRoles: ['heading', 'bullet'],
-    mediaRoles: ['diagram', 'icon'],
-  },
   info_secondary: {
     textRoles: ['heading', 'paragraph', 'quote'],
     mediaRoles: [],
@@ -49,26 +41,6 @@ export const SECTION_ROLES: Record<string, SectionRoleConfig> = {
     textRoles: ['heading', 'subtitle', 'paragraph', 'bullet'],
     mediaRoles: ['photo'],
   },
-  traspaso_generacional: {
-    textRoles: ['heading', 'subtitle', 'paragraph', 'bullet'],
-    mediaRoles: ['photo'],
-  },
-  service_clinica_empresarios: {
-    textRoles: ['heading', 'subtitle', 'paragraph', 'bullet'],
-    mediaRoles: ['photo'],
-  },
-  teaser_circuit: {
-    textRoles: ['heading'],
-    mediaRoles: [],
-  },
-  teaser_clinica: {
-    textRoles: ['heading', 'subtitle', 'cta'],
-    mediaRoles: [],
-  },
-  teaser_traspaso: {
-    textRoles: ['heading', 'subtitle', 'cta'],
-    mediaRoles: [],
-  },
 }
 
 export function getSectionRoles(sectionName: string): SectionRoleConfig {
@@ -84,18 +56,11 @@ export const SECTION_DISPLAY_NAMES: Record<string, string> = {
   hero: 'Portada Principal',
   secondary_hero: 'Portada Secundaria',
   about: 'Nosotros',
-  news: 'Novedades',
-  info_primary: 'Información Principal',
   info_secondary: 'Información Secundaria',
   contact_form: 'Formulario de Contacto',
   service_intervencion: 'Servicio: Intervención Directa',
   service_seleccion: 'Servicio: Selección de Personal',
   service_acompanamiento: 'Servicio: Acompañamiento',
-  traspaso_generacional: 'Traspaso Generacional',
-  service_clinica_empresarios: 'Servicio: Consultoría para Empresario',
-  teaser_circuit: 'Teaser: Circuito Integrado',
-  teaser_clinica: 'Teaser: Consultoría para Empresario',
-  teaser_traspaso: 'Teaser: Traspaso Generacional',
 }
 
 export const ROLE_DISPLAY_NAMES: Record<string, string> = {

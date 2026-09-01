@@ -23,13 +23,10 @@ import {
   HeroLayout,
   SecondaryHeroLayout,
   AboutLayout,
-  NewsLayout,
-  InfoPrimaryLayout,
   InfoSecondaryLayout,
   ContactFormLayout,
   ServiceDetailLayout,
   RecruitmentLayout,
-  TeaserLayout,
 } from './canvas'
 import type { SectionCanvasEditorProps, SlotContext, LayoutProps } from './canvas'
 
@@ -37,18 +34,11 @@ const LAYOUT_MAP: Record<string, React.ComponentType<LayoutProps>> = {
   hero: HeroLayout,
   secondary_hero: SecondaryHeroLayout,
   about: AboutLayout,
-  news: NewsLayout,
-  info_primary: InfoPrimaryLayout,
   info_secondary: InfoSecondaryLayout as unknown as React.ComponentType<LayoutProps>,
   contact_form: ContactFormLayout as unknown as React.ComponentType<LayoutProps>,
   service_intervencion: ServiceDetailLayout,
   service_seleccion: RecruitmentLayout,
   service_acompanamiento: ServiceDetailLayout,
-  traspaso_generacional: ServiceDetailLayout,
-  service_clinica_empresarios: ServiceDetailLayout,
-  teaser_circuit: TeaserLayout as unknown as React.ComponentType<LayoutProps>,
-  teaser_clinica: TeaserLayout as unknown as React.ComponentType<LayoutProps>,
-  teaser_traspaso: TeaserLayout as unknown as React.ComponentType<LayoutProps>,
 }
 
 // ── Layout description map — explica cómo se arma la diapositiva ──
@@ -56,18 +46,11 @@ const LAYOUT_DESCRIPTIONS: Record<string, string> = {
   hero: '5 elementos de texto + carrusel de fondo. El título y botones se superponen sobre las imágenes con degradado oscuro.',
   secondary_hero: '3 textos centrados + 1 imagen destacada. Diseño simétrico con tarjeta CTA.',
   about: 'Grilla de 4 columnas: bio + párrafo + foto × 2 perfiles. Fondo con puntos decorativos.',
-  news: 'Carrusel horizontal de tarjetas. Cada tarjeta = imagen miniatura + texto de novedad.',
-  info_primary: '2 columnas: diagrama/imagen (izq) + título con lista de viñetas (der). Íconos opcionales.',
-  info_secondary: '2 columnas: acordeones con secciones (izq) + gráfico dona interactivo (der). Sin imágenes.',
+  info_secondary: '2 columnas: acordeones con secciones (izq) + diagrama del circuito de intervención (der). Sin imágenes editables.',
   contact_form: '1 columna: formulario de contacto centrado + texto informativo abajo. Los campos del formulario no son editables.',
   service_intervencion: '2 columnas: tarjeta de texto con objetivo/párrafos/ejes (izq) + imagen (der).',
   service_seleccion: '2 bloques: detalle del servicio (arriba) + formulario de postulación CV (abajo).',
   service_acompanamiento: '2 columnas: tarjeta de texto con objetivo/párrafos/ejes (izq) + imagen (der).',
-  traspaso_generacional: '2 columnas: tarjeta de texto con objetivo/párrafos/ejes (izq) + imagen (der).',
-  service_clinica_empresarios: '2 columnas: tarjeta de texto con objetivo/párrafos/ejes (izq) + imagen (der).',
-  teaser_circuit: '1 columna: título editable. La animación del circuito se genera automáticamente.',
-  teaser_clinica: '2 columnas: ilustración (izq) + título, subtítulo y CTA (der).',
-  teaser_traspaso: '2 columnas: título, subtítulo y CTA (izq) + ilustración (der).',
 }
 
 // ── Content status calculations ──
@@ -142,7 +125,6 @@ export default function SectionCanvasEditor({
   const [editValue, setEditValue] = useState('')
   const [editingTextId, setEditingTextId] = useState<number | null>(null)
   const [showGuide, setShowGuide] = useState(false)
-  const [showFiles, setShowFiles] = useState(false)
 
   // ── Estado del gallery picker ──
   const [galleryTarget, setGalleryTarget] = useState<{
@@ -266,8 +248,6 @@ export default function SectionCanvasEditor({
 
   const LayoutComponent = LAYOUT_MAP[sectionName]
   const layoutDesc = LAYOUT_DESCRIPTIONS[sectionName]
-  const files = section?.files ?? []
-  const hasFiles = files.length > 0
 
   return (
     <div className="space-y-4">
@@ -315,18 +295,6 @@ export default function SectionCanvasEditor({
           <span className="mr-1">📋</span> Guía
         </button>
 
-        {sectionName === 'news' && (onUploadR2File || hasFiles) && (
-          <button
-            type="button"
-            onClick={() => setShowFiles(!showFiles)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-              showFiles ? 'bg-purple-500/20 text-purple-300' : 'text-slate-400 hover:bg-slate-700 hover:text-slate-200'
-            }`}
-            title="Archivos adjuntos"
-          >
-            <span className="mr-1">📎</span> Archivos{hasFiles ? ` (${files.length})` : ''}
-          </button>
-        )}
       </div>
 
       {/* ━━━ GUIDE PANEL (collapsible) ━━━ */}
@@ -472,165 +440,12 @@ export default function SectionCanvasEditor({
         </div>
       )}
 
-      {/* ━━━ FILES PANEL (R2) — Solo para novedades ━━━ */}
-      {showFiles && sectionName === 'news' && (
-        <FilesPanel
-          files={files}
-          sectionId={sectionId}
-          onUpload={onUploadR2File}
-          onDownload={onDownloadFile}
-          onRemove={onRemoveFile}
-          isUploading={isUploadingR2}
-        />
-      )}
-
       {/* ━━━ GALLERY PICKER MODAL ━━━ */}
       {galleryTarget && (
         <GalleryPicker
           onSelect={handleGallerySelect}
           onClose={() => setGalleryTarget(null)}
         />
-      )}
-    </div>
-  )
-}
-
-// ── Files Panel Component ──
-
-function FilesPanel({
-  files,
-  sectionId,
-  onUpload,
-  onDownload,
-  onRemove,
-  isUploading,
-}: {
-  files: import('../../models').FileContent[]
-  sectionId: number
-  onUpload?: (file: File, sectionId: number, role: string, order: number) => void
-  onDownload?: (fileId: number) => void
-  onRemove?: (fileId: number) => void
-  isUploading?: boolean
-}) {
-  const formatSize = (bytes: number | null) => {
-    if (!bytes) return '—'
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
-
-  return (
-    <div className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50/50 to-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-100">
-            <svg className="h-3.5 w-3.5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
-            </svg>
-          </div>
-          <h3 className="text-sm font-semibold text-purple-900">Archivos adjuntos</h3>
-          <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-700">
-            Subida directa a R2
-          </span>
-        </div>
-        {onUpload && (
-          <button
-            type="button"
-            onClick={() => {
-              const input = document.createElement('input')
-              input.type = 'file'
-              input.onchange = (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0]
-                if (file) onUpload(file, sectionId, 'attachment', files.length + 1)
-              }
-              input.click()
-            }}
-            disabled={isUploading}
-            className="flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:bg-purple-700 disabled:opacity-50"
-          >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Subir archivo
-          </button>
-        )}
-      </div>
-
-      {/* Rate limit warning */}
-      <div className="mb-3 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
-        <svg className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-        </svg>
-        <span>Límite: 3 subidas cada 24 horas por IP. Los archivos se suben directamente a Cloudflare R2 (máx. 5 MB).</span>
-      </div>
-
-      {files.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-purple-200 bg-purple-50/30 p-6 text-center">
-          <svg className="mx-auto h-8 w-8 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-          </svg>
-          <p className="mt-2 text-xs text-purple-400">No hay archivos adjuntos en esta sección</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {files.map((f) => (
-            <div
-              key={f.id}
-              className="flex items-center gap-3 rounded-lg border border-purple-100 bg-white p-3 transition-all hover:shadow-sm"
-            >
-              {/* Icon */}
-              <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${
-                f.state === 'UPLOADED' ? 'bg-emerald-100' : 'bg-amber-100'
-              }`}>
-                <svg className={`h-4 w-4 ${f.state === 'UPLOADED' ? 'text-emerald-600' : 'text-amber-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                </svg>
-              </div>
-
-              {/* Info */}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-800">{f.title ?? `Archivo #${f.id}`}</p>
-                <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                  <span>{formatSize(f.size)}</span>
-                  <span className={`rounded-full px-1.5 py-0.5 font-medium ${
-                    f.state === 'UPLOADED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                  }`}>
-                    {f.state === 'UPLOADED' ? 'Subido' : 'Pendiente'}
-                  </span>
-                  {f.role && <span className="text-slate-400">rol: {f.role}</span>}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-1">
-                {f.state === 'UPLOADED' && onDownload && (
-                  <button
-                    type="button"
-                    onClick={() => onDownload(f.id)}
-                    className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                    title="Descargar"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                    </svg>
-                  </button>
-                )}
-                {onRemove && (
-                  <button
-                    type="button"
-                    onClick={() => onRemove(f.id)}
-                    className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                    title="Eliminar"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
       )}
     </div>
   )

@@ -1,6 +1,6 @@
 /**
  * Layouts de canvas para secciones de servicio, información y formularios:
- * InfoPrimary, InfoSecondary, ContactForm, ServiceDetail, Recruitment.
+ * InfoSecondary, ContactForm, ServiceDetail, Recruitment.
  */
 
 import { matchAllTextsForRole } from '../../../config/sectionCanvasConfig'
@@ -11,39 +11,10 @@ import { ConnectedTextSlot, ConnectedMediaSlot, MultipleTextSlots } from './Conn
 import { colors } from '../../../../../theme'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Info Primary
+// Info Secondary (acordeones + diagrama del circuito)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export function InfoPrimaryLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
-  const heading = textSlots.find((s) => s.role === 'heading')!
-  const bulletConfig = textSlots.find((s) => s.role === 'bullet')!
-  const diagram = mediaSlots.find((s) => s.role === 'diagram')!
-  const iconConfig = mediaSlots.find((s) => s.role === 'icon')
-
-  return (
-    <div className="rounded-xl bg-slate-100 p-6 space-y-4">
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ConnectedMediaSlot config={diagram} ctx={ctx} />
-        <div className="space-y-4">
-          <ConnectedTextSlot config={heading} ctx={ctx} />
-          <MultipleTextSlots config={bulletConfig} ctx={ctx} addLabel="Agregar viñeta" />
-        </div>
-      </div>
-      {iconConfig && (
-        <div className="border-t border-slate-200 pt-4">
-          <p className="mb-2 text-xs font-medium text-gray-500">Íconos (opcionales, uno por viñeta):</p>
-          <ConnectedMediaSlot config={iconConfig} ctx={ctx} />
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Info Secondary (dona)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-const DONA_COLORS = ['#0d9488', '#06b6d4', '#6366f1', '#4338ca', '#134e4a']
+const SEGMENT_ACCENT_COLORS = ['#0d9488', '#06b6d4', '#6366f1', '#4338ca', '#134e4a']
 
 export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; textSlots: TextSlotConfig[] }) {
   const heading = textSlots.find((s) => s.role === 'heading')!
@@ -54,7 +25,7 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
   const quotes = ctx.section ? matchAllTextsForRole(ctx.section.texts, 'quote') : []
   const quotesByOrder = new Map(quotes.map((q) => [q.order, q] as const))
 
-  /** Reordenar sección de la dona */
+  /** Reordenar sección del acordeón */
   const swapSections = (indexA: number, indexB: number) => {
     const pA = paragraphs[indexA]
     const pB = paragraphs[indexB]
@@ -79,11 +50,11 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
             const pSlotId = `${paraConfig.id}-${i}`
             const qSlotId = `${quoteConfig.id}-${i}`
             return (
-              <div key={p.id} className="group/dona rounded-xl border-l-4 bg-white shadow-sm" style={{ borderLeftColor: DONA_COLORS[i % DONA_COLORS.length] }}>
+              <div key={p.id} className="group/segment rounded-xl border-l-4 bg-white shadow-sm" style={{ borderLeftColor: SEGMENT_ACCENT_COLORS[i % SEGMENT_ACCENT_COLORS.length] }}>
                 <div className="px-4 py-3 flex items-center gap-2">
                   {/* Flechas reorden */}
                   {paragraphs.length > 1 && (
-                    <div className="flex flex-col gap-0.5 opacity-0 transition-opacity group-hover/dona:opacity-100">
+                    <div className="flex flex-col gap-0.5 opacity-0 transition-opacity group-hover/segment:opacity-100">
                       <button
                         type="button"
                         onClick={() => swapSections(i, i - 1)}
@@ -106,7 +77,7 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
                       </button>
                     </div>
                   )}
-                  <span className="flex h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: DONA_COLORS[i % DONA_COLORS.length] }} />
+                  <span className="flex h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: SEGMENT_ACCENT_COLORS[i % SEGMENT_ACCENT_COLORS.length] }} />
                   <div className="flex-1">
                     <InlineTextSlot
                       config={{ ...paraConfig, id: pSlotId, slotIndex: i }}
@@ -124,7 +95,7 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
                 <div className="px-4 pb-3">
                   {quote ? (
                     <InlineTextSlot
-                      config={{ ...quoteConfig, id: qSlotId, slotIndex: i, label: 'Descripción (click en dona)' }}
+                      config={{ ...quoteConfig, id: qSlotId, slotIndex: i, label: 'Descripción (click en el acordeón)' }}
                       text={quote}
                       isEditing={ctx.editingSlotId === qSlotId}
                       editValue={ctx.editValue}
@@ -159,7 +130,7 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Agregar sección en la dona
+            Agregar sección al acordeón
           </button>
           {ctx.editingSlotId === `${paraConfig.id}-new` && (
             <div className="rounded-lg border border-blue-200 bg-white p-3">
@@ -176,54 +147,19 @@ export function InfoSecondaryLayout({ ctx, textSlots }: { ctx: SlotContext; text
             </div>
           )}
         </div>
-        {/* Dona preview */}
-        <div className="flex items-center justify-center rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
-          {paragraphs.length > 0 ? (
-            <DonutPreview count={paragraphs.length} />
-          ) : (
-            <div className="text-center text-gray-400">
-              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                <circle cx="12" cy="12" r="10" />
-                <circle cx="12" cy="12" r="4" />
-              </svg>
-              <p className="mt-2 text-xs">Agregá secciones para ver la dona</p>
-            </div>
-          )}
+        {/* Diagrama del circuito — imagen fija, no editable desde el panel */}
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl bg-slate-50 p-6 ring-1 ring-slate-200 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-100/60">
+            <svg className="h-8 w-8 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5v15m6-15v15M4.5 9h15M4.5 15h15" />
+            </svg>
+          </div>
+          <p className="text-xs text-gray-400">
+            Diagrama del circuito de intervención.<br />
+            Imagen fija — no se sube ni se edita desde el panel.
+          </p>
         </div>
       </div>
-    </div>
-  )
-}
-
-/** Vista previa SVG del gráfico dona */
-function DonutPreview({ count }: { count: number }) {
-  const rad = (d: number) => (d * Math.PI) / 180
-  return (
-    <div className="text-center">
-      <div className="relative mx-auto h-40 w-40">
-        <svg viewBox="0 0 100 100" className="h-full w-full">
-          {Array.from({ length: count }).map((_, i) => {
-            const seg = 360 / count
-            const start = -90 + i * seg + 1.5
-            const end = -90 + (i + 1) * seg - 1.5
-            const large = end - start > 180 ? 1 : 0
-            const r = 40
-            const ir = 22
-            const os = { x: 50 + r * Math.cos(rad(start)), y: 50 + r * Math.sin(rad(start)) }
-            const oe = { x: 50 + r * Math.cos(rad(end)), y: 50 + r * Math.sin(rad(end)) }
-            const is_ = { x: 50 + ir * Math.cos(rad(end)), y: 50 + ir * Math.sin(rad(end)) }
-            const ie = { x: 50 + ir * Math.cos(rad(start)), y: 50 + ir * Math.sin(rad(start)) }
-            return (
-              <path
-                key={i}
-                d={`M${os.x} ${os.y} A${r} ${r} 0 ${large} 1 ${oe.x} ${oe.y} L${is_.x} ${is_.y} A${ir} ${ir} 0 ${large} 0 ${ie.x} ${ie.y} Z`}
-                fill={DONA_COLORS[i % DONA_COLORS.length]}
-              />
-            )
-          })}
-        </svg>
-      </div>
-      <p className="mt-2 text-xs text-gray-400">Vista previa de la dona ({count} secciones)</p>
     </div>
   )
 }
@@ -385,38 +321,6 @@ export function RecruitmentLayout({ ctx, textSlots, mediaSlots }: LayoutProps) {
           {cta && <ConnectedTextSlot config={cta} ctx={ctx} />}
         </div>
       )}
-    </div>
-  )
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Teaser Layout (para teasers de la home)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-export function TeaserLayout({ ctx, textSlots }: { ctx: SlotContext; textSlots: TextSlotConfig[] }) {
-  const heading = textSlots.find((s) => s.role === 'heading')
-  const subtitle = textSlots.find((s) => s.role === 'subtitle')
-  const cta = textSlots.find((s) => s.role === 'cta')
-
-  return (
-    <div className="rounded-xl bg-gradient-to-br from-teal-50 to-white p-6 space-y-4">
-      <div className="grid gap-4 lg:grid-cols-2 items-center">
-        {/* Left: illustration placeholder */}
-        <div className="flex items-center justify-center rounded-xl bg-teal-100/50 p-8">
-          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-teal-200/50">
-            <svg className="h-12 w-12 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-            </svg>
-          </div>
-          <p className="ml-3 text-[10px] text-teal-600">Ilustración autogenerada</p>
-        </div>
-        {/* Right: editable text slots */}
-        <div className="space-y-3">
-          {heading && <ConnectedTextSlot config={heading} ctx={ctx} />}
-          {subtitle && <ConnectedTextSlot config={subtitle} ctx={ctx} />}
-          {cta && <ConnectedTextSlot config={cta} ctx={ctx} />}
-        </div>
-      </div>
     </div>
   )
 }

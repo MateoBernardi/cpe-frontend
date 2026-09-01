@@ -128,6 +128,85 @@ html.lenis, html.lenis body {
   max-height: 500px;
 }
 
+/* ── Action button success check (draws the tick) ── */
+@keyframes actionButtonCheck {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.action-button-check {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: actionButtonCheck 0.3s ease-out forwards;
+}
+
+/* ── Toggle de interacción (favorito / guardado) ──
+   Mismo criterio que el mark del checkbox de acá abajo: apagar tiene que pesar
+   visualmente lo mismo que encender, así que hay dos animaciones y no una.
+   `pop` sobrepasa la escala y vuelve (el gesto de marcar se siente como un
+   golpecito); `drop` se hunde y vuelve, más corto y sin sobrepaso, para que
+   quitar no se lea como un segundo "marcar". Las dos duran menos de 300ms:
+   corren sobre un estado ya actualizado de forma optimista, así que no pueden
+   demorar la lectura del nuevo estado. */
+@keyframes interactionTogglePop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.32); }
+  70%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+@keyframes interactionToggleDrop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(0.82); }
+  100% { transform: scale(1); }
+}
+.interaction-toggle-pop {
+  animation: interactionTogglePop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.interaction-toggle-drop {
+  animation: interactionToggleDrop 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .interaction-toggle-pop,
+  .interaction-toggle-drop {
+    animation: none;
+  }
+}
+
+/* ── Checkbox mark (preferences toggles) ──
+   Se dibuja al marcar y se BORRA al desmarcar (el trazo se retrae en lugar de
+   desaparecer de golpe), así el gesto de apagar tiene el mismo peso visual que
+   el de encender. */
+@keyframes checkboxMarkDraw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes checkboxMarkErase {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 1; }
+}
+.checkbox-mark {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.checkbox-mark-checked {
+  animation: checkboxMarkDraw 0.25s ease-out forwards;
+}
+.checkbox-mark-unchecked {
+  animation: checkboxMarkErase 0.2s ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-button-check,
+  .checkbox-mark-checked {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  /* El borrado no se anima: el trazo simplemente ya no está. */
+  .checkbox-mark-unchecked {
+    animation: none;
+    stroke-dashoffset: 1;
+  }
+}
+
 /* ── CV upload zone pulse ring ── */
 @keyframes cvPulse {
   0% { box-shadow: 0 0 0 0 rgba(1, 136, 141, 0.25); }
